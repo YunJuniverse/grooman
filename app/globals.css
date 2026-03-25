@@ -1,27 +1,63 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ── 라이트/다크 색상 토큰 ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-base:    #f4f5f7;
+  --bg-card:    #ffffff;
+  --bg-subtle:  #f9fafb;
+  --border:     #e2e8f0;
+  --border-sub: #edf2f7;
+  --text-1:     #0f172a;
+  --text-2:     #374151;
+  --text-3:     #6b7280;
+  --text-4:     #9ca3af;
+  --accent:     #4f46e5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --bg-base:    #10131a;
+  --bg-card:    #1c2030;
+  --bg-subtle:  #161b27;
+  --border:     #2d3650;
+  --border-sub: #232b3e;
+  --text-1:     #f1f5f9;
+  --text-2:     #cbd5e1;
+  --text-3:     #94a3b8;
+  --text-4:     #64748b;
+  --accent:     #818cf8;
 }
+
+* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; box-sizing: border-box; }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-1);
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.6;
 }
 
+/* 스크롤바 */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-4); }
+
+/* 텍스트 선택 */
+::selection { background: var(--accent); color: #fff; }
+
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .glass { backdrop-filter: blur(14px) saturate(180%); -webkit-backdrop-filter: blur(14px) saturate(180%); }
+
+  /* HOT 순위 그라디언트 */
+  .rank-gold   { color: #f59e0b; font-weight: 900; }
+  .rank-silver { color: #94a3b8; font-weight: 900; }
+  .rank-bronze { color: #b45309; font-weight: 900; }
 }
