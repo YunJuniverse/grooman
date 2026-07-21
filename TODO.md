@@ -9,17 +9,7 @@
 
 ## Backlog
 
-### GRM-010
-- **title**: 출시 전 봇 제거 게이트 + 안전한 teardown 수단 확보
-- **mode**: fullstack
-- **change-class**: B (teardown 수단·스키마) + C (공개 배포 릴리스 게이트)
-- **owner**: AI + Human
-- **acceptance criteria**:
-  - [ ] 봇 식별 수단 통일 — `profiles.is_bot` 컬럼 추가(마이그레이션), 시더가 이 플래그를 세팅하도록 수정
-  - [ ] 봇 식별자 불일치 정리 — `002_seed_bots.sql`(@grooman.kr)·`data.ts`(@grooman.internal)·런타임 랜덤 이메일(`seed-bots/route.ts:38`) 일원화
-  - [ ] teardown 스크립트/마이그레이션 작성 — 봇 계정 + 봇 생성 posts·comments·likes 전량 삭제(`WHERE is_bot`)
-  - [ ] **릴리스 게이트**: 공개 배포 직전 "봇 0건"을 쿼리로 검증(체크리스트 항목화). [[ADR-0002]]
-- **notes**: 2026-07-22 결정(GRM-010 해소) — 봇은 출시 전 look 확인용 테스트 픽스처. 실사용자 없으므로 프로덕션 공개 표기는 불필요. 진짜 리스크는 "teardown 불가"(is_bot 컬럼·삭제 스크립트 부재, 식별자 3곳 불일치). 비공개인 지금 정리하는 게 가장 쌈. 상세 [[ADR-0002]].
+_(없음)_
 
 ## Ready
 
@@ -44,6 +34,10 @@ _(없음)_
 _(없음)_
 
 ## Done
+
+### GRM-010
+- **title**: 봇 teardown 수단 + 공개 배포 릴리스 게이트
+- **notes**: Completed 2026-07-22. `profiles.is_bot` 마이그레이션(`004_bot_flag.sql`)+기존봇 백필, 시더가 is_bot 세팅(식별 일원화), teardown 스크립트(`supabase/scripts/teardown_bots.sql`, 글·댓글 우선 삭제로 SET NULL 방치 방지), 릴리스 게이트 SOP(`00_briefs/standing/SOP_public-release-gate.md`). 실행(프로덕션 teardown+0건 검증)은 공개 배포 시 SOP대로. BOT-1 해소. [[ADR-0002]].
 
 ### GRM-000
 - **title**: 방법론 v4.0 부트스트랩 + 핵심 결정 retro-ADR 문서화

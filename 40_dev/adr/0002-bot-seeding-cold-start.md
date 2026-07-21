@@ -35,11 +35,12 @@ updated: 2026-07-22
 ## Consequences
 
 - 쉬워지는 것: 출시 전 실 데이터로 UI/레이아웃·인게이지먼트 컴포넌트(HOT보드·좋아요·댓글) look 확인.
-- **핵심 리스크 — teardown 불가능**: "출시 전 전량 삭제"가 결정이지만, 현재 봇을 **안전·검증 가능하게 삭제할 수단이 없다**:
-  - `profiles`에 `is_bot` 구분 컬럼 없음(`is_admin`만 존재) → 단일 플래그로 봇 식별 불가.
-  - 봇 식별자가 3곳에서 불일치: `002_seed_bots.sql`=`bot.<cat>@grooman.kr`, `lib/bots/data.ts`=`bot.<cat>@grooman.internal`, 런타임 시더 `seed-bots/route.ts:38`=**랜덤 이메일** `bot.<random>@grooman.kr`.
-  - 삭제 스크립트(un-seeder)가 아예 없음. 봇 콘텐츠는 hot_rank·검색 색인에도 반영됨.
-- **되돌리기 비용**: 위 식별 불일치 때문에, 늦게 정리할수록 "어떤 계정·글이 봇인지" 판별이 어려워진다. → **지금(비공개 상태에서) 봇 마커 + teardown 수단을 확보**하는 게 가장 싸다.
+- **핵심 리스크였던 teardown 불가 — 2026-07-22 해소(GRM-010 구현)**: 아래 수단을 확보했다.
+  - `profiles.is_bot` 컬럼 추가 + 기존 봇 백필(`supabase/migrations/004_bot_flag.sql`) → **봇 식별의 단일 소스**.
+  - 런타임 시더(`seed-bots/route.ts`)가 `is_bot=true`를 세팅하도록 수정 → 식별자 3곳 불일치(@grooman.kr/@grooman.internal/랜덤 이메일)를 `is_bot` 플래그로 일원화.
+  - teardown 스크립트(`supabase/scripts/teardown_bots.sql`) — 봇 글·댓글부터 지운 뒤 계정 삭제(SET NULL 방치 방지) + 검증 쿼리.
+  - 릴리스 게이트 SOP(`00_briefs/standing/SOP_public-release-gate.md`) — 공개 배포 직전 "봇 0건" 검증을 절차화.
+- **되돌리기 비용**: teardown은 봇 글에 달린 실사용자 댓글도 CASCADE 삭제하므로 반드시 **공개 전(실사용자 유입 전)** 실행해야 한다 — 이 타이밍 자체가 비가역 제약.
 - **Change Class 판정**: 공개 배포 결정 자체는 **C**(릴리스 게이트: "봇 0건" 검증). teardown 수단 구현(`is_bot` 컬럼 등 스키마 변경)은 **B**.
 
 ## Approval Evidence

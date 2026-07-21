@@ -11,6 +11,7 @@ export interface Profile {
   point: number
   post_count: number
   is_admin: boolean
+  is_bot: boolean
   created_at: string
 }
 

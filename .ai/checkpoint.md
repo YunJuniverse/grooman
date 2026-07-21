@@ -23,14 +23,14 @@
 
 > *이번 세션*에 한 일의 서사만. 누적 이력(최근 N건 board)은 HANDOFF `Recent Changes` 참조 — 여기 복제 금지.
 
-- (이전) 방법론 부트스트랩(66fb321) + 체크리스트 트리아지·retro-ADR 3건(cb2e0e4) → PR grooman#1 push 완료.
-- GRM-010 정책 결정: 사용자 확인 결과 **봇 8개는 출시 전 look 확인용 테스트 픽스처, 실배포 때 전부 삭제, 현재 비공개**. → 프로덕션 공개 표기 불필요, "봇 0건" 릴리스 게이트로 대체.
-- 현재 구현이 **봇 teardown 불가**임을 발견(BOT-1, High): `profiles.is_bot` 없음, 식별자 3곳 불일치(`002_seed_bots.sql`=@grooman.kr·`data.ts`=@grooman.internal·`seed-bots/route.ts:38`=랜덤이메일), 삭제 스크립트 부재.
-- 반영: ADR-0002 재구성(테스트 픽스처+릴리스 게이트+teardown 리스크), ADR index·TODO GRM-010(실행 항목화)·HANDOFF(GRM-010 Resolved + BOT-1 이슈) 갱신.
+- (이전) 부트스트랩(66fb321)+retro-ADR(cb2e0e4)+GRM-010 결정(22a38e3) → PR grooman#1.
+- **GRM-010 구현 완료**: (1) `supabase/migrations/004_bot_flag.sql` — `profiles.is_bot` 추가 + partial index + 기존봇 백필(username 8개 OR 이메일 패턴). (2) `seed-bots/route.ts` — 봇 생성/기존 양쪽에 `is_bot:true` 세팅 → is_bot을 식별 단일소스로 일원화. (3) `supabase/scripts/teardown_bots.sql` — 봇 글·댓글 먼저 삭제(SET NULL 방치 방지) 후 계정 삭제 + 검증쿼리. (4) `00_briefs/standing/SOP_public-release-gate.md` — "봇 0건" 게이트 절차. (5) `types/supabase.ts`에 `is_bot` 추가.
+- FK 핵심: `posts/comments.user_id = ON DELETE SET NULL` → 계정만 지우면 봇 글이 user_id=null로 방치. teardown이 글·댓글부터 지우는 이유.
+- 로컬 빌드/타입체크 미실행(node_modules 미설치) → 변경은 by-inspection 안전, PR CI가 검증.
 
 ## 다음 사람에게 (구체적 첫 행동)
 
-1. **GRM-010 실행(BOT-1 해소)**: `profiles.is_bot` 컬럼 마이그레이션 추가 → 시더가 세팅 → 봇 계정·콘텐츠 teardown 스크립트(`WHERE is_bot`) → 공개 배포 직전 "봇 0건" 쿼리 검증을 릴리스 체크리스트에. **비공개인 지금 하는 게 가장 쌈.**
+1. GRM-010 실행은 **공개 배포 시점**에 SOP_public-release-gate 대로(프로덕션에서 004 적용→teardown 실행→0건 검증). 지금은 코드/문서만 준비됨.
 2. GRM-001 (Ready): 주요 5경로 모바일 Lighthouse 90+ 감사. 실제 앱 실행 필요.
 3. `.ai/context.json` 의 `project.domain` 을 `webapp-next` 등 실제 값으로.
 4. (권장) 크롤·봇·RLS 로직에 characterization 테스트 추가 검토.

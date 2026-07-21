@@ -30,6 +30,8 @@ export async function POST(req: Request) {
         .single()
 
       if (existing) {
+        // 마이그레이션 이전에 생성된 봇도 is_bot 마커를 갖도록 보정
+        await supabase.from('profiles').update({ is_bot: true }).eq('id', existing.id)
         botUserIds[bot.username] = existing.id
         continue
       }
