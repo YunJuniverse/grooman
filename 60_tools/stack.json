@@ -1,0 +1,210 @@
+{
+  "$schema_note": "Tech stack data for dashboard Overview tab bento grid. Edit `size: hero|mid|sm` to control card prominence.",
+  "categories": [
+    { "id": "frontend",   "label": "Frontend",      "short": "FE" },
+    { "id": "backend",    "label": "Backend",       "short": "BE" },
+    { "id": "cms",        "label": "CMS",           "short": "CMS" },
+    { "id": "infra",      "label": "Infrastructure","short": "INFRA" },
+    { "id": "dev",        "label": "Dev Tools",     "short": "DEV" }
+  ],
+  "items": [
+    {
+      "id": "nextjs",
+      "category": "frontend",
+      "name": "Next.js 15",
+      "tag": "App Router",
+      "role": "프레임워크",
+      "size": "hero",
+      "reason": "SSG + ISR + Server Actions 통합. 단일 런타임으로 풀스택 처리 가능. App Router 의 nested layout / streaming 으로 회사소개·블로그·문의 한 코드베이스.",
+      "url": "https://nextjs.org/docs"
+    },
+    {
+      "id": "typescript",
+      "category": "frontend",
+      "name": "TypeScript",
+      "role": "언어",
+      "size": "sm",
+      "reason": "타입 안전성. Next.js / Sanity / Zod 모두 TS 우선 지원."
+    },
+    {
+      "id": "tailwind",
+      "category": "frontend",
+      "name": "Tailwind CSS",
+      "tag": "v4",
+      "role": "스타일링",
+      "size": "sm",
+      "reason": "유틸리티 클래스로 빠른 작업. v4 의 CSS-first 설정 으로 lightningcss 빌드 가속."
+    },
+    {
+      "id": "shadcn",
+      "category": "frontend",
+      "name": "shadcn/ui",
+      "role": "UI 컴포넌트",
+      "size": "sm",
+      "reason": "Tailwind 기반, 무설치 복사형. 의존성 대신 *코드 소유권* — 디자인 수정 자유."
+    },
+    {
+      "id": "motion",
+      "category": "frontend",
+      "name": "Motion",
+      "tag": "framer-motion",
+      "role": "애니메이션",
+      "size": "sm",
+      "reason": "회사소개 페이지 인터랙션. variants / layout animation 으로 declarative."
+    },
+    {
+      "id": "rhf-zod",
+      "category": "frontend",
+      "name": "React Hook Form + Zod",
+      "role": "폼 검증",
+      "size": "mid",
+      "reason": "문의 폼 클라이언트 검증. Zod schema 가 TS 타입까지 자동 추론 — single source of truth."
+    },
+    {
+      "id": "next-intl",
+      "category": "frontend",
+      "name": "next-intl",
+      "role": "i18n",
+      "size": "sm",
+      "reason": "App Router 공식 지원, 가장 성숙. middleware / locale routing 통합."
+    },
+    {
+      "id": "resend",
+      "category": "backend",
+      "name": "Resend",
+      "role": "이메일 발송",
+      "size": "hero",
+      "reason": "100건/일 무료, SDK 간단. React Email 컴포넌트로 템플릿 작성 가능. SES 처럼 deliverability 안 걱정.",
+      "url": "https://resend.com/docs"
+    },
+    {
+      "id": "node",
+      "category": "backend",
+      "name": "Node.js",
+      "tag": "Next.js 기본",
+      "role": "서버 런타임",
+      "size": "mid",
+      "reason": "Edge 불필요, 안정적. fs / crypto 등 노드 API 자유 사용."
+    },
+    {
+      "id": "route-handlers",
+      "category": "backend",
+      "name": "Route Handlers + Server Actions",
+      "role": "API 레이어",
+      "size": "mid",
+      "reason": "별도 서버 없음. Server Actions 로 form submit / mutation 직접. Route Handlers 로 webhook / public API."
+    },
+    {
+      "id": "sanity-asset",
+      "category": "backend",
+      "name": "Sanity Asset Pipeline",
+      "role": "파일·이미지",
+      "size": "sm",
+      "reason": "CMS 내장, CDN 포함. on-the-fly 리사이즈 URL params."
+    },
+    {
+      "id": "sanity",
+      "category": "cms",
+      "name": "Sanity v3",
+      "role": "Headless CMS",
+      "size": "hero",
+      "reason": "GROQ 강력. Studio 가 React 라 Next.js 앱 안에 임베드. 무료 티어 API 10만건/월 + 에디터 2명 + 10GB — 회사 홈 충분.",
+      "url": "https://www.sanity.io/docs"
+    },
+    {
+      "id": "sanity-studio",
+      "category": "cms",
+      "name": "Sanity Studio",
+      "tag": "/studio 임베드",
+      "role": "관리 UI",
+      "size": "mid",
+      "reason": "Next.js 앱 내 /studio 경로에 embed. 별도 호스팅 불필요. 콘텐츠 타입: 블로그 / 뉴스 / 채용 / 회사 정보."
+    },
+    {
+      "id": "vercel",
+      "category": "infra",
+      "name": "Vercel",
+      "role": "호스팅",
+      "size": "hero",
+      "reason": "Next.js 공식. ISR / Image Optimization / Edge Network 자동. Preview URL 로 PR 마다 라이브 미리보기.",
+      "url": "https://vercel.com/docs"
+    },
+    {
+      "id": "vercel-edge",
+      "category": "infra",
+      "name": "Edge Network",
+      "role": "CDN",
+      "size": "sm",
+      "reason": "자동 포함. 글로벌 캐시 + 함수 distribution."
+    },
+    {
+      "id": "vercel-dns",
+      "category": "infra",
+      "name": "Vercel DNS",
+      "tag": "또는 외부",
+      "role": "도메인 DNS",
+      "size": "sm",
+      "reason": "연결만 하면 됨. 인증서 자동."
+    },
+    {
+      "id": "vercel-env",
+      "category": "infra",
+      "name": "Environment Variables",
+      "role": "환경변수",
+      "size": "sm",
+      "reason": "Preview / Production 분리. CLI 로 pull 가능."
+    },
+    {
+      "id": "vercel-analytics",
+      "category": "infra",
+      "name": "Vercel Analytics",
+      "role": "분석",
+      "size": "sm",
+      "reason": "무료, 코드 한 줄. Core Web Vitals 자동 수집."
+    },
+    {
+      "id": "pnpm",
+      "category": "dev",
+      "name": "pnpm",
+      "role": "패키지 매니저",
+      "size": "hero",
+      "reason": "디스크 절약 (content-addressable store), 빠름. monorepo workspaces 도 자연스러움.",
+      "url": "https://pnpm.io"
+    },
+    {
+      "id": "eslint",
+      "category": "dev",
+      "name": "ESLint",
+      "tag": "Next.js 기본",
+      "role": "Linting",
+      "size": "sm",
+      "reason": "Next.js 가 기본 제공하는 eslint-config-next 사용."
+    },
+    {
+      "id": "prettier",
+      "category": "dev",
+      "name": "Prettier + Tailwind plugin",
+      "role": "포맷터",
+      "size": "mid",
+      "reason": "Tailwind 클래스 자동 정렬. PR 리뷰 노이즈 제거."
+    },
+    {
+      "id": "git",
+      "category": "dev",
+      "name": "Git",
+      "tag": "main 보호",
+      "role": "Git 전략",
+      "size": "sm",
+      "reason": "main 보호, PR 머지만. squash merge."
+    },
+    {
+      "id": "turbopack",
+      "category": "dev",
+      "name": "Turbopack",
+      "tag": "기본",
+      "role": "로컬 개발",
+      "size": "sm",
+      "reason": "pnpm dev 기본. webpack 대비 빠른 HMR."
+    }
+  ]
+}

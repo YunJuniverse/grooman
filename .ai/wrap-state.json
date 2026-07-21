@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "bootstrapped_at": "2026-07-21T14:38:18Z",
+  "last_validated_commit": "38fc62669ed4b8e4fa583410399ebe038b7bf75e",
+  "last_validated_at": null,
+  "files": {
+    "HANDOFF.md": {
+      "sha256": "9349d77d6178acc99e19c320ed92f986563622405e65a2d45cb19839325da350"
+    },
+    "TODO.md": {
+      "sha256": "6ff033e7a862cfce291a9f71d3d6e91a222e3ef74342b660f6dddb747e76ff0d"
+    },
+    ".ai/checkpoint.md": {
+      "sha256": "019a3e5ce41a0651219e245fca5f32acb1c65250a9c9edb3f9fe8a330684c855"
+    }
+  },
+  "observations": {
+    "validated_files": [
+      "50_resources/ai_observations/2026-07-21_grooman-methodology-bootstrap.md"
+    ]
+  }
+}

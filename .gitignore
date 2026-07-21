@@ -35,3 +35,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .claude/
+
+# >>> methodology managed (마커 사이 수정 금지) >>>
+# 방법론 생성 산출물 — 추적 금지 (대시보드/캐시는 로컬 자동 재생성)
+dashboard.html
+_start/.cache/
+__pycache__/
+*.pyc
+.DS_Store
+# <<< methodology managed <<<

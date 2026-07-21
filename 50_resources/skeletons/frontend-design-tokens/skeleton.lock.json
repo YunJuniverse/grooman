@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "domain": "frontend-design-tokens",
+  "base_version": "v1",
+  "built_at": "2026-07-09T05:35:34Z",
+  "base_files": [
+    "components/primitives/Badge.tsx",
+    "components/primitives/Button.tsx",
+    "components/primitives/Card.tsx",
+    "components/primitives/index.ts",
+    "design-system.md",
+    "guardrails/check-no-arbitrary-color.sh",
+    "guardrails/wiring.md",
+    "lib/cn.ts",
+    "theme/tokens.css"
+  ],
+  "catalog_entries": [
+    {
+      "id": "C-001",
+      "status": "found",
+      "path": "50_resources/catalog/C-001_frontend-design-tokens.md",
+      "title": "프론트엔드 색 하드코딩 누적 → 드리프트·리브랜딩 마비 (디자인 토큰 미적용)"
+    }
+  ]
+}
