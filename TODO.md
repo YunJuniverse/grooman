@@ -9,16 +9,7 @@
 
 ## Backlog
 
-### GRM-010
-- **title**: 봇 시딩 진정성·공개(disclosure) 정책 결정
-- **mode**: planning-only
-- **change-class**: C
-- **owner**: Human
-- **acceptance criteria**:
-  - [ ] AI 생성 봇 계정(실사용자와 구분 불가, `002_seed_bots.sql`)을 서비스에 유지할지 결정
-  - [ ] 유지 시 봇/자동수급 콘텐츠 공개 표기(예: "AI 생성"·"자동수집" 뱃지) 여부 결정
-  - [ ] 개인정보처리방침·이용약관과 정합성 확인
-- **notes**: retro-ADR-0002가 표면화한 미결 결정. 콜드스타트 부트스트랩 목적은 이해하나, 진정성·이용자 신뢰·표기 의무는 사람 판단 필요(Class C). [[ADR-0002]] 참조.
+_(없음)_
 
 ## Ready
 
@@ -43,6 +34,10 @@ _(없음)_
 _(없음)_
 
 ## Done
+
+### GRM-010
+- **title**: 봇 teardown 수단 + 공개 배포 릴리스 게이트
+- **notes**: Completed 2026-07-22. `profiles.is_bot` 마이그레이션(`004_bot_flag.sql`)+기존봇 백필, 시더가 is_bot 세팅(식별 일원화), teardown 스크립트(`supabase/scripts/teardown_bots.sql`, 글·댓글 우선 삭제로 SET NULL 방치 방지), 릴리스 게이트 SOP(`00_briefs/standing/SOP_public-release-gate.md`). 실행(프로덕션 teardown+0건 검증)은 공개 배포 시 SOP대로. BOT-1 해소. [[ADR-0002]].
 
 ### GRM-000
 - **title**: 방법론 v4.0 부트스트랩 + 핵심 결정 retro-ADR 문서화

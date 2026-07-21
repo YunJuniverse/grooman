@@ -1,14 +1,17 @@
 ---
 status: accepted
 date: 2026-07-21
+updated: 2026-07-22
 ---
 
-# ADR-0002 AI 생성 봇 계정 8개를 auth.users에 직접 시딩해 콜드스타트 UGC(게시글·댓글)를 부트스트랩한다
+# ADR-0002 AI 봇 8개는 출시 전 look 확인용 테스트 픽스처이며, 공개 배포 전 전량 삭제한다
 
-빈 커뮤니티 문제를 풀기 위해, 카테고리별 페르소나 봇 8개를 SQL 마이그레이션으로 `auth.users`에 직접 삽입하고 Claude로 게시글·댓글을 생성해 초기 활동을 채운다. 그 대가로 진정성·공개(disclosure) 리스크와 Supabase 인증 플로우 우회를 수용한다. **이 결정의 진정성/표기 측면은 미결(Class C)이며 사람 판단이 필요하다.**
+카테고리별 페르소나 봇 8개를 SQL 마이그레이션으로 `auth.users`에 직접 삽입하고 Claude로 게시글·댓글을 생성한다. **용도는 콜드스타트 프로덕션 부트스트랩이 아니라, 출시 전 UI/레이아웃(look)을 실 데이터로 확인하기 위한 테스트 픽스처다.** grooman은 현재 비공개(실사용자 없음)이며, **공개 배포 시 봇 계정과 봇 생성 콘텐츠를 전량 삭제**하는 것을 조건으로 이 방식을 수용한다.
 
-- Related TODO / issue: **GRM-010(봇 진정성·공개 정책 결정 — 미결)**
-- Related PR: (retro — 자율빌드 단계에서 이미 구현, 소급 기록)
+> **2026-07-22 결정 (GRM-010 해소)**: 봇은 실사용자를 겨냥한 기만 장치가 아니라 출시 전 테스트 픽스처다 → 프로덕션 공개 표기(disclosure)는 불필요. 대신 **"공개 배포 전 봇 0건" 릴리스 게이트**가 필수다. 현재 teardown이 불가능한 상태가 실제 리스크다(아래 Consequences).
+
+- Related TODO / issue: **GRM-010(출시 전 봇 제거 게이트 + 안전한 teardown 수단 확보)**
+- Related PR: [grooman#1](https://github.com/YunJuniverse/grooman/pull/1)
 
 > ⚠️ 소급(retro) ADR. 현행 코드(`supabase/migrations/002_seed_bots.sql`, `lib/bots/generator.ts`, `lib/bots/data.ts`, `app/api/admin/seed-bots/route.ts`, `bot-likes`·`bot-activity`)가 담은 결정을 재구성한 것이다.
 
@@ -31,15 +34,18 @@ date: 2026-07-21
 
 ## Consequences
 
-- 쉬워지는 것: 즉각적 초기 활동감·카테고리 커버리지 확보.
-- 어려워지는 것: **봇이 실사용자와 구분 불가** → 이용자 신뢰·표시광고/기만 관련 리스크; `auth.users` 직접 조작은 Supabase 업그레이드·인증 로직 변경 시 깨질 수 있음; 마이그레이션에 봇 비밀번호가 평문 리터럴로 남음.
-- **선행조건 / 미결(OPEN)**: 이 결정은 **브랜드·이용자 신뢰·표기 의무**에 닿으므로 방법론상 **Class C**다. 봇 유지 여부와 "AI 생성/자동수집" 공개 표기 여부는 사람이 결정해야 한다 → **GRM-010**. 정책이 정해질 때까지 본 ADR은 리스크를 명시적으로 노출한 상태로 둔다.
-- **되돌리기 비용**: 봇 콘텐츠가 실 콘텐츠와 섞여 누적되고 hot_rank·검색 색인에 반영된다. 사후 제거 시 어떤 글이 봇 것인지 식별·정리 + 지표 왜곡 보정이 필요.
-- **Change Class 판정**: **C** (공개 서비스의 진정성·표기 — 사람 승인 필요. AI가 임의로 "완료" 처리하지 않는다).
+- 쉬워지는 것: 출시 전 실 데이터로 UI/레이아웃·인게이지먼트 컴포넌트(HOT보드·좋아요·댓글) look 확인.
+- **핵심 리스크였던 teardown 불가 — 2026-07-22 해소(GRM-010 구현)**: 아래 수단을 확보했다.
+  - `profiles.is_bot` 컬럼 추가 + 기존 봇 백필(`supabase/migrations/004_bot_flag.sql`) → **봇 식별의 단일 소스**.
+  - 런타임 시더(`seed-bots/route.ts`)가 `is_bot=true`를 세팅하도록 수정 → 식별자 3곳 불일치(@grooman.kr/@grooman.internal/랜덤 이메일)를 `is_bot` 플래그로 일원화.
+  - teardown 스크립트(`supabase/scripts/teardown_bots.sql`) — 봇 글·댓글부터 지운 뒤 계정 삭제(SET NULL 방치 방지) + 검증 쿼리.
+  - 릴리스 게이트 SOP(`00_briefs/standing/SOP_public-release-gate.md`) — 공개 배포 직전 "봇 0건" 검증을 절차화.
+- **되돌리기 비용**: teardown은 봇 글에 달린 실사용자 댓글도 CASCADE 삭제하므로 반드시 **공개 전(실사용자 유입 전)** 실행해야 한다 — 이 타이밍 자체가 비가역 제약.
+- **Change Class 판정**: 공개 배포 결정 자체는 **C**(릴리스 게이트: "봇 0건" 검증). teardown 수단 구현(`is_bot` 컬럼 등 스키마 변경)은 **B**.
 
 ## Approval Evidence
 
-- (retro — 승인 증거 없음. **GRM-010에서 사람 결정 대기 중.** 승인 없이 자동으로 accepted 처리하지 않으며, status=accepted는 "코드에 이미 존재함"을 뜻할 뿐 정책 승인을 뜻하지 않는다.)
+- 2026-07-22: 사람 결정 — 봇은 출시 전 테스트 픽스처, 공개 배포 시 전량 삭제. 프로덕션 표기는 불필요, "봇 0건" 릴리스 게이트로 대체. (retro였던 부분은 유지: 최초 봇 도입 자체의 승인 증거는 없음.)
 
 ## Related
 

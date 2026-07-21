@@ -23,18 +23,17 @@
 
 > *이번 세션*에 한 일의 서사만. 누적 이력(최근 N건 board)은 HANDOFF `Recent Changes` 참조 — 여기 복제 금지.
 
-- (이전) 방법론 v4.0 부트스트랩: 임시 staging init 후 복사, 구 CLAUDE.md 보존, .gitignore 병합, Project Settings 채움. → 커밋 66fb321.
-- 구 자율빌드 체크리스트(56항목)를 실코드와 대조: ~53항목 이미 구현(파일명·구조 다름 포함), 진짜 미완은 Lighthouse 검증뿐. → GRM-001만 TODO Ready 승격(옵션 B).
-- 핵심 결정 3건 retro-ADR 문서화: ADR-0001(RSS 크롤+AI필터, user_id=null 자동게시, Class B)·ADR-0002(봇 8개 auth.users 직접 시딩, Class C·표기 미결)·ADR-0003(전테이블 RLS + 크롤은 admin client로 RLS 우회, Class B).
-- ADR-0002가 표면화한 봇 진정성/공개 표기 문제를 GRM-010(Class C, Human)로 Backlog 등록 + HANDOFF Open Decisions에 반영.
+- (이전) 부트스트랩(66fb321)+retro-ADR(cb2e0e4)+GRM-010 결정(22a38e3) → PR grooman#1.
+- **GRM-010 구현 완료**: (1) `supabase/migrations/004_bot_flag.sql` — `profiles.is_bot` 추가 + partial index + 기존봇 백필(username 8개 OR 이메일 패턴). (2) `seed-bots/route.ts` — 봇 생성/기존 양쪽에 `is_bot:true` 세팅 → is_bot을 식별 단일소스로 일원화. (3) `supabase/scripts/teardown_bots.sql` — 봇 글·댓글 먼저 삭제(SET NULL 방치 방지) 후 계정 삭제 + 검증쿼리. (4) `00_briefs/standing/SOP_public-release-gate.md` — "봇 0건" 게이트 절차. (5) `types/supabase.ts`에 `is_bot` 추가.
+- FK 핵심: `posts/comments.user_id = ON DELETE SET NULL` → 계정만 지우면 봇 글이 user_id=null로 방치. teardown이 글·댓글부터 지우는 이유.
+- 로컬 빌드/타입체크 미실행(node_modules 미설치) → 변경은 by-inspection 안전, PR CI가 검증.
 
 ## 다음 사람에게 (구체적 첫 행동)
 
-1. 브랜치 `chore/apply-methodology`를 검토 후 push→PR로 grooman main에 머지 (방법론: main 직접 push 금지). 이 커밋에 ADR 3건 + TODO 포함.
-2. **GRM-010 (Class C, Human 결정)**: 봇 시딩 유지 여부 + "AI생성/자동수집" 공개 표기 정책. ADR-0002 리스크 해소 전까지 열린 상태.
-3. GRM-001 (Ready): 주요 5경로 모바일 Lighthouse 90+ 감사·최적화. 실제 앱 실행 필요.
-4. `.ai/context.json` 의 `project.domain` 을 `webapp-next` 등 실제 값으로 채울 것.
-5. (권장) ADR가 커버한 크롤·봇·RLS 비즈니스 로직에 characterization 테스트 추가 검토.
+1. GRM-010 실행은 **공개 배포 시점**에 SOP_public-release-gate 대로(프로덕션에서 004 적용→teardown 실행→0건 검증). 지금은 코드/문서만 준비됨.
+2. GRM-001 (Ready): 주요 5경로 모바일 Lighthouse 90+ 감사. 실제 앱 실행 필요.
+3. `.ai/context.json` 의 `project.domain` 을 `webapp-next` 등 실제 값으로.
+4. (권장) 크롤·봇·RLS 로직에 characterization 테스트 추가 검토.
 
 ## 막혔던 지점 / 시도해봤지만 안 된 것
 
