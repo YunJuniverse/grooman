@@ -23,18 +23,17 @@
 
 > *이번 세션*에 한 일의 서사만. 누적 이력(최근 N건 board)은 HANDOFF `Recent Changes` 참조 — 여기 복제 금지.
 
-- (이전) 방법론 v4.0 부트스트랩: 임시 staging init 후 복사, 구 CLAUDE.md 보존, .gitignore 병합, Project Settings 채움. → 커밋 66fb321.
-- 구 자율빌드 체크리스트(56항목)를 실코드와 대조: ~53항목 이미 구현(파일명·구조 다름 포함), 진짜 미완은 Lighthouse 검증뿐. → GRM-001만 TODO Ready 승격(옵션 B).
-- 핵심 결정 3건 retro-ADR 문서화: ADR-0001(RSS 크롤+AI필터, user_id=null 자동게시, Class B)·ADR-0002(봇 8개 auth.users 직접 시딩, Class C·표기 미결)·ADR-0003(전테이블 RLS + 크롤은 admin client로 RLS 우회, Class B).
-- ADR-0002가 표면화한 봇 진정성/공개 표기 문제를 GRM-010(Class C, Human)로 Backlog 등록 + HANDOFF Open Decisions에 반영.
+- (이전) 방법론 부트스트랩(66fb321) + 체크리스트 트리아지·retro-ADR 3건(cb2e0e4) → PR grooman#1 push 완료.
+- GRM-010 정책 결정: 사용자 확인 결과 **봇 8개는 출시 전 look 확인용 테스트 픽스처, 실배포 때 전부 삭제, 현재 비공개**. → 프로덕션 공개 표기 불필요, "봇 0건" 릴리스 게이트로 대체.
+- 현재 구현이 **봇 teardown 불가**임을 발견(BOT-1, High): `profiles.is_bot` 없음, 식별자 3곳 불일치(`002_seed_bots.sql`=@grooman.kr·`data.ts`=@grooman.internal·`seed-bots/route.ts:38`=랜덤이메일), 삭제 스크립트 부재.
+- 반영: ADR-0002 재구성(테스트 픽스처+릴리스 게이트+teardown 리스크), ADR index·TODO GRM-010(실행 항목화)·HANDOFF(GRM-010 Resolved + BOT-1 이슈) 갱신.
 
 ## 다음 사람에게 (구체적 첫 행동)
 
-1. 브랜치 `chore/apply-methodology`를 검토 후 push→PR로 grooman main에 머지 (방법론: main 직접 push 금지). 이 커밋에 ADR 3건 + TODO 포함.
-2. **GRM-010 (Class C, Human 결정)**: 봇 시딩 유지 여부 + "AI생성/자동수집" 공개 표기 정책. ADR-0002 리스크 해소 전까지 열린 상태.
-3. GRM-001 (Ready): 주요 5경로 모바일 Lighthouse 90+ 감사·최적화. 실제 앱 실행 필요.
-4. `.ai/context.json` 의 `project.domain` 을 `webapp-next` 등 실제 값으로 채울 것.
-5. (권장) ADR가 커버한 크롤·봇·RLS 비즈니스 로직에 characterization 테스트 추가 검토.
+1. **GRM-010 실행(BOT-1 해소)**: `profiles.is_bot` 컬럼 마이그레이션 추가 → 시더가 세팅 → 봇 계정·콘텐츠 teardown 스크립트(`WHERE is_bot`) → 공개 배포 직전 "봇 0건" 쿼리 검증을 릴리스 체크리스트에. **비공개인 지금 하는 게 가장 쌈.**
+2. GRM-001 (Ready): 주요 5경로 모바일 Lighthouse 90+ 감사. 실제 앱 실행 필요.
+3. `.ai/context.json` 의 `project.domain` 을 `webapp-next` 등 실제 값으로.
+4. (권장) 크롤·봇·RLS 로직에 characterization 테스트 추가 검토.
 
 ## 막혔던 지점 / 시도해봤지만 안 된 것
 

@@ -10,15 +10,16 @@
 ## Backlog
 
 ### GRM-010
-- **title**: 봇 시딩 진정성·공개(disclosure) 정책 결정
-- **mode**: planning-only
-- **change-class**: C
-- **owner**: Human
+- **title**: 출시 전 봇 제거 게이트 + 안전한 teardown 수단 확보
+- **mode**: fullstack
+- **change-class**: B (teardown 수단·스키마) + C (공개 배포 릴리스 게이트)
+- **owner**: AI + Human
 - **acceptance criteria**:
-  - [ ] AI 생성 봇 계정(실사용자와 구분 불가, `002_seed_bots.sql`)을 서비스에 유지할지 결정
-  - [ ] 유지 시 봇/자동수급 콘텐츠 공개 표기(예: "AI 생성"·"자동수집" 뱃지) 여부 결정
-  - [ ] 개인정보처리방침·이용약관과 정합성 확인
-- **notes**: retro-ADR-0002가 표면화한 미결 결정. 콜드스타트 부트스트랩 목적은 이해하나, 진정성·이용자 신뢰·표기 의무는 사람 판단 필요(Class C). [[ADR-0002]] 참조.
+  - [ ] 봇 식별 수단 통일 — `profiles.is_bot` 컬럼 추가(마이그레이션), 시더가 이 플래그를 세팅하도록 수정
+  - [ ] 봇 식별자 불일치 정리 — `002_seed_bots.sql`(@grooman.kr)·`data.ts`(@grooman.internal)·런타임 랜덤 이메일(`seed-bots/route.ts:38`) 일원화
+  - [ ] teardown 스크립트/마이그레이션 작성 — 봇 계정 + 봇 생성 posts·comments·likes 전량 삭제(`WHERE is_bot`)
+  - [ ] **릴리스 게이트**: 공개 배포 직전 "봇 0건"을 쿼리로 검증(체크리스트 항목화). [[ADR-0002]]
+- **notes**: 2026-07-22 결정(GRM-010 해소) — 봇은 출시 전 look 확인용 테스트 픽스처. 실사용자 없으므로 프로덕션 공개 표기는 불필요. 진짜 리스크는 "teardown 불가"(is_bot 컬럼·삭제 스크립트 부재, 식별자 3곳 불일치). 비공개인 지금 정리하는 게 가장 쌈. 상세 [[ADR-0002]].
 
 ## Ready
 
