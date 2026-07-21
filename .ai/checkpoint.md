@@ -23,16 +23,17 @@
 
 > *이번 세션*에 한 일의 서사만. 누적 이력(최근 N건 board)은 HANDOFF `Recent Changes` 참조 — 여기 복제 금지.
 
-- (이전) 16+17 머지(PR#9) → **GRM-011 기획 시리즈 7/7 완결**.
-- **전수조사 → 정합화 + MASTER_PLAN v1** (branch docs/master-plan-consistency): 로컬 방법론 문서 전수조사(공유 문서는 sync 소관 제외) → 4건 판정. ① AGENTS.md §1 채움(CLAUDE.md 미러 누락분) ② context.json 갱신(domain=webapp-next·phase=M1-prep·active_todos) ③ 기획 8종 status draft→active(머지=승인 증거) ④ **MASTER_PLAN v1**(지침 18 정독): 코드 베이스라인 스냅샷·M0~M3 페이즈 5필드·인라인 가드 3건(법률 전 공개 금지 등)·mermaid 의존성(크리티컬 패스=legal-review)·MVP 확정·AI-001 소급 게이트·B/C 사전 매핑·게이트 활성/이연 라이프사이클.
-- TODO: GRM-011 → Done(부산물: 갭 4건 적발 기록). 이 PR = **master-plan-approval 게이트**.
+- (이전) MASTER_PLAN v1+정합화 머지(PR#10) — master-plan-approval 통과, **M1 공식 착수**.
+- **GRM-014 구현** (branch feat/grm-014-ai-guard, Class A): CLAUDE.md 규칙대로 **테스트 우선** — vitest+zod 설치, `tests/unit/crawl-analysis.test.ts` 11케이스 선작성(clinic 구조 거부·enum·범위·타입·필드 누락·malformed JSON) → `lib/ai/crawl-analysis.ts` 신설(zod 스키마+parseCrawlAnalysis 순수 함수) → `claude.ts` 재작성(키 부재 fail-closed·temperature 0·파서 위임). 테스트 11/11·tsc 0·build 27라우트 ✓.
+- 부수: package.json에 test 스크립트 추가 → **이후 ship이 테스트를 자동 실행**(게이트 강화). vitest.config.ts(@ alias). AI-001 v1.1(B1·B3·B4 완료 표시, AC④=게이트 추가 불요 판정).
+- 참고: Vercel 플러그인 훅이 "AI Gateway로 이관하라" 검증 오류를 냈으나 **기존 확립 패턴(@anthropic-ai/sdk 직접) 유지 판단** — 이관은 GRM-014 범위 밖 인프라 변경 + 골든셋 전 AI 인프라 동결 규칙 위반.
 
 ## 다음 사람에게 (구체적 첫 행동)
 
-1. 이 PR 리뷰 = **master-plan-approval 게이트** — 머지 시 M1 공식 착수 가능.
-2. **법률 검토 착수 최우선**(M1 크리티컬 패스 — 외부 의존). 병행: M1 구현 — 권장 순서 GRM-014(작고 명확)→GRM-013→GRM-012(최대).
-3. M1 종료 조건 = MASTER_PLAN §5.5(구현 3건+Lighthouse+실소스+봇0+색인100) — 게이트: legal-review + class-c-public-release.
-4. 골든셋 v1 전 AI-001 프롬프트·모델 변경 동결(17 §1) 유지.
+1. GRM-014 PR 리뷰·머지(Class A — 테스트 11종·빌드 증거 포함).
+2. 다음 구현: **GRM-013 측정 인프라** — 인간 액션 선행: GA4 계정·Search Console 등록은 hayden(코드 삽입은 AI). 그다음 GRM-012(최대, Class B).
+3. **법률 검토 여전히 미착수** — M1 크리티컬 패스, 재촉 필요.
+4. M1 종료 조건 = MASTER_PLAN §5.5 · 골든셋 v1 전 AI-001 프롬프트·모델 변경 동결 유지(이번 변경은 가드·인프라라 동결 위반 아님 — 프롬프트 본문 불변).
 
 ## 막혔던 지점 / 시도해봤지만 안 된 것
 

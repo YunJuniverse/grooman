@@ -13,18 +13,6 @@ _(없음)_
 
 ## Ready
 
-### GRM-014
-- **title**: AI-001 가드 강화 — fail-closed 수정 + 출력 스키마 검증 (P1)
-- **mode**: fullstack
-- **change-class**: A
-- **owner**: AI
-- **milestone**: P1
-- **acceptance criteria**:
-  - [ ] B4: `ANTHROPIC_API_KEY` 부재·호출 실패 시 기본값 통과 → **해당 글 폐기(fail-closed)**로 수정
-  - [ ] B3: 출력 zod 스키마 검증(enum·타입) — "유효 JSON이나 엉뚱한 category" 차단
-  - [ ] B1: `temperature: 0` 고정(평가 재현성)
-  - [ ] 수정 전까지 릴리스 게이트 체크에 "배포 환경 API 키 존재" 항목 추가 여부 확인
-- **notes**: 16 AI-001 작성 중 적발(지침 17 §4.2 fail-closed 위반). 상세 [[AI-001_crawl-analysis]] §8·개선 백로그.
 
 ### GRM-013
 - **title**: 측정 인프라 구축 — GA4 + Search Console (P1 필수 — G5)
@@ -72,6 +60,10 @@ _(없음)_
 _(없음)_
 
 ## Done
+
+### GRM-014
+- **title**: AI-001 가드 강화 — fail-closed + zod 스키마 검증 + temperature 0
+- **notes**: Completed 2026-07-22. `lib/ai/crawl-analysis.ts` 신설(zod 스키마 — clinic enum 구조 거부) + `claude.ts` fail-closed 재작성 + **테스트 인프라 도입**(vitest, 단위 테스트 11종 전부 통과) + tsc·build 클린. CRAWL-2 해소. AC④: fail-closed로 키 부재가 안전해져 릴리스 게이트 추가 불요 판정. [[AI-001_crawl-analysis]] v1.1.
 
 ### GRM-011
 - **title**: 30_planning 기획서 시리즈 디벨롭 (지침 10~17 기반)

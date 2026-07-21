@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "77ef2dacdab1a96063d90611462cd066ef597e1b",
-  "last_validated_at": "2026-07-21T16:37:57Z",
+  "last_validated_commit": "d4e1e68a2ba9cd59ed4321ad0e6439ff63dcb202",
+  "last_validated_at": "2026-07-21T16:44:49Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "59d9bc6084079c3b2a95beb51f43f0ea42e00c216db59acf0a0df374b56c4a4b"
+      "sha256": "dfc9b55a72249333422add92d8aed149953c27bca88ff9477493949e86f74389"
     },
     "TODO.md": {
-      "sha256": "a561bff96db29d0ede9bee32df62ad8c52ea2e02d4150fb57e13200c47b37b1f"
+      "sha256": "776e52d2d1ec7dc7d174408af5ad01190d9d20480712ddae520ecf5b461fd590"
     },
     ".ai/checkpoint.md": {
-      "sha256": "21be79177f821a398f87b5d89228b3e7f676e07720fede92fd9218fa2bc96f1d"
+      "sha256": "e3c60bd5ff3e697e358b909ad0dbab7e21c83452bbbc5390412d98ac34d1c58e"
     }
   },
   "observations": {
@@ -25,6 +25,7 @@
       "50_resources/ai_observations/2026-07-21_grm-011-ops-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-pm-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-service-plan-v1.md",
+      "50_resources/ai_observations/2026-07-21_grm-014-ai-guard-impl.md",
       "50_resources/ai_observations/2026-07-21_grooman-methodology-bootstrap.md",
       "50_resources/ai_observations/2026-07-21_grooman-retro-adr-and-checklist-triage.md",
       "50_resources/ai_observations/2026-07-21_master-plan-v1-and-doc-consistency.md"
