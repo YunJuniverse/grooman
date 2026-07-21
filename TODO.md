@@ -27,7 +27,19 @@ _(없음)_
 
 ## InProgress
 
-_(없음)_
+### GRM-011
+- **title**: 30_planning 기획서 시리즈 디벨롭 (지침 10~17 기반)
+- **mode**: planning-only
+- **change-class**: A (문서 — 단, 승인은 PR 리뷰 게이트)
+- **owner**: AI + Human
+- **acceptance criteria**:
+  - [x] 10 사업기획서 v1 초안 — problem-first 척추·5대 크로스체크 충족, [미확정] 3건 태그 (리뷰 대기)
+  - [ ] 14 브랜드기획서
+  - [ ] 11 서비스기획서
+  - [ ] 12 운영기획서 · 13 마케팅기획서
+  - [ ] 15 PM기획서
+  - [ ] 16 AI 기능 기획서 + 17 평가·가드레일 (Eval-First)
+- **notes**: 방법론 권장 순서(30_planning/_README.md)대로 한 문서씩 작성→사람 리뷰 게이트. 각 문서 지침(20_guides/10~17)을 로드해 작성. retrofit 특성상 역방향 문서화+전방향 디벨롭 혼합.
 
 ## Blocked
 
