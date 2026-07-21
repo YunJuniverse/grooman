@@ -7,10 +7,10 @@
 
 ## Current Focus
 
-- Working on: GRM-010 구현 완료(is_bot 마이그레이션·teardown 스크립트·릴리스 게이트 SOP). 남은 큰 항목은 GRM-001
+- Working on: GRM-011 기획서 시리즈 — 10 사업기획서 v1 초안 완료(리뷰 대기). 다음 문서: 14 브랜드
 - Current mode: fullstack
-- Next TODO: GRM-001 Lighthouse 감사 (실제 앱 실행 필요)
-- Blockers: 없음
+- Next TODO: 사업기획서 PR 리뷰([미확정] 3건 사람 입력) → 14 브랜드기획서 / GRM-001 Lighthouse
+- Blockers: PR#2(GRM-010 잔여 복구) 머지 대기 — PR#1이 cb2e0e4 시점에 머지돼 커밋 2개 누락됐었음
 
 ## Active Links
 
@@ -37,7 +37,8 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
+- 2026-07-22: 10 사업기획서 v1 초안(지침 10 §8.1 척추·5대 크로스체크·시장 리서치) + GRM-011 등록 · Class A · branch docs/plan-10-business
+- 2026-07-22: PR#1 머지 누락 발견(cb2e0e4 시점 머지 → GRM-010 커밋 2개 고아) → 복구 PR#2 생성 · process
 - 2026-07-22: GRM-010 구현 — profiles.is_bot(004)+백필·시더 is_bot 세팅·teardown 스크립트·릴리스 게이트 SOP. BOT-1 해소 · Class B
 - 2026-07-22: GRM-010 결정 — 봇=출시전 테스트 픽스처·배포 전 전량 삭제(표기 불필요). teardown 불가 리스크(BOT-1) 표면화, ADR-0002 갱신 · Class C(결정)
 - 2026-07-21: 핵심 결정 retro-ADR 3건(0001 크롤·0002 봇시딩·0003 RLS) + TODO(GRM-001 Ready·GRM-010 봇표기 Backlog) 정리 · Class A
-- 2026-07-21: 방법론 v4.0 적용(bootstrap) — 기존 Next.js14+Supabase 앱에 retrofit, 구 CLAUDE.md는 00_briefs/reference로 보존 · Class A · branch chore/apply-methodology

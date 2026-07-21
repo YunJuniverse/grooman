@@ -1,22 +1,26 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "38fc62669ed4b8e4fa583410399ebe038b7bf75e",
-  "last_validated_at": null,
+  "last_validated_commit": "5e68d2066d91edc6fc96906c676b7331a7487c99",
+  "last_validated_at": "2026-07-21T15:39:31Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "9349d77d6178acc99e19c320ed92f986563622405e65a2d45cb19839325da350"
+      "sha256": "f477f042e5918d5c1f66cdf31825481887ca14aee0d566ed1ca5be17938a14d8"
     },
     "TODO.md": {
-      "sha256": "6ff033e7a862cfce291a9f71d3d6e91a222e3ef74342b660f6dddb747e76ff0d"
+      "sha256": "766ae41ac65a444e8dcf3ce9def69a807824a6752fc267b58ff481b4e11c96fe"
     },
     ".ai/checkpoint.md": {
-      "sha256": "019a3e5ce41a0651219e245fca5f32acb1c65250a9c9edb3f9fe8a330684c855"
+      "sha256": "05ec321d3097645dcc875f1dd6acea31cc61be0659e93ae8c91394dee7423f83"
     }
   },
   "observations": {
     "validated_files": [
-      "50_resources/ai_observations/2026-07-21_grooman-methodology-bootstrap.md"
+      "50_resources/ai_observations/2026-07-21_grm-010-bot-policy-resolved.md",
+      "50_resources/ai_observations/2026-07-21_grm-010-bot-teardown-impl.md",
+      "50_resources/ai_observations/2026-07-21_grm-011-business-plan-v1.md",
+      "50_resources/ai_observations/2026-07-21_grooman-methodology-bootstrap.md",
+      "50_resources/ai_observations/2026-07-21_grooman-retro-adr-and-checklist-triage.md"
     ]
   }
 }
