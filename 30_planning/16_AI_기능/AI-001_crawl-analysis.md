@@ -4,7 +4,7 @@ title: 크롤 콘텐츠 AI 분석 (분류·요약·필터)
 version: v1
 feature_id: AI-001
 last_updated: 2026-07-22
-status: draft
+status: active
 ai_relevance: feature   # 서비스기획서 v1.1의 tool 분류를 정정 — AI 산출물(요약·분류)이 제품에 포함되므로 지침 16 §1.5 기준 feature
 eval_required: true
 guardrail_class: medium

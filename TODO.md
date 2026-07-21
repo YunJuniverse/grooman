@@ -65,20 +65,7 @@ _(없음)_
 
 ## InProgress
 
-### GRM-011
-- **title**: 30_planning 기획서 시리즈 디벨롭 (지침 10~17 기반)
-- **mode**: planning-only
-- **change-class**: A (문서 — 단, 승인은 PR 리뷰 게이트)
-- **owner**: AI + Human
-- **acceptance criteria**:
-  - [x] 10 사업기획서 v1 초안 — 머지됨(PR#3)
-  - [x] 14 브랜드기획서 v1 — 머지(PR#4)·tagline 확정 반영(v1.1)
-  - [x] 11 서비스기획서 v1 — 머지(PR#5)·G1=P1 확정 반영(v1.1)
-  - [x] 12 운영기획서 v1 — 머지(PR#6)·제안값 확정(v1.1)
-  - [x] 13 마케팅기획서 v1 — 머지(PR#7)
-  - [x] 15 PM기획서 v1 초안 — 방법론 인스턴스화·OKR·프리모템(법률 검토→크리티컬 패스 승격)·게이트 카탈로그 (리뷰 대기)
-  - [x] 16 AI-001 crawl-analysis + 17 평가·가드레일 v1 — retrofit 명세·EDD 사후 적용 선언·**fail-open 가드 적발(B4)**·개선 백로그 5건 (리뷰 대기 — 머지 시 GRM-011 완료)
-- **notes**: 방법론 권장 순서(30_planning/_README.md)대로 한 문서씩 작성→사람 리뷰 게이트. 각 문서 지침(20_guides/10~17)을 로드해 작성. retrofit 특성상 역방향 문서화+전방향 디벨롭 혼합.
+_(없음)_
 
 ## Blocked
 
@@ -86,10 +73,12 @@ _(없음)_
 
 ## Done
 
+### GRM-011
+- **title**: 30_planning 기획서 시리즈 디벨롭 (지침 10~17 기반)
+- **notes**: Completed 2026-07-22. 7/7 — 10 사업·14 브랜드·11 서비스·12 운영·13 마케팅·15 PM·16 AI-001+17 평가(PR#3~#9 머지). 부산물: 구현 갭 4건 적발(G1 신고·G4 제재·G5 측정·CRAWL-2 fail-open)→GRM-012/013/014, 법률 검토 크리티컬 패스 승격(프리모템). 전 문서 status: active 전환.
+
 ### GRM-010
 - **title**: 봇 teardown 수단 + 공개 배포 릴리스 게이트
 - **notes**: Completed 2026-07-22. `profiles.is_bot` 마이그레이션(`004_bot_flag.sql`)+기존봇 백필, 시더가 is_bot 세팅(식별 일원화), teardown 스크립트(`supabase/scripts/teardown_bots.sql`, 글·댓글 우선 삭제로 SET NULL 방치 방지), 릴리스 게이트 SOP(`00_briefs/standing/SOP_public-release-gate.md`). 실행(프로덕션 teardown+0건 검증)은 공개 배포 시 SOP대로. BOT-1 해소. [[ADR-0002]].
 
-### GRM-000
-- **title**: 방법론 v4.0 부트스트랩 + 핵심 결정 retro-ADR 문서화
-- **notes**: Completed 2026-07-21. 기존 Next.js14+Supabase 앱에 방법론 retrofit, 구 자율빌드 CLAUDE.md는 `00_briefs/reference/`로 보존. 핵심 결정 3건을 소급 문서화 → [[ADR-0001]](자동 크롤 파이프라인)·[[ADR-0002]](봇 시딩)·[[ADR-0003]](RLS 모델). branch `chore/apply-methodology`.
+

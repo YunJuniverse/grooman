@@ -7,13 +7,13 @@
 
 ## 1. Project Settings
 
-- **Project Name**: grooman
-- **Objective**: [one-line goal]
-- **Mode**: [planning / planning-handoff / dev / fullstack / agency / lean / ops]  <!-- 모드별 권장 템플릿 세트는 50_resources/templates/_CATALOG.md 참조 — 필요한 템플릿만 로드. planning-handoff(사람 개발자 인계)는 20_guides/09 재포맷 규칙 적용 -->
-- **Stack**: [confirmed stack]
-- **Primary Approver**: [name or role]
-- **Started On**: 2026-07-21
-- **Release Policy**: [private / staged / public]
+- **Project Name**: grooman (그루맨, grooman.kr)
+- **Objective**: 대한민국 남성 그루밍 전문 커뮤니티·콘텐츠 플랫폼 (브랜드 중립성 최우선)
+- **Mode**: fullstack  <!-- 모드별 권장 템플릿 세트는 50_resources/templates/_CATALOG.md 참조 — 필요한 템플릿만 로드. planning-handoff(사람 개발자 인계)는 20_guides/09 재포맷 규칙 적용 -->
+- **Stack**: Next.js 14 (App Router·RSC·Server Actions) · Supabase (PostgreSQL·Auth·Storage·RLS) · Vercel (배포·Cron·Edge) · Tailwind + shadcn/ui · Tiptap v2 · Cloudinary · Claude API · TypeScript strict
+- **Primary Approver**: hayden
+- **Started On**: 2026-07-21  <!-- 방법론 적용일. 코드베이스는 이전부터 존재 -->
+- **Release Policy**: staged
 
 ---
 
