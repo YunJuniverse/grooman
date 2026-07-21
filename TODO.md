@@ -13,6 +13,19 @@ _(없음)_
 
 ## Ready
 
+### GRM-014
+- **title**: AI-001 가드 강화 — fail-closed 수정 + 출력 스키마 검증 (P1)
+- **mode**: fullstack
+- **change-class**: A
+- **owner**: AI
+- **milestone**: P1
+- **acceptance criteria**:
+  - [ ] B4: `ANTHROPIC_API_KEY` 부재·호출 실패 시 기본값 통과 → **해당 글 폐기(fail-closed)**로 수정
+  - [ ] B3: 출력 zod 스키마 검증(enum·타입) — "유효 JSON이나 엉뚱한 category" 차단
+  - [ ] B1: `temperature: 0` 고정(평가 재현성)
+  - [ ] 수정 전까지 릴리스 게이트 체크에 "배포 환경 API 키 존재" 항목 추가 여부 확인
+- **notes**: 16 AI-001 작성 중 적발(지침 17 §4.2 fail-closed 위반). 상세 [[AI-001_crawl-analysis]] §8·개선 백로그.
+
 ### GRM-013
 - **title**: 측정 인프라 구축 — GA4 + Search Console (P1 필수 — G5)
 - **mode**: fullstack
@@ -64,7 +77,7 @@ _(없음)_
   - [x] 12 운영기획서 v1 — 머지(PR#6)·제안값 확정(v1.1)
   - [x] 13 마케팅기획서 v1 — 머지(PR#7)
   - [x] 15 PM기획서 v1 초안 — 방법론 인스턴스화·OKR·프리모템(법률 검토→크리티컬 패스 승격)·게이트 카탈로그 (리뷰 대기)
-  - [ ] 16 AI 기능 기획서 + 17 평가·가드레일 (Eval-First)
+  - [x] 16 AI-001 crawl-analysis + 17 평가·가드레일 v1 — retrofit 명세·EDD 사후 적용 선언·**fail-open 가드 적발(B4)**·개선 백로그 5건 (리뷰 대기 — 머지 시 GRM-011 완료)
 - **notes**: 방법론 권장 순서(30_planning/_README.md)대로 한 문서씩 작성→사람 리뷰 게이트. 각 문서 지침(20_guides/10~17)을 로드해 작성. retrofit 특성상 역방향 문서화+전방향 디벨롭 혼합.
 
 ## Blocked

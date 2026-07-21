@@ -1,23 +1,24 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "047921a740b182588005a94a7a8473fdb61a263d",
-  "last_validated_at": "2026-07-21T16:19:04Z",
+  "last_validated_commit": "8e1e4c933e949a9c7a716933042ac8579b0a27ec",
+  "last_validated_at": "2026-07-21T16:25:01Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "34cc6d5c224e9a0c93d0b4a1a9968cad748f0e40e3f13acb1a8183bf7af3dfa1"
+      "sha256": "59735f5a90c91a17e2af3fd4899ae939784184b729bf88f17ed04b75e8e819c1"
     },
     "TODO.md": {
-      "sha256": "96c9df9b9075d08ef68676cf6e1bc8b3b16a6ca9dd3b9a503a29a74eaeb406c8"
+      "sha256": "136a0c11f1219b34990998500a29b50828780102c090436c7a3d0171fd1f1292"
     },
     ".ai/checkpoint.md": {
-      "sha256": "2046c449de5b5a1cf60d43949f92ac52717092807e6792a12b69436d6c42c20f"
+      "sha256": "5e9d278ae542be2fbfb5ea22461b32ed5d255ee0426a8e1dbe2ebef473f4937e"
     }
   },
   "observations": {
     "validated_files": [
       "50_resources/ai_observations/2026-07-21_grm-010-bot-policy-resolved.md",
       "50_resources/ai_observations/2026-07-21_grm-010-bot-teardown-impl.md",
+      "50_resources/ai_observations/2026-07-21_grm-011-ai-eval-plans-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-brand-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-business-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-marketing-plan-v1.md",
