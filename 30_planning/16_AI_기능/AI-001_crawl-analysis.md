@@ -1,7 +1,7 @@
 ---
 doc_id: ai-feature-001
 title: 크롤 콘텐츠 AI 분석 (분류·요약·필터)
-version: v1
+version: v1.1
 feature_id: AI-001
 last_updated: 2026-07-22
 status: active
@@ -48,13 +48,13 @@ human_in_loop_gates:
 
 - **모델**: Anthropic `claude-haiku-4-5-20251001` (버전 핀 — 구현). max_tokens 500.
 - **프롬프트**: 단일 user 메시지, JSON-only 지시 + 카테고리 기준 명시. **enum에서 clinic 의도적 제외**(자동수급 금지의 기계적 강제 — ADR-0001).
-- **결정론(§8.4)**: temperature 미지정(기본값) — ⚠️ **개선 B1**: 분류·판정 작업이므로 `temperature: 0` 고정 권장(평가 재현성).
+- **결정론(§8.4)**: `temperature: 0` 고정 ✅ (B1 — GRM-014 구현).
 - 프롬프트 위치: 현재 `lib/ai/claude.ts` 인라인 — **개선 B2**: `prompts/crawl-analysis/` 분리 + 버전 태그(P2).
 
 ## 5. 출력 계약
 
 - **스키마**: `{ category: enum5, summary: string(3줄), tags: string[], spam_score: 0~1, is_advertisement: bool }`.
-- **검증(현재)**: 정규식 JSON 추출 → `JSON.parse` 실패 시 `null` → 해당 글 폐기(fail-safe). ⚠️ **개선 B3**: 필드 타입·enum 값 검증 없음(파싱만) — zod 스키마 검증 추가로 "JSON은 유효하나 category가 엉뚱한 값" 케이스 차단(§5.19·LLM05).
+- **검증**: `lib/ai/crawl-analysis.ts` — 정규식 JSON 추출 → `JSON.parse` → **zod 스키마 검증**(enum 5종·타입·범위) 실패 시 전부 `null` → 폐기 ✅ (B3 — GRM-014 구현, 단위 테스트 11종 `tests/unit/crawl-analysis.test.ts`). clinic은 스키마 enum에서 구조적으로 거부.
 - **후속 처리**: `spam_score ≥ 0.7 ∨ is_advertisement` → 폐기(crawl_queue failed) / 통과 → 게시.
 
 ## 6. 평가 명세 (Eval Spec) — 17 인스턴스 §2~3이 조직 기준
@@ -85,13 +85,13 @@ human_in_loop_gates:
 | 데이터 보호 | 사용자 데이터 미전송(공개 RSS만) · Anthropic API 기본 비학습 | — | ✅ 저위험 |
 | 컴플라이언스 | **clinic enum 차단**(의료 자동수급 금지) · "자동수집" 표시(韓 AI기본법 합성물 표시 선제 대응) | 차단 | ✅ 구현 |
 
-⚠️ **발견 — fail-open 가드 (개선 B4, 우선)**: `ANTHROPIC_API_KEY` 부재 시 **기본값 반환**(`category: hair, spam_score: 0, is_advertisement: false`) → 필터가 무력화된 채 전부 hair로 자동 게시된다. 지침 17 §4.2 **fail-closed 원칙 위반** — 키 부재/호출 실패 시 해당 글을 **폐기(skip)**하도록 수정 필요. → GRM-014.
+~~⚠️ fail-open 가드(B4)~~ → **해소 ✅ (GRM-014)**: 키 부재·호출 실패·파싱/검증 실패 전부 `null` 반환 → 호출부가 폐기(fail-closed). 키 부재는 이제 "자동수집 중단"일 뿐 무필터 게시 경로 없음.
 
 ## 9. Fallback 체인
 
 - 1차: Haiku 호출 → 실패(타임아웃·5xx·파싱 실패) 시 **해당 글 폐기, 다음 주기 재시도**(url_hash 멱등 — 중복 게시 없음).
 - 2차 모델·사람 강등 **없음(의도적)**: 비대면·비긴급 파이프라인이라 "안 하기"가 안전한 fallback(정중한 거절 상당). 모델 전면 장애 = 자동수집 일시 중단, 사용자 영향 0(운영기획서 §10).
-- ⚠️ 단 B4 수정 전까지는 "키 부재" 경로가 fallback이 아니라 **무필터 통과**임 — 위 §8.
+- B4 해소로 "키 부재" 경로도 정상 fallback(폐기)이 됨 ✅.
 
 ## 10. Tool/Action 권한
 
@@ -125,9 +125,9 @@ human_in_loop_gates:
 
 | ID | 항목 | 우선 |
 |---|---|---|
-| **B4** | **fail-open → fail-closed** (키 부재·호출 실패 시 폐기) | **P1 (GRM-014)** |
-| B3 | 출력 zod 스키마 검증(enum·타입) | P1 (GRM-014 동봉) |
-| B1 | temperature 0 고정 | P1 (GRM-014 동봉) |
+| ~~B4~~ | ~~fail-open → fail-closed~~ | ✅ 완료 (GRM-014, 2026-07-22) |
+| ~~B3~~ | ~~출력 zod 스키마 검증~~ | ✅ 완료 (GRM-014 — 테스트 11종) |
+| ~~B1~~ | ~~temperature 0 고정~~ | ✅ 완료 (GRM-014) |
 | B2 | 프롬프트 파일 분리·버전 태그 | P2 |
 | B5 | 트레이스 필드(model·tokens·cost) 기록 | P2 |
 
@@ -137,3 +137,4 @@ human_in_loop_gates:
 |------|------|------|
 | v0 | 2026-07-21 | 스켈레톤 |
 | v1 | 2026-07-22 | retrofit 명세 — 현재 동작 박제 + ai_relevance tool→feature 정정 + **fail-open 가드 발견(B4)** + 개선 백로그 5건 + Eval Spec(골든셋 축적 계획·clinic 0건 hard) |
+| v1.1 | 2026-07-22 | B1·B3·B4 구현 반영(GRM-014) — fail-closed·zod 검증(`lib/ai/crawl-analysis.ts`+테스트 11종)·temperature 0. AC④ 판정: fail-closed로 키 부재가 안전해져 릴리스 게이트 추가 불요(키 부재=크롤 중단, 일일 루틴이 감지) |
