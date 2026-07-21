@@ -7,10 +7,10 @@
 
 ## Current Focus
 
-- Working on: GRM-011 기획서 시리즈 — 10 사업(머지)·14 브랜드 v1 초안 완료(리뷰 대기). 다음 문서: 11 서비스
+- Working on: GRM-011 — 10 사업·14 브랜드(tagline 확정) 머지, 11 서비스 v1 초안 완료(리뷰 대기). 다음: 12 운영·13 마케팅
 - Current mode: fullstack
-- Next TODO: 브랜드기획서 PR 리뷰([미확정] 3건: tagline·심볼·다크 WCAG) → 11 서비스기획서 / GRM-001 Lighthouse
-- Blockers: 없음 (PR#2·#3 머지 완료)
+- Next TODO: 서비스기획서 PR 리뷰(핵심 판단: **신고 UI 갭 G1의 Phase — P1 필수 vs P2**) → 12/13 기획서
+- Blockers: 없음
 
 ## Active Links
 
@@ -30,6 +30,7 @@
 | ID | Issue | Severity | Next Step |
 |----|-------|----------|-----------|
 | ~~BOT-1~~ | ~~봇 teardown 불가~~ → **Resolved 2026-07-22** (GRM-010): is_bot 마커·teardown 스크립트·릴리스 게이트 SOP 구현 | ~~High~~ | 공개 배포 시 SOP_public-release-gate 대로 실행 |
+| G1 | **신고 UI 미구현** — reports 테이블·RLS만 존재, 사용자 신고 수단 없음 (서비스기획서 F7) | High | Phase 판정 사람 결정(P1 필수 vs P2) → 구현 |
 | SEC-1 | 새 테이블 RLS 정책 누락 시 조용한 취약점 (ADR-0003) | Med | 마이그레이션 추가 시 RLS 점검 루틴화 |
 | CRAWL-1 | 자동 크롤 글이 사람 검수 없이 즉시 published·색인 (ADR-0001) | Med | 자동수집 뱃지·출처는 이미 표기됨. 검수 게이트 도입은 선택 |
 
@@ -37,8 +38,8 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-22: 14 브랜드기획서 v1 초안(Dunford·가치실체·다면메시지·정량화톤·DBA·SoS) · Class A · branch docs/plan-14-brand
+- 2026-07-22: 11 서비스기획서 v1(부모=인덱스·역문서화·**신고UI 갭 발견**) + 14 tagline 확정(v1.1) · Class A · branch docs/plan-11-service
+- 2026-07-22: 14 브랜드기획서 v1 초안(Dunford·가치실체·다면메시지·정량화톤·DBA·SoS) 머지(PR#4) · Class A
 - 2026-07-22: 10 사업기획서 v1 머지(PR#3) + GRM-010 잔여 복구 머지(PR#2) — GRM-011 순서 1 완료 · Class A
 - 2026-07-22: GRM-010 구현 — profiles.is_bot(004)+백필·시더 is_bot 세팅·teardown 스크립트·릴리스 게이트 SOP. BOT-1 해소 · Class B
 - 2026-07-22: GRM-010 결정 — 봇=출시전 테스트 픽스처·배포 전 전량 삭제(표기 불필요) · Class C(결정)
-- 2026-07-21: 핵심 결정 retro-ADR 3건(0001 크롤·0002 봇시딩·0003 RLS) 문서화 · Class A
