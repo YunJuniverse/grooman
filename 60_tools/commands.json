@@ -1,0 +1,208 @@
+{
+  "$schema": "methodology/commands/v1",
+  "description": "자주 사용 명령 목록 — 대시보드 Commands 카드에서 표시·클립보드 복사. USER_GUIDE.md 와 정합 유지.",
+  "categories": [
+    {
+      "id": "boot",
+      "label": "부팅 / 시작",
+      "icon": "▶",
+      "commands": [
+        {
+          "label": "Dashboard 열기 (macOS)",
+          "command": "open '_start/in-spire (mac).app'",
+          "description": "Finder 더블클릭과 동일. dashboard 빌드 + 자동 포트 + 브라우저"
+        },
+        {
+          "label": "Dashboard 빌드+서빙",
+          "command": "methodology dashboard",
+          "description": "포트 자동 할당 (8765-8799). 같은 프로젝트 재호출은 재사용."
+        },
+        {
+          "label": "Dashboard + 브라우저 자동 열기",
+          "command": "methodology dashboard --open",
+          "description": "macOS: open / 기타: webbrowser 자동 호출"
+        },
+        {
+          "label": "다른 브랜치 dashboard (격리)",
+          "command": "methodology dashboard --branch <name>",
+          "description": "git worktree add --detach 로 ~/.methodology-cache/ 격리 → 별도 포트. working tree 안 건드림."
+        },
+        {
+          "label": "떠 있는 모든 dashboard",
+          "command": "methodology dashboard list",
+          "description": "~/.methodology-dashboards.json 레지스트리 조회"
+        },
+        {
+          "label": "모든 dashboard 종료",
+          "command": "methodology dashboard stop --all",
+          "description": "worktree·레지스트리 자동 정리"
+        }
+      ]
+    },
+    {
+      "id": "end",
+      "label": "작업 종료",
+      "icon": "✓",
+      "commands": [
+        {
+          "label": "Ship — 검증+commit+push",
+          "command": "methodology ship -m \"<commit message>\"",
+          "description": "7단계 자동: wrap → manifest-check → sensitive → test → build → commit → push"
+        },
+        {
+          "label": "Ship — push 없이 commit 까지",
+          "command": "methodology ship -m \"...\" --no-push",
+          "description": "로컬 commit 만, push 는 수동"
+        },
+        {
+          "label": "Wrap — 4 라이브 파일 점검",
+          "command": "methodology wrap",
+          "description": "HANDOFF/TODO/checkpoint/observation 오늘 갱신 여부 검증"
+        },
+        {
+          "label": "Wrap (strict, CI용)",
+          "command": "methodology wrap --strict",
+          "description": "누락 1건이라도 있으면 exit 1"
+        },
+        {
+          "label": "Pre-push hook 1회 설치",
+          "command": "methodology hooks install",
+          "description": "이후 git push 시 자동 검증. 우회는 --no-verify"
+        }
+      ]
+    },
+    {
+      "id": "ops",
+      "label": "운영 / 동기화",
+      "icon": "⚙",
+      "commands": [
+        {
+          "label": "Status — 본 저장소 commit 격차",
+          "command": "methodology status",
+          "description": "upstream commit 과 비교, behind upstream 표시 (RFC-001)"
+        },
+        {
+          "label": "Sync — 방법론 자산 갱신",
+          "command": "methodology sync --apply",
+          "description": "본 저장소의 새 commit 의 자산을 현재 프로젝트에 동기화"
+        },
+        {
+          "label": "Sync dry-run",
+          "command": "methodology sync",
+          "description": "변경 미리보기 (apply 안 함)"
+        },
+        {
+          "label": "Manifest-check (격리 안전망)",
+          "command": "methodology manifest-check",
+          "description": "70_meta 가 적용 프로젝트에 새지 않는지 검증"
+        },
+        {
+          "label": "Version",
+          "command": "methodology version",
+          "description": "METHODOLOGY_VERSION + commit + path"
+        },
+        {
+          "label": "Init — 새 프로젝트에 방법론 적용",
+          "command": "methodology init <path> --label <name> --type fullstack",
+          "description": "빈/기존 폴더에 NN_ 구조 + .ai 부팅 컨텍스트 생성. 70_meta 격리."
+        },
+        {
+          "label": "Diff — 파일 vs upstream 비교",
+          "command": "methodology diff <file>",
+          "description": "본 저장소 원본과 현재 프로젝트 파일 차이 (sync 전 점검)"
+        },
+        {
+          "label": "Sync — worktree 까지 일괄",
+          "command": "methodology sync --apply --include-worktrees",
+          "description": "sibling git worktree 도 함께 동기화 (마이그레이션 시 기본 True)"
+        }
+      ]
+    },
+    {
+      "id": "observe",
+      "label": "관찰 / 회고",
+      "icon": "○",
+      "commands": [
+        {
+          "label": "L1 관찰 생성",
+          "command": "methodology observe --slug <slug> --summary \"...\" --task-type docs",
+          "description": "50_resources/ai_observations/YYYY-MM-DD_<slug>.md 작성. 보통 AI 가 자동."
+        },
+        {
+          "label": "L1 관찰 검증",
+          "command": "methodology observe --validate 50_resources/ai_observations/<file>.md",
+          "description": "20_guides/03 스키마 검증"
+        },
+        {
+          "label": "Catalog 상태",
+          "command": "methodology catalog status",
+          "description": "pending / active / archive 카운트"
+        },
+        {
+          "label": "Thinktank 마이닝 리포트",
+          "command": "methodology thinktank",
+          "description": "L3 주간 마이닝 (40_dev/snapshots/insights/)"
+        },
+        {
+          "label": "Catalog Pending 시드",
+          "command": "methodology catalog seed-pending",
+          "description": "첫 Pending Lesson (P-001) 예시 시드 생성 — 실제 마찰로 내용을 교체할 것. N≥2 목격 시 active 승급."
+        }
+      ]
+    },
+    {
+      "id": "skeleton",
+      "label": "스켈레톤 (L2)",
+      "icon": "▢",
+      "commands": [
+        {
+          "label": "Skeleton 도메인 초기화",
+          "command": "methodology skeleton init <domain>",
+          "description": "50_resources/skeletons/<domain>/ base + bakes-in.json 생성"
+        },
+        {
+          "label": "Skeleton lock 빌드",
+          "command": "methodology skeleton build <domain>",
+          "description": "bakes-in.json → skeleton.lock.json (재현 가능 base 스냅샷)"
+        },
+        {
+          "label": "Skeleton 적용",
+          "command": "methodology skeleton apply <domain> <target>",
+          "description": "lock 의 base 파일을 대상 폴더에 전개"
+        }
+      ]
+    },
+    {
+      "id": "export",
+      "label": "외주 인계",
+      "icon": "↗",
+      "commands": [
+        {
+          "label": "Export 미리보기",
+          "command": "methodology export --dry-run",
+          "description": "포함·제외 통계 출력. target 생성 안 함."
+        },
+        {
+          "label": "Export — 코드만 추출",
+          "command": "methodology export",
+          "description": "<source>-handover/ 폴더에 방법론·메타 자산 제외 후 복사"
+        },
+        {
+          "label": "Export — tar.gz 압축",
+          "command": "methodology export --zip",
+          "description": "<source>-handover.tar.gz 생성"
+        },
+        {
+          "label": "Export — sensitive (.env) 포함",
+          "command": "methodology export --allow-sensitive",
+          "description": "의식적 우회. 기본은 sensitive 차단."
+        },
+        {
+          "label": "Export — 상세 목록",
+          "command": "methodology export --dry-run --verbose",
+          "description": "포함·제외 파일 30/20개 미리보기"
+        }
+      ]
+    }
+  ]
+}

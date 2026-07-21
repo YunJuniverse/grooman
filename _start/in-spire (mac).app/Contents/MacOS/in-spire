@@ -1,0 +1,27 @@
+#!/bin/bash
+# in-spire — methodology dashboard launcher (macOS)
+# 더블클릭 진입점. .app 번들 위치 기준 프로젝트 루트 탐색.
+
+APP_BIN="${BASH_SOURCE[0]}"
+# APP_BIN: <ROOT>/_start/in-spire (mac).app/Contents/MacOS/in-spire
+# 4단계 위 = 프로젝트 루트
+PROJECT_ROOT="$(cd "$(dirname "$APP_BIN")/../../../.." && pwd)"
+
+cd "$PROJECT_ROOT" || {
+  osascript -e 'display alert "in-spire" message "프로젝트 루트로 cd 실패"'
+  exit 1
+}
+
+# 3-tier 구조 탐지: v4.0(60_tools) → v3.2(50_tools) → root fallback
+METH=""
+if   [ -f "60_tools/methodology.py" ]; then METH="60_tools/methodology.py"
+elif [ -f "50_tools/methodology.py" ]; then METH="50_tools/methodology.py"
+elif [ -f "methodology.py" ];           then METH="methodology.py"
+fi
+
+if [ -z "$METH" ]; then
+  osascript -e 'display alert "in-spire" message "methodology.py 미발견. 방법론이 적용된 프로젝트 루트에 _start 폴더가 있는지 확인."'
+  exit 1
+fi
+
+exec /usr/bin/env python3 "$METH" dashboard --open

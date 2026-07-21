@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "schema_url": ".ai/schema/context.schema.json",
+  "project": {
+    "name": "[PROJECT_NAME]",
+    "kind": "applied-project",
+    "domain": null,
+    "started_on": "[YYYY-MM-DD]"
+  },
+  "current_phase": {
+    "stage": "stage-1",
+    "label": "초기 부팅 — 도메인 식별, 첫 TODO 정렬",
+    "since": "[YYYY-MM-DD]"
+  },
+  "active_skeleton": null,
+  "last_session": {
+    "ended_at": "[YYYY-MM-DD]T00:00:00Z",
+    "agent": {
+      "model": "unknown",
+      "tool": "unknown",
+      "version": "0"
+    },
+    "host_os": "unknown",
+    "checkpoint_file": ".ai/checkpoint.md"
+  },
+  "must_read": [
+    "ONBOARDING.md",
+    "10_foundation/WHITEPAPER.md",
+    "CLAUDE.md",
+    "HANDOFF.md",
+    ".ai/checkpoint.md"
+  ],
+  "must_read_optional": [
+    "README.md",
+    "20_guides/README.md",
+    "20_guides/00_AI_기획_프로젝트_운영_원칙.md"
+  ],
+  "active_todos": [],
+  "active_catalog_hits": [],
+  "adapters_present": ["generic", "claude"]
+}

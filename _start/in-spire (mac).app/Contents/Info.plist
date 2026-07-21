@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key><string>in-spire</string>
+    <key>CFBundleDisplayName</key><string>in-spire (mac)</string>
+    <key>CFBundleIdentifier</key><string>com.in-spire.dashboard</string>
+    <key>CFBundleVersion</key><string>1.0</string>
+    <key>CFBundleShortVersionString</key><string>1.0</string>
+    <key>CFBundleExecutable</key><string>in-spire</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>LSMinimumSystemVersion</key><string>10.10</string>
+    <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>

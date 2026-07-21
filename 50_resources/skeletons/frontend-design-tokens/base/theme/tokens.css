@@ -1,0 +1,102 @@
+/*
+ * tokens.css — 디자인 토큰 단일 출처 (Tailwind CSS v4 @theme)
+ * --------------------------------------------------------------------------
+ * 규칙: 이름 = 역할. 프로젝트 브랜드에 맞게 *값만* 바꾸고, 토큰 이름은 유지한다.
+ *       모든 UI는 이 토큰을 통해서만 색을 쓴다. arbitrary hex / off-system 회색
+ *       (text-gray-N, bg-slate-N, zinc-N ...)은 가드레일이 차단한다.
+ * 기준: 20_guides/20_프론트엔드_디자인_토큰_시스템_규칙.md §3
+ */
+@import "tailwindcss";
+
+@theme {
+  /* === 1. Surfaces — 배경 레이어 ============================== */
+  --color-surface-base: #ffffff;      /* 페이지 바닥 */
+  --color-surface-raised: #f8fafc;    /* 카드·패널 */
+  --color-surface-overlay: #ffffff;   /* 모달·팝오버 */
+  --color-surface-sunken: #f1f5f9;    /* 입력 well·트랙 */
+  --color-surface-inverse: #0f172a;   /* 대비 반전(다크 배지 등) */
+
+  /* === 2. Text =============================================== */
+  --color-text-primary: #0f172a;      /* 본문 */
+  --color-text-secondary: #475569;    /* 보조 */
+  --color-text-muted: #94a3b8;        /* 흐림·placeholder */
+  --color-text-inverse: #f8fafc;      /* 반전 배경 위 */
+  --color-text-on-brand: #ffffff;     /* 브랜드 배경 위 */
+
+  /* === 3. Border ============================================ */
+  --color-border-subtle: #f1f5f9;     /* 약한 구분선 */
+  --color-border-default: #e2e8f0;    /* 기본 */
+  --color-border-strong: #cbd5e1;     /* 강조 */
+  --color-border-focus: #6366f1;      /* 포커스 링 (= brand) */
+
+  /* === 4. Brand ============================================= */
+  --color-brand: #6366f1;             /* 주 액션 */
+  --color-brand-hover: #4f46e5;       /* hover */
+  --color-brand-active: #4338ca;      /* active */
+  --color-brand-subtle: #eef2ff;      /* 배경 틴트 */
+
+  /* === 5. Semantic — 상태 =================================== */
+  --color-success: #16a34a;
+  --color-success-subtle: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-subtle: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-subtle: #fee2e2;
+  --color-info: #2563eb;
+  --color-info-subtle: #dbeafe;
+
+  /* === 디자인 언어 토큰 (색 아님) ============================ */
+  /* 반경 */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  /* 그림자 */
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(15 23 42 / 0.1);
+
+  /* 모션 */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* 타이포 */
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+
+/* === 다크 테마 — 토큰 *값만* 재정의(이름 동일, 코드 무변경) ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface-base: #0f172a;
+    --color-surface-raised: #1e293b;
+    --color-surface-overlay: #1e293b;
+    --color-surface-sunken: #020617;
+    --color-surface-inverse: #f8fafc;
+
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #64748b;
+    --color-text-inverse: #0f172a;
+    --color-text-on-brand: #ffffff;
+
+    --color-border-subtle: #1e293b;
+    --color-border-default: #334155;
+    --color-border-strong: #475569;
+    --color-border-focus: #818cf8;
+
+    --color-brand: #818cf8;
+    --color-brand-hover: #6366f1;
+    --color-brand-active: #4f46e5;
+    --color-brand-subtle: #1e1b4b;
+
+    --color-success-subtle: #052e16;
+    --color-warning-subtle: #451a03;
+    --color-danger-subtle: #450a0a;
+    --color-info-subtle: #172554;
+  }
+}

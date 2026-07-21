@@ -1,19 +1,19 @@
-# CLAUDE.md
+# AGENTS.md
 
-> This file is auto-loaded by Claude Code at the start of each session.
+> This file is auto-loaded by Codex at the start of each session.
 > Fill the project settings before active work begins.
 
 ---
 
 ## 1. Project Settings
 
-- **Project Name**: grooman (그루맨, grooman.kr)
-- **Objective**: 대한민국 남성 그루밍 전문 커뮤니티·콘텐츠 플랫폼 (브랜드 중립성 최우선)
-- **Mode**: fullstack  <!-- 모드별 권장 템플릿 세트는 50_resources/templates/_CATALOG.md 참조 — 필요한 템플릿만 로드. planning-handoff(사람 개발자 인계)는 20_guides/09 재포맷 규칙 적용 -->
-- **Stack**: Next.js 14 (App Router·RSC·Server Actions) · Supabase (PostgreSQL·Auth·Storage·RLS) · Vercel (배포·Cron·Edge) · Tailwind + shadcn/ui · Tiptap v2 · Cloudinary · Claude API · TypeScript strict
-- **Primary Approver**: hayden
-- **Started On**: 2026-07-21  <!-- 방법론 적용일. 코드베이스는 이전부터 존재(자율빌드 스펙: 00_briefs/reference/2026-07-21_grooman-autonomous-build-spec.md) -->
-- **Release Policy**: staged
+- **Project Name**: grooman
+- **Objective**: [one-line goal]
+- **Mode**: [planning / planning-handoff / dev / fullstack / agency / lean / ops]  <!-- 모드별 권장 템플릿 세트는 50_resources/templates/_CATALOG.md 참조 — 필요한 템플릿만 로드. planning-handoff(사람 개발자 인계)는 20_guides/09 재포맷 규칙 적용 -->
+- **Stack**: [confirmed stack]
+- **Primary Approver**: [name or role]
+- **Started On**: 2026-07-21
+- **Release Policy**: [private / staged / public]
 
 ---
 
@@ -31,7 +31,7 @@
 - **외주 인계·로컬 안전망**: 코드만 추출 `methodology.py export --path <p> --dry-run`(방법론·sensitive 기본 차단; `--allow-sensitive`/`--zip`); push 가드 `methodology.py hooks install`(pre-push manifest+wrap --strict).
 - 식별자·버전 규칙은 `20_guides/02_식별자_및_버전_관리_규칙.md` 준수 후 새 ID 생성.
 - `40_dev/snapshots/`는 날짜 산출물 — 라이브 아님. 사람 승인은 머지된 PR 또는 링크된 ADR·이슈로만 성립.
-- Default boot context = `CLAUDE.md` + `HANDOFF.md`; `TODO.md`·관련 코드·테스트·ADR은 필요 시 로드.
+- Default boot context = `AGENTS.md` + `HANDOFF.md`; `TODO.md`·관련 코드·테스트·ADR은 필요 시 로드.
 - **부팅 시작 (의무)**: 세션 시작 시 *먼저* `python3 60_tools/methodology.py boot` 실행 — 브리프 목록·HANDOFF 포커스·checkpoint 요지·라이브 파일 사이즈 경고·dashboard URL을 한 번에 출력(부팅 계약을 실행 명령으로 격상, METH-101). 그 뒤 ① 나열된 브리프 본문을 *전부* 읽고 반영 보고 — **`00_briefs/standing/`(상시 SOP·반복작업 절차, 아카이브 안 됨)을 항상 먼저**, 그다음 `00_briefs/current/`(날짜순, 옛 브리프 충돌 시 자동 결정 금지·사용자 확인). `00_briefs/_README.md` ② dashboard URL을 첫 보고에 포함. **IR·작업 질문에 곧바로 뛰어들지 말 것** — 부팅 없이·SOP 없이 시작하면 기존 프로세스를 모른 채 오답을 낸다. **반복 작업은 착수 전 해당 `standing/SOP_*`부터 확인.**
 - **반복 작업 기억 (요청 시)**: 사용자가 반복·정기 작업을 "기억해줘 / 이건 반복(정기) 작업이야"라고 하면 → `00_briefs/standing/SOP_<topic>.md`로 박제(`00_briefs/standing/SOP_template.md` 형식: 트리거·입력·절차·산출물·주의점). 절차가 바뀌는 걸 감지하면 해당 SOP 갱신 제안. **구분**: 반복 *작업 절차* = repo `standing/` SOP(팀 공유·boot 노출·이 저장소 전용) / 사용자 개인 선호·사실 = 도구 메모리(별개 시스템).
 - **브리프 자동 분류**: 사용자가 브리프를 던지면 AI가 유형 판별해 해당 폴더에 배치 — 회의→`00_briefs/meetings/`, 리서치·분석→`research/`, 외부 참고자료·링크→`reference/`, 아이디어·방향→`ideas/`, 반복 절차→`standing/SOP_*`. 유형 폴더 파일명 `YYYY-MM-DD_<slug>.md`. 애매하면 사용자에게 유형 확인(그래도 불명확 시 `ideas/`). 규칙표: `00_briefs/_README.md §자동 분류`.
@@ -92,8 +92,8 @@ Additional rule:
 
 | File | Contains | Must NOT contain |
 |------|----------|-----------------|
-| `CLAUDE.md` | Project settings, change-class rules, workflow rules, file-role definitions, code/test conventions | Current sprint summaries, deliverable version tables, open-issue inventories, evolving implementation status |
-| `AGENTS.md` | Codex-facing mirror of `CLAUDE.md` | Same restrictions as `CLAUDE.md` |
+| `AGENTS.md` | Project settings, change-class rules, workflow rules, file-role definitions, code/test conventions | Current sprint summaries, deliverable version tables, open-issue inventories, evolving implementation status |
+| `CLAUDE.md` | Claude Code-facing mirror of `AGENTS.md` | Same restrictions as `AGENTS.md` |
 | `HANDOFF.md` | **누적 상태 보드**(대시보드 파싱): current focus, open issues/decisions, active links, recent changes(terse 1-line board) | Session narrative — 방금 한 것·step-by-step 다음 행동·막힌 것(→ `.ai/checkpoint.md`); long history, sprint archives, essays, duplicated ADR |
 | `.ai/checkpoint.md` | **세션 서사 바통**(콜드스타트 인계·매 세션 덮어씀·컴팩션 생존 앵커): 방금 한 것(이번 세션)·다음 구체 행동·막힌 것·환경 | 누적 상태 — open-issue/decision 표·링크·running history(→ `HANDOFF.md`) |
 | `TODO.md` | Active backlog items with stable IDs, mode, change class, owner, acceptance criteria | Full completion archives — move historical detail to git, PRs, or dated snapshots |
@@ -132,7 +132,7 @@ Typical gate points:
 ### Fullstack
 
 1. Human adds or confirms a backlog item in `TODO.md`.
-2. AI reads `CLAUDE.md` and `HANDOFF.md`.
+2. AI reads `AGENTS.md` and `HANDOFF.md`.
 3. AI loads only the relevant TODO, code, tests, and ADRs.
 4. AI determines the change class.
 5. AI implements the change and opens a PR.
@@ -142,7 +142,7 @@ Typical gate points:
 ### Planning-Only
 
 1. Human adds or confirms a planning item in `TODO.md`.
-2. AI reads `CLAUDE.md` and `HANDOFF.md`.
+2. AI reads `AGENTS.md` and `HANDOFF.md`.
 3. AI performs research and writes a dated snapshot under `40_dev/snapshots/`.
 4. Human reviews through a PR or issue thread.
 5. AI updates `HANDOFF.md` and `TODO.md`.

@@ -1,0 +1,104 @@
+# 적용 프로젝트에 주입되는 CI (MANIFEST shared_paths 경유).
+# 본 워크플로는 *방법론이 적용된 외부 프로젝트* 의 main/PR에서 동작한다.
+#
+# 검증 범위:
+#  - 70_meta/60_meta 미주입 (격리 보증)
+#  - manifest-check (MANIFEST 안전망)
+#  - L1 observation lint (있을 때만)
+#  - HANDOFF.md 신선도 (warn-only)
+#  - methodology status — upstream commit 격차 표시 (warn-only)
+#
+# 정합성:
+#  - tools/resources/meta 경로는 v3.2/v4.0 차이가 있어 구조 자동 탐지.
+#    (60_tools/methodology.py 존재 → v4.0, 50_tools/methodology.py → v3.2)
+#  - 본 워크플로는 *source 저장소(ai-pipeline-methodology) 에서 skip*.
+#    source 는 70_meta/ 를 의도적으로 가지고 있어서 격리 검사가 항상 fail 됨.
+#    source 의 자체 검증은 methodology-source-ci.yml 가 담당.
+
+name: methodology-applied-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  methodology-validate:
+    # source 저장소 (ai-pipeline-methodology) 에서는 skip — applied-ci 는 외부 적용 프로젝트 전용.
+    if: github.repository != 'YunJuniverse/ai-pipeline-methodology'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: 구조 탐지 (v3.2 vs v4.0)
+        id: layout
+        run: |
+          if   [ -f "60_tools/methodology.py" ]; then
+            echo "tools=60_tools" >> $GITHUB_OUTPUT
+            echo "resources=50_resources" >> $GITHUB_OUTPUT
+            echo "meta=70_meta" >> $GITHUB_OUTPUT
+            echo "version=v4.0" >> $GITHUB_OUTPUT
+          elif [ -f "50_tools/methodology.py" ]; then
+            echo "tools=50_tools" >> $GITHUB_OUTPUT
+            echo "resources=40_resources" >> $GITHUB_OUTPUT
+            echo "meta=60_meta" >> $GITHUB_OUTPUT
+            echo "version=v3.2" >> $GITHUB_OUTPUT
+          else
+            echo "❌ methodology.py 미발견 (60_tools/ 또는 50_tools/)"
+            exit 1
+          fi
+          echo "✅ layout: $(cat $GITHUB_OUTPUT | grep version)"
+
+      - name: meta 미주입 검증 (격리 보증)
+        run: |
+          META="${{ steps.layout.outputs.meta }}"
+          if [ -e "$META" ]; then
+            echo "❌ $META/ 가 적용 프로젝트에 존재 — 메타-방법론이 새어나감"
+            exit 1
+          fi
+          echo "✅ $META 미주입"
+
+      - name: manifest-check (excluded_paths 안전망)
+        run: python3 ${{ steps.layout.outputs.tools }}/methodology.py manifest-check
+
+      - name: L1 observation lint (있을 때만)
+        run: |
+          set -e
+          fail=0
+          for f in ${{ steps.layout.outputs.resources }}/ai_observations/*.md; do
+            [ -e "$f" ] || continue
+            [ "$(basename "$f")" = "_README.md" ] && continue
+            python3 ${{ steps.layout.outputs.tools }}/methodology.py observe --validate "$f" || fail=1
+          done
+          exit $fail
+
+      - name: dashboard build — 산출물 생성 가능 확인
+        run: python3 ${{ steps.layout.outputs.tools }}/generate-dashboard.py --out /tmp/dashboard.html
+
+  methodology-freshness:
+    # warn-only — HANDOFF/TODO/checkpoint 신선도. fail로 머지 차단은 하지 않음.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository != 'YunJuniverse/ai-pipeline-methodology'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: 구조 탐지
+        id: layout
+        run: |
+          if   [ -f "60_tools/methodology.py" ]; then echo "tools=60_tools" >> $GITHUB_OUTPUT
+          elif [ -f "50_tools/methodology.py" ]; then echo "tools=50_tools" >> $GITHUB_OUTPUT
+          else echo "tools=" >> $GITHUB_OUTPUT; fi
+      - name: wrap (informational)
+        if: steps.layout.outputs.tools != ''
+        run: python3 ${{ steps.layout.outputs.tools }}/methodology.py wrap || true
+      - name: status (upstream commit 격차 표시)
+        if: steps.layout.outputs.tools != ''
+        run: python3 ${{ steps.layout.outputs.tools }}/methodology.py status || true

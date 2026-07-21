@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "domain": "frontend-design-tokens",
+  "base_version": "v1",
+  "catalog_entries": ["C-001"],
+  "verified_with": ["claude-opus-4-8"]
+}

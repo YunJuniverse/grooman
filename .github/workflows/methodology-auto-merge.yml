@@ -1,0 +1,44 @@
+# 본 저장소 + 적용 프로젝트 공통 — PR 자동 머지 워크플로.
+# 사용자가 main 직접 push 모델에서 PR 모델로 전환할 때 활성.
+#
+# 동작:
+#  - PR에 'auto-merge' 라벨 또는 'auto-merge' 코멘트가 있으면
+#  - 모든 required check가 통과한 뒤 자동 squash 머지
+#  - 외부 action 의존 없음 (GitHub 내장 gh CLI 사용)
+#
+# 권한 (사용자 본인 저장소 기본 권한으로 충분):
+#  - contents: write (머지)
+#  - pull-requests: write (코멘트·라벨)
+
+name: methodology-auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  pull_request_review:
+    types: [submitted]
+  check_suite:
+    types: [completed]
+
+jobs:
+  auto-merge:
+    # auto-merge 라벨이 있을 때만
+    if: contains(github.event.pull_request.labels.*.name, 'auto-merge') || contains(github.event.label.name, 'auto-merge')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: gh pr merge --auto --squash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM="${{ github.event.pull_request.number }}"
+          [ -z "$PR_NUM" ] && PR_NUM="${{ github.event.check_suite.pull_requests[0].number }}"
+          if [ -z "$PR_NUM" ]; then
+            echo "PR 번호 미식별 — skip"
+            exit 0
+          fi
+          echo "PR #$PR_NUM auto-merge 활성화"
+          gh pr merge "$PR_NUM" --auto --squash --delete-branch || \
+            echo "auto-merge 등록 실패 (이미 등록됐거나 권한·체크 미충족)"

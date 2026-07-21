@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=in-spire (linux)
+Comment=Methodology dashboard launcher
+Exec=__EXEC__
+Icon=__ICON__
+Terminal=false
+Categories=Development;
