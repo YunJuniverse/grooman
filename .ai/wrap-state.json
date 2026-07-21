@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "a3f2a13f3245a3db52f51682cf2b7a13daf06a02",
-  "last_validated_at": "2026-07-21T16:13:51Z",
+  "last_validated_commit": "047921a740b182588005a94a7a8473fdb61a263d",
+  "last_validated_at": "2026-07-21T16:19:04Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "a6b8808d5394a35535219359ac88ed98c704c47ae4b0eb10dd0dd49984a6130b"
+      "sha256": "34cc6d5c224e9a0c93d0b4a1a9968cad748f0e40e3f13acb1a8183bf7af3dfa1"
     },
     "TODO.md": {
-      "sha256": "952cc3f2da801d381b5964b0d2ed40f520947484c5896eb8bad6487cccf7643a"
+      "sha256": "96c9df9b9075d08ef68676cf6e1bc8b3b16a6ca9dd3b9a503a29a74eaeb406c8"
     },
     ".ai/checkpoint.md": {
-      "sha256": "d9b6a0c9a26e9f901254145052bcf5e5dfdfb72ce0b15aa97a9d12109d51afb4"
+      "sha256": "2046c449de5b5a1cf60d43949f92ac52717092807e6792a12b69436d6c42c20f"
     }
   },
   "observations": {
@@ -22,6 +22,7 @@
       "50_resources/ai_observations/2026-07-21_grm-011-business-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-marketing-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-ops-plan-v1.md",
+      "50_resources/ai_observations/2026-07-21_grm-011-pm-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-service-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grooman-methodology-bootstrap.md",
       "50_resources/ai_observations/2026-07-21_grooman-retro-adr-and-checklist-triage.md"
