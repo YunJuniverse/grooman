@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "277d9eb19196af0261e50a2fbb710790e02beaf3",
-  "last_validated_at": "2026-07-21T15:59:02Z",
+  "last_validated_commit": "3d5482770a52e33dd2615e96420eebda630332d5",
+  "last_validated_at": "2026-07-21T16:08:15Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "e57ba3d677c11d8ae6a30e30872cfb7902be031bfa135337ed2d4e65c57ae7c7"
+      "sha256": "3077234b8d3891f81c91c9dc092d8f7a9ae185f8c555f4604fe06f7bda9115d4"
     },
     "TODO.md": {
-      "sha256": "db9a81266f19b1fbaf95470eaa87669e4b668d29b7ee531436e5d4c386bb98de"
+      "sha256": "a3f7db573d5fc9994e00ad98e0bac0be64d4769faf61ba667166db6b37a50fd3"
     },
     ".ai/checkpoint.md": {
-      "sha256": "5f036d2acd8a3ba5351df5bc860d9287c8feaa4b1af22d7731d7561bfd5cb378"
+      "sha256": "f5fe391070a7187e3b079c25458a3acf410e3443db961c529a4dd497ec5236ac"
     }
   },
   "observations": {
@@ -20,6 +20,7 @@
       "50_resources/ai_observations/2026-07-21_grm-010-bot-teardown-impl.md",
       "50_resources/ai_observations/2026-07-21_grm-011-brand-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-business-plan-v1.md",
+      "50_resources/ai_observations/2026-07-21_grm-011-ops-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grm-011-service-plan-v1.md",
       "50_resources/ai_observations/2026-07-21_grooman-methodology-bootstrap.md",
       "50_resources/ai_observations/2026-07-21_grooman-retro-adr-and-checklist-triage.md"
