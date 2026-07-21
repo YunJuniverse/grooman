@@ -7,9 +7,9 @@
 
 ## Current Focus
 
-- Working on: GRM-011 — 10·14·11·12 머지(제안값 확정), 13 마케팅 v1 초안 완료(리뷰 대기). 다음: 15 PM → 16+17
+- Working on: GRM-011 — 10~13 머지, 15 PM v1 초안 완료(리뷰 대기). 잔여: 16+17(Eval-First 세트)
 - Current mode: fullstack
-- Next TODO: 마케팅기획서 PR 리뷰 → 15 PM기획서 / P1 필수 구현 2건(GRM-012 신고·제재, GRM-013 측정 인프라)
+- Next TODO: PM기획서 PR 리뷰 → 16+17 / **법률 검토 착수(프리모템이 크리티컬 패스로 승격)** / GRM-012·013 구현
 - Blockers: 없음
 
 ## Active Links
@@ -39,8 +39,8 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-22: 13 마케팅기획서 v1(오가닉·Content Loop·SEO/GEO·**G5 발견**→GRM-013) + 12 운영 제안값 확정(v1.1) · Class A · branch docs/plan-13-marketing
+- 2026-07-22: 15 PM기획서 v1(방법론 인스턴스화·OKR·프리모템→**법률 검토 크리티컬 패스 승격**·게이트 카탈로그) · Class A · branch docs/plan-15-pm
+- 2026-07-22: 13 마케팅기획서 v1(오가닉·Content Loop·**G5 발견**→GRM-013) 머지(PR#7) + 12 제안값 확정 · Class A
 - 2026-07-22: 12 운영기획서 v1(1인 슬림·신고 프로세스·제재 단계·**G4 발견**) 머지(PR#6) + GRM-012 등록 · Class A
 - 2026-07-22: 11 서비스기획서 v1(부모=인덱스·역문서화·신고UI 갭 발견) 머지(PR#5) + 14 tagline 확정 · Class A
 - 2026-07-22: 14 브랜드기획서 v1 초안(Dunford·가치실체·다면메시지·정량화톤·DBA·SoS) 머지(PR#4) · Class A
-- 2026-07-22: 10 사업기획서 v1 머지(PR#3) + GRM-010 잔여 복구 머지(PR#2) — GRM-011 순서 1 완료 · Class A
