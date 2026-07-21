@@ -7,9 +7,9 @@
 
 ## Current Focus
 
-- Working on: GRM-011 — 10~13 머지, 15 PM v1 초안 완료(리뷰 대기). 잔여: 16+17(Eval-First 세트)
+- Working on: GRM-011 — 10~15 머지, **16+17 v1 초안 완료(리뷰 대기 — 머지 시 기획 시리즈 7/7 완료)**
 - Current mode: fullstack
-- Next TODO: PM기획서 PR 리뷰 → 16+17 / **법률 검토 착수(프리모템이 크리티컬 패스로 승격)** / GRM-012·013 구현
+- Next TODO: 16+17 PR 리뷰 → P1 구현 3건(GRM-012 신고·제재, GRM-013 측정, GRM-014 가드) / **법률 검토 착수(크리티컬 패스)**
 - Blockers: 없음
 
 ## Active Links
@@ -34,13 +34,14 @@
 | G5 | **측정 인프라 전무** — GA4류·Search Console 등록·소유권 메타 없음 → 마케팅 KPI 측정 불가 (마케팅기획서 §9) | High | GRM-013 (P1 필수, Class A) — 계정은 사람·코드는 AI |
 | SEC-1 | 새 테이블 RLS 정책 누락 시 조용한 취약점 (ADR-0003) | Med | 마이그레이션 추가 시 RLS 점검 루틴화 |
 | CRAWL-1 | 자동 크롤 글이 사람 검수 없이 즉시 published·색인 (ADR-0001) | Med | 자동수집 뱃지·출처는 이미 표기됨. 검수 게이트 도입은 선택 |
+| CRAWL-2 | **fail-open 가드** — API 키 부재 시 기본값 통과(필터 무력화·전부 hair 분류) (AI-001 §8 B4) | Med | GRM-014 (P1) — fail-closed 수정 |
 
 ## Recent Changes
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-22: 15 PM기획서 v1(방법론 인스턴스화·OKR·프리모템→**법률 검토 크리티컬 패스 승격**·게이트 카탈로그) · Class A · branch docs/plan-15-pm
+- 2026-07-22: 16 AI-001+17 평가·가드레일 v1(EDD 사후 선언·**fail-open 적발**→GRM-014·ai_relevance 정정 v1.2) · Class A · branch docs/plan-16-17-ai-eval
+- 2026-07-22: 15 PM기획서 v1(방법론 인스턴스화·프리모템→**법률 검토 크리티컬 패스**) 머지(PR#8) · Class A
 - 2026-07-22: 13 마케팅기획서 v1(오가닉·Content Loop·**G5 발견**→GRM-013) 머지(PR#7) + 12 제안값 확정 · Class A
 - 2026-07-22: 12 운영기획서 v1(1인 슬림·신고 프로세스·제재 단계·**G4 발견**) 머지(PR#6) + GRM-012 등록 · Class A
-- 2026-07-22: 11 서비스기획서 v1(부모=인덱스·역문서화·신고UI 갭 발견) 머지(PR#5) + 14 tagline 확정 · Class A
 - 2026-07-22: 14 브랜드기획서 v1 초안(Dunford·가치실체·다면메시지·정량화톤·DBA·SoS) 머지(PR#4) · Class A
