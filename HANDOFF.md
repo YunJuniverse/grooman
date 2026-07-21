@@ -7,9 +7,9 @@
 
 ## Current Focus
 
-- Working on: GRM-011 — 10~15 머지, **16+17 v1 초안 완료(리뷰 대기 — 머지 시 기획 시리즈 7/7 완료)**
+- Working on: **GRM-011 완결(7/7)** + MASTER_PLAN v1·문서 정합화(AGENTS·context.json·status active) 리뷰 대기
 - Current mode: fullstack
-- Next TODO: 16+17 PR 리뷰 → P1 구현 3건(GRM-012 신고·제재, GRM-013 측정, GRM-014 가드) / **법률 검토 착수(크리티컬 패스)**
+- Next TODO: master-plan-approval(이 PR) → M1 구현(GRM-014→013→012 권장) / **법률 검토 착수(크리티컬 패스)**
 - Blockers: 없음
 
 ## Active Links
@@ -40,8 +40,8 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-22: 16 AI-001+17 평가·가드레일 v1(EDD 사후 선언·**fail-open 적발**→GRM-014·ai_relevance 정정 v1.2) · Class A · branch docs/plan-16-17-ai-eval
+- 2026-07-22: MASTER_PLAN v1(M0~M3·MVP 확정·게이트 인스턴스) + 정합화(AGENTS·context.json·기획 8종 active) — **GRM-011 완결** · Class A · branch docs/master-plan-consistency
+- 2026-07-22: 16 AI-001+17 평가 v1(**fail-open 적발**→GRM-014) 머지(PR#9) — 기획 시리즈 7/7 · Class A
 - 2026-07-22: 15 PM기획서 v1(방법론 인스턴스화·프리모템→**법률 검토 크리티컬 패스**) 머지(PR#8) · Class A
-- 2026-07-22: 13 마케팅기획서 v1(오가닉·Content Loop·**G5 발견**→GRM-013) 머지(PR#7) + 12 제안값 확정 · Class A
 - 2026-07-22: 12 운영기획서 v1(1인 슬림·신고 프로세스·제재 단계·**G4 발견**) 머지(PR#6) + GRM-012 등록 · Class A
 - 2026-07-22: 14 브랜드기획서 v1 초안(Dunford·가치실체·다면메시지·정량화톤·DBA·SoS) 머지(PR#4) · Class A

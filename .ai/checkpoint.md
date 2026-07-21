@@ -23,16 +23,16 @@
 
 > *이번 세션*에 한 일의 서사만. 누적 이력(최근 N건 board)은 HANDOFF `Recent Changes` 참조 — 여기 복제 금지.
 
-- (이전) 15 PM기획서 v1 머지(PR#8).
-- **GRM-011 순서 7(마지막) — 16 AI-001 + 17 평가·가드레일 v1** (branch docs/plan-16-17-ai-eval): 지침 16·17 정독 후 Eval-First 세트 작성. AI-001은 retrofit 명세 — 코드 현재 동작 박제 + 지침 기준 미달을 개선 백로그 5건(B1~B5)으로. 17은 프로젝트 인스턴스 — EDD 사후 적용 정직 선언(골든셋 v1 전 프롬프트·모델 변경 동결 규칙), 메트릭 채택표(clinic 유출 0건 hard), judge 1인 규율(교차 계열 권장+사람 calibration 20건 필수), 게이트 7종 인스턴스.
-- **발견 2건**: ① ai_relevance 정정 — 서비스기획서가 tool로 분류했으나 AI 산출물(요약·분류)이 제품에 포함되므로 지침 16 §1.5 기준 **feature** → 서비스기획서 v1.2 정정. ② **fail-open 가드 적발** — API 키 부재 시 기본값 통과(spam 0·전부 hair)로 필터 무력화, 지침 17 §4.2 fail-closed 위반 → CRAWL-2 이슈 + **GRM-014**(B4+B3+B1, Class A, P1) 등록.
+- (이전) 16+17 머지(PR#9) → **GRM-011 기획 시리즈 7/7 완결**.
+- **전수조사 → 정합화 + MASTER_PLAN v1** (branch docs/master-plan-consistency): 로컬 방법론 문서 전수조사(공유 문서는 sync 소관 제외) → 4건 판정. ① AGENTS.md §1 채움(CLAUDE.md 미러 누락분) ② context.json 갱신(domain=webapp-next·phase=M1-prep·active_todos) ③ 기획 8종 status draft→active(머지=승인 증거) ④ **MASTER_PLAN v1**(지침 18 정독): 코드 베이스라인 스냅샷·M0~M3 페이즈 5필드·인라인 가드 3건(법률 전 공개 금지 등)·mermaid 의존성(크리티컬 패스=legal-review)·MVP 확정·AI-001 소급 게이트·B/C 사전 매핑·게이트 활성/이연 라이프사이클.
+- TODO: GRM-011 → Done(부산물: 갭 4건 적발 기록). 이 PR = **master-plan-approval 게이트**.
 
 ## 다음 사람에게 (구체적 첫 행동)
 
-1. 16+17 PR 리뷰(= eval-spec-approval 게이트) — 머지 시 **GRM-011 기획 시리즈 7/7 완료** → GRM-011을 Done으로 이동.
-2. **법률 검토 착수 최우선**(크리티컬 패스 — 외부 의존). 병행: P1 구현 3건 — GRM-012(신고·제재, Class B)·GRM-013(측정, Class A)·GRM-014(AI 가드 fail-closed, Class A — 작고 명확해 첫 구현으로 적합).
-3. 골든셋 v1 구축 전 프롬프트·모델 변경 금지(17 §1 동결 규칙) — AI 관련 코드 수정 시 인지.
-4. 구현 완료 후 흐름: 릴리스 게이트(SOP) → Class C 공개 승인 → P1. 18 마스터플랜은 구현 착수 전 필요 시 작성(지침 18).
+1. 이 PR 리뷰 = **master-plan-approval 게이트** — 머지 시 M1 공식 착수 가능.
+2. **법률 검토 착수 최우선**(M1 크리티컬 패스 — 외부 의존). 병행: M1 구현 — 권장 순서 GRM-014(작고 명확)→GRM-013→GRM-012(최대).
+3. M1 종료 조건 = MASTER_PLAN §5.5(구현 3건+Lighthouse+실소스+봇0+색인100) — 게이트: legal-review + class-c-public-release.
+4. 골든셋 v1 전 AI-001 프롬프트·모델 변경 동결(17 §1) 유지.
 
 ## 막혔던 지점 / 시도해봤지만 안 된 것
 

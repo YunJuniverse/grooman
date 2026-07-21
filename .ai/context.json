@@ -4,23 +4,23 @@
   "project": {
     "name": "grooman",
     "kind": "applied-project",
-    "domain": null,
+    "domain": "webapp-next",
     "started_on": "2026-07-21"
   },
   "current_phase": {
-    "stage": "stage-1",
-    "label": "초기 부팅 — 도메인 식별, 첫 TODO 정렬",
-    "since": "2026-07-21"
+    "stage": "M1-prep",
+    "label": "기획 시리즈 7/7 완료(GRM-011) — P1 공개 준비: 구현 3건 + 법률 검토(크리티컬 패스)",
+    "since": "2026-07-22"
   },
   "active_skeleton": null,
   "last_session": {
-    "ended_at": "2026-07-21T00:00:00Z",
+    "ended_at": "2026-07-22T00:00:00Z",
     "agent": {
-      "model": "unknown",
-      "tool": "unknown",
-      "version": "0"
+      "model": "claude-fable-5",
+      "tool": "claude-code",
+      "version": "1"
     },
-    "host_os": "unknown",
+    "host_os": "darwin",
     "checkpoint_file": ".ai/checkpoint.md"
   },
   "must_read": [
@@ -35,7 +35,7 @@
     "20_guides/README.md",
     "20_guides/00_AI_기획_프로젝트_운영_원칙.md"
   ],
-  "active_todos": [],
+  "active_todos": ["GRM-012", "GRM-013", "GRM-014", "GRM-001"],
   "active_catalog_hits": [],
   "adapters_present": ["generic", "claude"]
 }
