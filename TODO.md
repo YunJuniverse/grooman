@@ -13,21 +13,25 @@ _(없음)_
 
 ## Ready
 
+_(없음)_
+
+## InProgress
+
 ### GRM-013
-- **title**: 측정 인프라 구축 — GA4 + Search Console (P1 필수 — G5)
+- **title**: 측정 인프라 구축 — GTM/GA4 + Search Console (P1 필수 — G5)
 - **mode**: fullstack
 - **change-class**: A
 - **owner**: AI + Human
 - **milestone**: P1
 - **acceptance criteria**:
-  - [ ] GA4(또는 경량 대안) 설치 — 페이지뷰·세션·가입 전환 이벤트 수집
-  - [ ] Search Console 등록 + 소유권 확인 메타 + sitemap 제출
+  - [x] GTM 컨테이너 `GTM-WJVFXRBT` 설치 — `@next/third-parties` + noscript 폴백, `NEXT_PUBLIC_GTM_ID` 게이트
+  - [x] 개인정보처리방침에 분석 쿠키·처리위탁·정보주체 권리 반영 (설치의 법적 전제)
+  - [ ] **[사람]** Vercel Production 환경에만 `NEXT_PUBLIC_GTM_ID=GTM-WJVFXRBT` 설정 후 재배포
+  - [ ] **[사람]** GTM 콘솔에서 GA4 구성 태그 연결 + 게시
+  - [ ] 가입 전환 이벤트 `sendGTMEvent` 삽입 (GA4 연결 확인 후)
+  - [ ] **[사람]** Search Console 등록 + 소유권 확인 + sitemap 제출
   - [ ] 마케팅기획서 §9 KPI 표의 지표가 실제 수집되는지 확인
-- **notes**: 마케팅기획서 작성 중 발견(G5) — 분석 도구·서치콘솔 전무. 검색 유입 전략(P1)의 전제 조건. 계정 생성은 사람(hayden), 코드 삽입은 AI.
-
-## InProgress
-
-_(없음)_
+- **notes**: 마케팅기획서 작성 중 발견(G5). 계정·콘솔 작업은 사람(hayden), 코드 삽입은 AI. **env 게이트 의도**: 미설정 시 GTM 미렌더 → PR preview·로컬 트래픽이 프로덕션 컨테이너를 오염시키지 않음. Production 환경에만 설정할 것(Preview 체크 해제). 로컬 검증 완료: `google_tag_manager["GTM-WJVFXRBT"]` 로드·`gtm.start` 푸시·noscript iframe 확인.
 
 ## Blocked
 
@@ -42,7 +46,7 @@ _(없음)_
   - [x] 안전 최적화 적용 — viewport/themeColor·리스트 이미지 lazy/async
   - [ ] **[Blocked]** 배포 환경(Vercel preview + env)에서 5경로 모바일 Lighthouse ≥90 측정
   - [ ] 미달 항목 조치·재측정
-- **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). **숫자 측정 Blocked**: 로컬에 Supabase 자격증명 없어 데이터 구동 페이지 렌더 불가 → 실측 무의미. **인간 액션 선행**: Vercel preview에 env 설정/배포. next/image 전면 전환 완료(raw img 14→0, PR#13). 시각 정합은 배포 후 확인 권고.
+- **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). next/image 전면 전환 완료(raw img 14→0, PR#13). 시각 정합은 배포 후 확인 권고. **블로커 해소 경로 확인(2026-07-22)**: GRM-013 작업 중, `NEXT_PUBLIC_SUPABASE_URL` + anon key만 빌드에 주입하면 로컬 `next start`로 페이지가 정상 렌더됨을 실증(service_role 불필요 — 공개 읽기는 RLS 허용). 즉 **Vercel 배포를 기다리지 않고 로컬 실측 가능**. 주의: `NEXT_PUBLIC_*`는 빌드 타임 인라인이라 build·start 양쪽에 넣어야 한다.
 
 ## Done
 
