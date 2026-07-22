@@ -23,20 +23,23 @@
 
 > *이번 세션*에 한 일의 서사만. 누적 이력은 HANDOFF `Recent Changes` 참조.
 
-- (이전) GRM-012 머지. M1 구현 진행 중.
-- **GRM-001 Lighthouse — 정직한 부분 처리** (branch feat/grm-001-lighthouse, Class A): 로컬에 Supabase 자격증명(`.env.local`) 전무 → 데이터 구동 페이지 렌더 실패 → **실 Lighthouse 숫자 측정 불가**(에러 페이지 측정은 무의미). 그래서 정적 감사로 전환.
-  - 정적 감사(`40_dev/snapshots/lighthouse-audit-2026-07-22.md`): 5경로×4카테고리. 결과 — SEO 양호(전경로 메타·robots·lang·OG·JSON-LD), a11y 대체로 양호(아이콘버튼 aria-label·alt 적절), **주 약점=raw img 14곳 명시적 크기 부재(CLS·best-practices)**.
-  - 안전 최적화만 적용(측정 불필요·레이아웃 불변): `layout`에 viewport/themeColor 추가, 리스트 썸네일 5개 img에 `loading=lazy`·`decoding=async`. next/image 전면 전환은 시각 검증 필요라 제외(후속).
-  - 검증: 테스트 21/21·tsc·build ✓.
-- **next/image 전면 전환**(사용자 요청): raw `<img>` 14곳 → `next/image` 0개 잔존. fill 패턴(부모 relative+sizes)·admin fixed(w/h). remotePatterns 기설정. tsc·build·테스트 통과. 시각 정합은 배포 후 확인 권고(fill+object-cover=기존과 동일 패턴). PR#13에 포함.
-- **숫자 ≥90 측정은 Blocked** — 인간 액션(Vercel preview에 env 설정/배포) 선행 필요. TODO GRM-001을 Blocked로, AC 정적 2건 체크·측정 2건 미체크로 정직 표기.
+- (이전) GRM-012 머지 · **GRM-001 머지(PR#13)** — 정적 감사+next/image 전환 완료, 숫자측정만 Blocked.
+- **Supabase 프로비저닝** (branch chore/supabase-provision): 계정에 grooman 프로젝트가 없어 신규 생성 — **월 $10 비용을 사용자 승인 후** 생성(`wqrxuzplcfjtjoiraqsf`, 서울). 마이그 001·003(스키마만)·004·005 적용, 11테이블 전부 RLS 활성 확인.
+  - **002 봇시딩·003 샘플광고는 의도적 미적용** — 배포 전 삭제 대상 데모 데이터. 특히 샘플광고의 "피부과 레이저·보톡스 40% 할인"은 clinic 정책과 충돌.
+  - advisor가 WARN 11건 검출 → **006 보안 하드닝** 적용(함수 8개 search_path 고정 + `handle_new_user` SECURITY DEFINER가 anon RPC로 노출된 것 EXECUTE 회수) → **11→1건**(남은 pg_trgm은 미사용이라 보류).
+- **법적 검토 — 사용자 요청으로 내가 수행**(변호사 없음). 웹 조사 후:
+  - **정보통신망법 §44-2**: 임시조치 자체는 재량이나 **절차는 강행규정**(약관 명시·지체없는 조치·양측 통지·게시판 공시). grooman 약관에 **전혀 없어 법정의무 위반 상태였음** → 약관 **제6조** 신설로 해소.
+  - **의료법 §56**: 핵심 발견 = **자발적 단순 후기는 위반 아님**(clinic 카테고리 존립 근거). 위반선 = 대가성·병원특정+유인·효과오인·진단조언 → 약관 **제7조**로 사전고지 + 운영기획서 §4.3에 근거 부여.
+  - **플랫폼 책임**(대법 2008다53812 계열): 위법명백+인식가능+미조치일 때만 책임 → 신고체계(GRM-012)+SLA+기록이 실질 방어선(이미 구축됨).
+  - 검토메모 `40_dev/snapshots/legal-compliance-review-2026-07-22.md` — **"변호사 아님·법률자문 아님" 한계와 잔여 불확실성 4건 명시**.
+- **사용자 오해 1건 정정**: "광고 심의 받으니 법적이슈 클리어" → 광고심의는 광고물 절차이고 UGC/임시조치/저작권은 별개 법리. / **내 오류 1건 정정**: 사업기획서 인프라 가정을 ₩8,000으로 잘못 읽고 $10이 초과라 했으나 실제 가정은 ₩75,000 — 초과 아님.
 
 ## 다음 사람에게 (구체적 첫 행동)
 
-1. GRM-001 PR 리뷰·머지(정적 감사+안전 최적화). **숫자 측정은 배포 후** — Vercel preview에 env 넣고 5경로 모바일 Lighthouse ≥90 확인(인간).
-2. **M1 남은 구현 = GRM-013 측정 인프라뿐** — 선행 인간 액션: GA4 계정·Search Console 등록. 그 후 코드는 AI.
-3. **법률 검토 여전히 미착수** — M1 크리티컬 패스, 재촉.
-4. M1 종료(MASTER_PLAN §5.5): 구현은 GRM-013만 남음 + 배포성 항목(Lighthouse 측정·크롤 실소스·봇0·색인) + 게이트(legal·class-c-public-release).
+1. 이 PR(chore/supabase-provision) 리뷰 — 006 마이그(이미 DB 적용됨)·약관 제6·7조·검토메모.
+2. **Vercel은 인간 액션**: 대시보드에서 `YunJuniverse/grooman` import + env 입력(URL=`https://wqrxuzplcfjtjoiraqsf.supabase.co`, 키는 Supabase 대시보드 API 탭). Marketplace Supabase 통합을 쓰면 키 복붙 불필요.
+3. 배포되면: GRM-001 Lighthouse 실측 가능 · GRM-013(GA4 계정 필요) 진행.
+4. 잔여 법적 항목: 크롤 실소스 저작권 확인(M1 게이트) · 광고↔clinic 분리 원칙(P3 전) · 개인정보처리방침 점검(별도).
 
 ## 막혔던 지점 / 시도해봤지만 안 된 것
 

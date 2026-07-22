@@ -7,14 +7,14 @@
 
 ## Current Focus
 
-- Working on: **M1 구현** — GRM-014·012 완료, GRM-001 정적 감사+최적화(숫자측정 Blocked). 남은: GRM-013(측정)
+- Working on: **Supabase 프로비저닝 + 법적 준수 조치** 완료(리뷰 대기). GRM-001은 머지됨(숫자측정만 Blocked)
 - Current mode: fullstack
-- Next TODO: GRM-001 PR 리뷰 → GRM-013(GA4 계정=사람 선행) / **법률 검토 착수(크리티컬 패스)** / GRM-001 숫자측정(배포 후)
-- Blockers: GRM-001 숫자 측정·GRM-013 = env·계정 필요(인간 액션 선행)
+- Next TODO: 이 PR 리뷰 → **Vercel 프로젝트 생성(인간)** → GRM-013(GA4 계정=인간) / GRM-001 숫자측정(배포 후)
+- Blockers: Vercel 연결·GA4 계정 = 인간 액션 선행 필요
 
 ## Active Links
 
-- Current PR: branch feat/grm-012-reports-sanctions (GRM-012)
+- Current PR: #13(GRM-001, 오픈) · branch chore/supabase-provision(신규)
 - Current issue:
 - Relevant ADRs: [ADR-0001](40_dev/adr/0001-rss-auto-crawl-ai-pipeline.md)·[ADR-0002](40_dev/adr/0002-bot-seeding-cold-start.md)·[ADR-0003](40_dev/adr/0003-rls-security-model.md)
 - Relevant snapshots:
@@ -32,7 +32,8 @@
 | ~~BOT-1~~ | ~~봇 teardown 불가~~ → **Resolved 2026-07-22** (GRM-010): is_bot 마커·teardown 스크립트·릴리스 게이트 SOP 구현 | ~~High~~ | 공개 배포 시 SOP_public-release-gate 대로 실행 |
 | ~~G1+G4~~ | ~~신고 UI + 계정 정지 수단~~ → **Resolved 2026-07-22** (GRM-012): 신고 5종 UI·어드민 처리 큐·`suspended_until`+INSERT RLS·정지/해제. 부수: profiles_update_admin으로 기존 toggleAdmin RLS 잠재버그도 해소 | ~~High~~ | 마이그 005 프로덕션 적용은 배포 시 |
 | G5 | **측정 인프라 전무** — GA4류·Search Console 등록·소유권 메타 없음 → 마케팅 KPI 측정 불가 (마케팅기획서 §9) | High | GRM-013 (P1 필수, Class A) — 계정은 사람·코드는 AI |
-| SEC-1 | 새 테이블 RLS 정책 누락 시 조용한 취약점 (ADR-0003) | Med | 마이그레이션 추가 시 RLS 점검 루틴화 |
+| SEC-1 | 새 테이블 RLS 정책 누락 시 조용한 취약점 (ADR-0003) | Med | 마이그레이션 추가 시 RLS 점검 + **Supabase advisor 정기 확인**(006로 11→1건 해소) |
+| LEGAL-1 | clinic "유인성" 회색지대·광고↔clinic 분리 원칙 미정 (검토메모 §5) | Med | 분쟁 발생·수익화 시 변호사 검토. P3 광고 도입 전 분리 원칙 결정 |
 | CRAWL-1 | 자동 크롤 글이 사람 검수 없이 즉시 published·색인 (ADR-0001) | Med | 자동수집 뱃지·출처는 이미 표기됨. 검수 게이트 도입은 선택 |
 | ~~CRAWL-2~~ | ~~fail-open 가드~~ → **Resolved 2026-07-22** (GRM-014): fail-closed+zod 검증+테스트 11종 | ~~Med~~ | — |
 
@@ -40,7 +41,8 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-22: **next/image 전면 전환**(raw img 14→0) — GRM-001 후속 최적화, PR#13에 포함 · Class A
-- 2026-07-22: **GRM-001 정적 Lighthouse 감사** — 5경로×4카테고리 코드감사+안전 최적화(viewport·img lazy). 숫자측정은 배포 env 필요로 Blocked · Class A
-- 2026-07-22: **GRM-012 구현** — 신고(5종 UI·중복방지)·어드민 처리큐·계정정지(`005` 마이그·RLS)·테스트 10종. G1+G4 해소 · Class B · branch feat/grm-012-reports-sanctions
+- 2026-07-22: **Supabase 프로비저닝**(grooman/서울, 마이그 001·003·004·005 적용) + **006 보안 하드닝**(advisor 11→1건, SECURITY DEFINER RPC 노출 차단) · Class B
+- 2026-07-22: **법적 준수 조치** — 정보통신망법 §44-2 절차 약관 미비(법정의무 위반) 발견·해소(약관 제6조) + 의료법 §56 근거로 clinic 기준 정렬(제7조) · 검토메모 작성
+- 2026-07-22: GRM-001 머지(PR#13) — 정적 Lighthouse 감사 + **next/image 전환**(raw img 14→0). 숫자측정은 배포 env 필요로 Blocked · Class A
+- 2026-07-22: **GRM-012 구현** — 신고(5종 UI·중복방지)·어드민 처리큐·계정정지(`005` 마이그·RLS)·테스트 10종. G1+G4 해소 · Class B
 - 2026-07-22: GRM-014 머지(PR#11) — AI 가드 fail-closed·zod·temp0. CRAWL-2 해소 · Class A
