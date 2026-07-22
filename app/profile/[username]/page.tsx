@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -50,9 +51,9 @@ export default async function ProfilePage({ params }: Props) {
       {/* 프로필 카드 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
         <div className="flex items-start gap-5">
-          <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+          <div className="relative w-20 h-20 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
             {profile.avatar_url
-              ? <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+              ? <Image src={profile.avatar_url} alt={profile.username} fill sizes="80px" className="object-cover" />
               : <span className="w-full h-full flex items-center justify-center text-2xl text-gray-500 font-medium">
                   {profile.username[0].toUpperCase()}
                 </span>

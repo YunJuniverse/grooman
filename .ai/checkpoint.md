@@ -23,7 +23,7 @@
 
 > *이번 세션*에 한 일의 서사만. 누적 이력은 HANDOFF `Recent Changes` 참조.
 
-- (이전) GRM-012 머지 · GRM-001(정적감사+next/image) PR#13 오픈 중.
+- (이전) GRM-012 머지 · **GRM-001 머지(PR#13)** — 정적 감사+next/image 전환 완료, 숫자측정만 Blocked.
 - **Supabase 프로비저닝** (branch chore/supabase-provision): 계정에 grooman 프로젝트가 없어 신규 생성 — **월 $10 비용을 사용자 승인 후** 생성(`wqrxuzplcfjtjoiraqsf`, 서울). 마이그 001·003(스키마만)·004·005 적용, 11테이블 전부 RLS 활성 확인.
   - **002 봇시딩·003 샘플광고는 의도적 미적용** — 배포 전 삭제 대상 데모 데이터. 특히 샘플광고의 "피부과 레이저·보톡스 40% 할인"은 clinic 정책과 충돌.
   - advisor가 WARN 11건 검출 → **006 보안 하드닝** 적용(함수 8개 search_path 고정 + `handle_new_user` SECURITY DEFINER가 anon RPC로 노출된 것 EXECUTE 회수) → **11→1건**(남은 pg_trgm은 미사용이라 보류).

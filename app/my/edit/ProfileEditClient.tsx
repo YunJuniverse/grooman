@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -42,9 +43,9 @@ export default function ProfileEditClient({ profile }: { profile: Profile }) {
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
         {/* 아바타 미리보기 */}
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden">
+          <div className="relative w-16 h-16 rounded-full bg-gray-200 overflow-hidden">
             {profile.avatar_url
-              ? <img src={profile.avatar_url} alt={username} className="w-full h-full object-cover" />
+              ? <Image src={profile.avatar_url} alt={username} fill sizes="64px" className="object-cover" />
               : <span className="w-full h-full flex items-center justify-center text-xl text-gray-500 font-bold">
                   {username[0]?.toUpperCase()}
                 </span>

@@ -7,9 +7,9 @@
 
 ## Current Focus
 
-- Working on: **Supabase 프로비저닝 + 법적 준수 조치** 완료(리뷰 대기). M1 남은 구현: GRM-013(측정)
+- Working on: **Supabase 프로비저닝 + 법적 준수 조치** 완료(리뷰 대기). GRM-001은 머지됨(숫자측정만 Blocked)
 - Current mode: fullstack
-- Next TODO: 이 PR 리뷰 → **Vercel 프로젝트 생성(인간)** → GRM-013(GA4 계정=인간) / GRM-001 실측(배포 후)
+- Next TODO: 이 PR 리뷰 → **Vercel 프로젝트 생성(인간)** → GRM-013(GA4 계정=인간) / GRM-001 숫자측정(배포 후)
 - Blockers: Vercel 연결·GA4 계정 = 인간 액션 선행 필요
 
 ## Active Links
@@ -43,4 +43,6 @@
 
 - 2026-07-22: **Supabase 프로비저닝**(grooman/서울, 마이그 001·003·004·005 적용) + **006 보안 하드닝**(advisor 11→1건, SECURITY DEFINER RPC 노출 차단) · Class B
 - 2026-07-22: **법적 준수 조치** — 정보통신망법 §44-2 절차 약관 미비(법정의무 위반) 발견·해소(약관 제6조) + 의료법 §56 근거로 clinic 기준 정렬(제7조) · 검토메모 작성
-- 2026-07-22: **GRM-012 구현** — 신고(5종 UI·중복방지)·어드민 처리큐·계정정지(`005` 마이그·RLS)·테스트 10종. G1+G4 해소 · Class B · branch feat/grm-012-reports-sanctions
+- 2026-07-22: GRM-001 머지(PR#13) — 정적 Lighthouse 감사 + **next/image 전환**(raw img 14→0). 숫자측정은 배포 env 필요로 Blocked · Class A
+- 2026-07-22: **GRM-012 구현** — 신고(5종 UI·중복방지)·어드민 처리큐·계정정지(`005` 마이그·RLS)·테스트 10종. G1+G4 해소 · Class B
+- 2026-07-22: GRM-014 머지(PR#11) — AI 가드 fail-closed·zod·temp0. CRAWL-2 해소 · Class A
