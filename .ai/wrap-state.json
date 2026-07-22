@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "d4e1e68a2ba9cd59ed4321ad0e6439ff63dcb202",
-  "last_validated_at": "2026-07-21T16:44:49Z",
+  "last_validated_commit": "d543756027c418a51bbb6b66fe2148785b2426bc",
+  "last_validated_at": "2026-07-22T10:52:45Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "dfc9b55a72249333422add92d8aed149953c27bca88ff9477493949e86f74389"
+      "sha256": "16929e49a7d871570baf2effa0c319d9bf01182645047e6c95f1c36f64e075a3"
     },
     "TODO.md": {
-      "sha256": "776e52d2d1ec7dc7d174408af5ad01190d9d20480712ddae520ecf5b461fd590"
+      "sha256": "5cd7d37c4126bf542553f5ff09bd35577f62355dc34704e312b43ff7d1f32723"
     },
     ".ai/checkpoint.md": {
-      "sha256": "e3c60bd5ff3e697e358b909ad0dbab7e21c83452bbbc5390412d98ac34d1c58e"
+      "sha256": "530b02fa1120857af504fd7213fa15a0612e545b66cff0ff2506895b8a271132"
     }
   },
   "observations": {
@@ -28,7 +28,8 @@
       "50_resources/ai_observations/2026-07-21_grm-014-ai-guard-impl.md",
       "50_resources/ai_observations/2026-07-21_grooman-methodology-bootstrap.md",
       "50_resources/ai_observations/2026-07-21_grooman-retro-adr-and-checklist-triage.md",
-      "50_resources/ai_observations/2026-07-21_master-plan-v1-and-doc-consistency.md"
+      "50_resources/ai_observations/2026-07-21_master-plan-v1-and-doc-consistency.md",
+      "50_resources/ai_observations/2026-07-22_grm-012-reports-sanctions-impl.md"
     ]
   }
 }

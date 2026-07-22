@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ThumbsUp, CornerDownRight, Trash2, ChevronDown } from 'lucide-react'
 import { relativeTime } from '@/lib/utils/date'
 import { createComment, deleteComment, toggleCommentLike } from '@/app/posts/comment-actions'
+import ReportButton from '@/components/moderation/ReportButton'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import type { Comment } from '@/types/supabase'
@@ -143,6 +144,7 @@ export default function CommentItem({ comment, postId, onRefresh, depth = 0 }: C
                 답글 보기
               </button>
             )}
+            <ReportButton targetType="comment" targetId={comment.id} variant="text" />
           </div>
         )}
 

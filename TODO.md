@@ -26,18 +26,6 @@ _(없음)_
   - [ ] 마케팅기획서 §9 KPI 표의 지표가 실제 수집되는지 확인
 - **notes**: 마케팅기획서 작성 중 발견(G5) — 분석 도구·서치콘솔 전무. 검색 유입 전략(P1)의 전제 조건. 계정 생성은 사람(hayden), 코드 삽입은 AI.
 
-### GRM-012
-- **title**: 신고 기능 + 계정 제재 수단 구현 (P1 필수 — G1·G4)
-- **mode**: fullstack
-- **change-class**: B (스키마 변경: reports 처리 상태·profiles 정지 컬럼·RLS)
-- **owner**: AI + Human
-- **milestone**: P1
-- **acceptance criteria**:
-  - [ ] 글/댓글 신고 UI(사유 5종) → reports 기록, 중복 신고 방지
-  - [ ] 관리자 신고 처리 큐(목록·필터·조치·사유 기록) — 처리 상태 전환
-  - [ ] `profiles` 정지 상태(작성 정지 기한) 컬럼 + RLS(정지 중 INSERT 차단) + 관리자 정지/해제 액션
-  - [ ] 12 운영기획서 §4.1 프로세스·§5 제재 단계와 정합(문서→코드 순서)
-- **notes**: 2026-07-22 사람 결정(G1=P1 필수). G4(정지 수단 부재)는 12 운영기획서 작성 중 발견 — 제재 기준의 집행 수단이라 세트 구현. 상세 기준: [[12_운영기획서]] §4.1·§5·§8.
 
 ### GRM-001
 - **title**: 전 페이지 Lighthouse 90+ 감사 및 최적화
@@ -60,6 +48,10 @@ _(없음)_
 _(없음)_
 
 ## Done
+
+### GRM-012
+- **title**: 신고 기능 + 계정 제재 수단 구현 (G1·G4 해소)
+- **notes**: Completed 2026-07-22. 신고 5종 UI(`ReportButton`)→reports(중복방지 unique)·어드민 신고관리 탭(목록·필터·처리/기각)·계정 정지(`005` 마이그: suspended_until+INSERT RLS·회원관리 7/30/영구·해제). 순수로직 `lib/moderation/reports.ts`+테스트 10종. 부수: `profiles_update_admin` RLS로 기존 toggleAdmin 잠재버그 해소. 테스트 21/21·build ✓. 정합: 12 v1.2·11 v1.3. Class B(스키마·RLS). [[12_운영기획서]] §4.1·§5.
 
 ### GRM-014
 - **title**: AI-001 가드 강화 — fail-closed + zod 스키마 검증 + temperature 0

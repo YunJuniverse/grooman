@@ -31,6 +31,7 @@ export default async function AdminPage() {
     { data: users },
     { data: posts },
     { data: ads },
+    { data: reports },
   ] = await Promise.all([
     supabase.from('posts').select('*', { count: 'exact', head: true }).eq('status', 'published'),
     supabase.from('posts').select('*', { count: 'exact', head: true }).eq('is_auto_crawled', true),
@@ -44,6 +45,10 @@ export default async function AdminPage() {
       .order('created_at', { ascending: false })
       .limit(100),
     supabase.from('ads').select('*').order('placement').order('order_num'),
+    supabase.from('reports')
+      .select('*, reporter:profiles!reporter_id(username)')
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
 
   return (
@@ -57,6 +62,8 @@ export default async function AdminPage() {
       posts={(posts ?? []) as any}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ads={(ads ?? []) as any}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      reports={(reports ?? []) as any}
     />
   )
 }

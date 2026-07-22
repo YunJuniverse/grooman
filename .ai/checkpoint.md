@@ -23,17 +23,19 @@
 
 > *이번 세션*에 한 일의 서사만. 누적 이력(최근 N건 board)은 HANDOFF `Recent Changes` 참조 — 여기 복제 금지.
 
-- (이전) MASTER_PLAN v1+정합화 머지(PR#10) — master-plan-approval 통과, **M1 공식 착수**.
-- **GRM-014 구현** (branch feat/grm-014-ai-guard, Class A): CLAUDE.md 규칙대로 **테스트 우선** — vitest+zod 설치, `tests/unit/crawl-analysis.test.ts` 11케이스 선작성(clinic 구조 거부·enum·범위·타입·필드 누락·malformed JSON) → `lib/ai/crawl-analysis.ts` 신설(zod 스키마+parseCrawlAnalysis 순수 함수) → `claude.ts` 재작성(키 부재 fail-closed·temperature 0·파서 위임). 테스트 11/11·tsc 0·build 27라우트 ✓.
-- 부수: package.json에 test 스크립트 추가 → **이후 ship이 테스트를 자동 실행**(게이트 강화). vitest.config.ts(@ alias). AI-001 v1.1(B1·B3·B4 완료 표시, AC④=게이트 추가 불요 판정).
-- 참고: Vercel 플러그인 훅이 "AI Gateway로 이관하라" 검증 오류를 냈으나 **기존 확립 패턴(@anthropic-ai/sdk 직접) 유지 판단** — 이관은 GRM-014 범위 밖 인프라 변경 + 골든셋 전 AI 인프라 동결 규칙 위반.
+- (이전) GRM-014 머지(PR#11). GRM-011 완결·M1 착수 상태.
+- **GRM-012 구현** (branch feat/grm-012-reports-sanctions, Class B): 신고+계정 제재. **테스트 우선** — `lib/moderation/reports.ts`(순수 로직: 사유 5종·제재 3단·정지 계산) + `tests/unit/moderation.test.ts` 10케이스 선작성 → 통과.
+  - 마이그 `005_reports_sanctions.sql`: `profiles.suspended_until`·reports 처리컬럼(resolved_by/at·admin_note)·**중복신고 unique index**·posts/comments INSERT RLS에 "정지 아님" 조건·`reports_update_admin`·**`profiles_update_admin`**(부수: 기존 toggleAdmin RLS 잠재버그도 해소).
+  - 서버액션 `app/moderation/actions.ts`(createReport·resolveReport·suspendUser·unsuspendUser, 서버측 admin 재확인). UI: `ReportButton`(게시글·댓글) + 어드민 **신고관리 탭**(목록·상태필터·처리/기각) + 회원관리 **정지 7/30/영구·해제**.
+  - 검증: 테스트 21/21·tsc 0·build 27라우트 ✓. 문서 정합: 12 운영기획서 v1.2·11 서비스 v1.3·AI-001(신고=Escalate 경로 완료).
+- 판단: 신고 처리 큐의 콘텐츠 조치(숨김/삭제)는 기존 게시글관리 탭 재사용, 계정 제재는 회원관리 탭 — 폴리모픽 대상 조인 대신 탭 분리(기존 대시보드 구조 정합). Vercel 훅 skill 주입(경로 오탐 다수)은 기존 패턴 유지로 무시.
 
 ## 다음 사람에게 (구체적 첫 행동)
 
-1. GRM-014 PR 리뷰·머지(Class A — 테스트 11종·빌드 증거 포함).
-2. 다음 구현: **GRM-013 측정 인프라** — 인간 액션 선행: GA4 계정·Search Console 등록은 hayden(코드 삽입은 AI). 그다음 GRM-012(최대, Class B).
-3. **법률 검토 여전히 미착수** — M1 크리티컬 패스, 재촉 필요.
-4. M1 종료 조건 = MASTER_PLAN §5.5 · 골든셋 v1 전 AI-001 프롬프트·모델 변경 동결 유지(이번 변경은 가드·인프라라 동결 위반 아님 — 프롬프트 본문 불변).
+1. GRM-012 PR 리뷰·머지(Class B — 롤백 절은 마이그 005 하단). **마이그 005는 배포 시 Supabase에 수동 적용**(002/004 패턴).
+2. 다음 M1 구현: **GRM-013 측정 인프라** — 선행 인간 액션: GA4 계정·Search Console 등록(hayden). 그다음 GRM-001 Lighthouse.
+3. **법률 검토 여전히 미착수** — M1 크리티컬 패스, 재촉.
+4. M1 종료 조건 = MASTER_PLAN §5.5(구현 3건+Lighthouse+실소스+봇0+색인100). 남은 구현: GRM-013·GRM-001.
 
 ## 막혔던 지점 / 시도해봤지만 안 된 것
 
