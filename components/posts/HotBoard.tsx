@@ -126,7 +126,7 @@ export default function HotBoard() {
               {/* 썸네일 */}
               {post.thumbnail_url && (
                 <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--border)]">
-                  <img src={post.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
+                  <img src={post.thumbnail_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
                 </div>
               )}
 

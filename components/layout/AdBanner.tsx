@@ -60,6 +60,8 @@ function SidebarAd({ ad }: { ad: Ad }) {
           <img
             src={ad.image_url}
             alt={ad.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
           />
         </div>
@@ -93,6 +95,8 @@ function FeedAd({ ad }: { ad: Ad }) {
           <img
             src={ad.image_url}
             alt={ad.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition"
           />
         </div>
@@ -126,6 +130,8 @@ function BannerAd({ ad }: { ad: Ad }) {
           <img
             src={ad.image_url}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
           />
         </div>

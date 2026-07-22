@@ -61,7 +61,7 @@ export default async function RelatedPosts({
           >
             <div className="w-16 h-16 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0">
               {post.thumbnail_url && (
-                <img src={post.thumbnail_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <img src={post.thumbnail_url} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition" />
               )}
             </div>
             <div className="flex-1 min-w-0">

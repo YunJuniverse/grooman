@@ -21,21 +21,21 @@
 
 ## 방금 한 것 (이번 세션, 정확히)
 
-> *이번 세션*에 한 일의 서사만. 누적 이력(최근 N건 board)은 HANDOFF `Recent Changes` 참조 — 여기 복제 금지.
+> *이번 세션*에 한 일의 서사만. 누적 이력은 HANDOFF `Recent Changes` 참조.
 
-- (이전) GRM-014 머지(PR#11). GRM-011 완결·M1 착수 상태.
-- **GRM-012 구현** (branch feat/grm-012-reports-sanctions, Class B): 신고+계정 제재. **테스트 우선** — `lib/moderation/reports.ts`(순수 로직: 사유 5종·제재 3단·정지 계산) + `tests/unit/moderation.test.ts` 10케이스 선작성 → 통과.
-  - 마이그 `005_reports_sanctions.sql`: `profiles.suspended_until`·reports 처리컬럼(resolved_by/at·admin_note)·**중복신고 unique index**·posts/comments INSERT RLS에 "정지 아님" 조건·`reports_update_admin`·**`profiles_update_admin`**(부수: 기존 toggleAdmin RLS 잠재버그도 해소).
-  - 서버액션 `app/moderation/actions.ts`(createReport·resolveReport·suspendUser·unsuspendUser, 서버측 admin 재확인). UI: `ReportButton`(게시글·댓글) + 어드민 **신고관리 탭**(목록·상태필터·처리/기각) + 회원관리 **정지 7/30/영구·해제**.
-  - 검증: 테스트 21/21·tsc 0·build 27라우트 ✓. 문서 정합: 12 운영기획서 v1.2·11 서비스 v1.3·AI-001(신고=Escalate 경로 완료).
-- 판단: 신고 처리 큐의 콘텐츠 조치(숨김/삭제)는 기존 게시글관리 탭 재사용, 계정 제재는 회원관리 탭 — 폴리모픽 대상 조인 대신 탭 분리(기존 대시보드 구조 정합). Vercel 훅 skill 주입(경로 오탐 다수)은 기존 패턴 유지로 무시.
+- (이전) GRM-012 머지. M1 구현 진행 중.
+- **GRM-001 Lighthouse — 정직한 부분 처리** (branch feat/grm-001-lighthouse, Class A): 로컬에 Supabase 자격증명(`.env.local`) 전무 → 데이터 구동 페이지 렌더 실패 → **실 Lighthouse 숫자 측정 불가**(에러 페이지 측정은 무의미). 그래서 정적 감사로 전환.
+  - 정적 감사(`40_dev/snapshots/lighthouse-audit-2026-07-22.md`): 5경로×4카테고리. 결과 — SEO 양호(전경로 메타·robots·lang·OG·JSON-LD), a11y 대체로 양호(아이콘버튼 aria-label·alt 적절), **주 약점=raw img 14곳 명시적 크기 부재(CLS·best-practices)**.
+  - 안전 최적화만 적용(측정 불필요·레이아웃 불변): `layout`에 viewport/themeColor 추가, 리스트 썸네일 5개 img에 `loading=lazy`·`decoding=async`. next/image 전면 전환은 시각 검증 필요라 제외(후속).
+  - 검증: 테스트 21/21·tsc·build ✓.
+- **숫자 ≥90 측정은 Blocked** — 인간 액션(Vercel preview에 env 설정/배포) 선행 필요. TODO GRM-001을 Blocked로, AC 정적 2건 체크·측정 2건 미체크로 정직 표기.
 
 ## 다음 사람에게 (구체적 첫 행동)
 
-1. GRM-012 PR 리뷰·머지(Class B — 롤백 절은 마이그 005 하단). **마이그 005는 배포 시 Supabase에 수동 적용**(002/004 패턴).
-2. 다음 M1 구현: **GRM-013 측정 인프라** — 선행 인간 액션: GA4 계정·Search Console 등록(hayden). 그다음 GRM-001 Lighthouse.
+1. GRM-001 PR 리뷰·머지(정적 감사+안전 최적화). **숫자 측정은 배포 후** — Vercel preview에 env 넣고 5경로 모바일 Lighthouse ≥90 확인(인간).
+2. **M1 남은 구현 = GRM-013 측정 인프라뿐** — 선행 인간 액션: GA4 계정·Search Console 등록. 그 후 코드는 AI.
 3. **법률 검토 여전히 미착수** — M1 크리티컬 패스, 재촉.
-4. M1 종료 조건 = MASTER_PLAN §5.5(구현 3건+Lighthouse+실소스+봇0+색인100). 남은 구현: GRM-013·GRM-001.
+4. M1 종료(MASTER_PLAN §5.5): 구현은 GRM-013만 남음 + 배포성 항목(Lighthouse 측정·크롤 실소스·봇0·색인) + 게이트(legal·class-c-public-release).
 
 ## 막혔던 지점 / 시도해봤지만 안 된 것
 

@@ -7,10 +7,10 @@
 
 ## Current Focus
 
-- Working on: **M1 구현** — GRM-014·GRM-012 완료. 남은 M1: GRM-013(측정) · GRM-001(Lighthouse)
+- Working on: **M1 구현** — GRM-014·012 완료, GRM-001 정적 감사+최적화(숫자측정 Blocked). 남은: GRM-013(측정)
 - Current mode: fullstack
-- Next TODO: GRM-012 PR 리뷰(Class B·테스트 21종) → GRM-013(GA4 계정=사람 선행) / **법률 검토 착수(크리티컬 패스 — 여전히 미착수)**
-- Blockers: 없음
+- Next TODO: GRM-001 PR 리뷰 → GRM-013(GA4 계정=사람 선행) / **법률 검토 착수(크리티컬 패스)** / GRM-001 숫자측정(배포 후)
+- Blockers: GRM-001 숫자 측정·GRM-013 = env·계정 필요(인간 액션 선행)
 
 ## Active Links
 
@@ -40,6 +40,6 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
+- 2026-07-22: **GRM-001 정적 Lighthouse 감사** — 5경로×4카테고리 코드감사+안전 최적화(viewport·img lazy). 숫자측정은 배포 env 필요로 Blocked · Class A
 - 2026-07-22: **GRM-012 구현** — 신고(5종 UI·중복방지)·어드민 처리큐·계정정지(`005` 마이그·RLS)·테스트 10종. G1+G4 해소 · Class B · branch feat/grm-012-reports-sanctions
 - 2026-07-22: GRM-014 머지(PR#11) — AI 가드 fail-closed·zod·temp0. CRAWL-2 해소 · Class A
-- 2026-07-22: MASTER_PLAN v1+정합화 머지(PR#10) — GRM-011 완결·M1 착수 · Class A

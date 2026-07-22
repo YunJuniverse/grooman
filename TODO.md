@@ -13,7 +13,6 @@ _(없음)_
 
 ## Ready
 
-
 ### GRM-013
 - **title**: 측정 인프라 구축 — GA4 + Search Console (P1 필수 — G5)
 - **mode**: fullstack
@@ -26,6 +25,11 @@ _(없음)_
   - [ ] 마케팅기획서 §9 KPI 표의 지표가 실제 수집되는지 확인
 - **notes**: 마케팅기획서 작성 중 발견(G5) — 분석 도구·서치콘솔 전무. 검색 유입 전략(P1)의 전제 조건. 계정 생성은 사람(hayden), 코드 삽입은 AI.
 
+## InProgress
+
+_(없음)_
+
+## Blocked
 
 ### GRM-001
 - **title**: 전 페이지 Lighthouse 90+ 감사 및 최적화
@@ -34,18 +38,11 @@ _(없음)_
 - **owner**: AI + Human
 - **milestone**: M1
 - **acceptance criteria**:
-  - [ ] 주요 5개 경로(홈 `/`, 카테고리 `/hair`, 게시글 상세 `/posts/[id]`, 검색 `/search`, 프로필 `/profile/[username]`) 모바일 Lighthouse 측정
-  - [ ] 각 경로 Performance·SEO·Accessibility·Best Practices ≥ 90
-  - [ ] 미달 항목은 원인·조치 기록 후 재측정으로 통과 확인
-- **notes**: 구 자율빌드 체크리스트에서 유일하게 미검증으로 남은 항목(나머지 ~53항목은 실코드 대조 결과 구현 완료). 실측 기반 QA 태스크.
-
-## InProgress
-
-_(없음)_
-
-## Blocked
-
-_(없음)_
+  - [x] 정적(코드 레벨) 감사 — 5경로 × 4카테고리 (`40_dev/snapshots/lighthouse-audit-2026-07-22.md`)
+  - [x] 안전 최적화 적용 — viewport/themeColor·리스트 이미지 lazy/async
+  - [ ] **[Blocked]** 배포 환경(Vercel preview + env)에서 5경로 모바일 Lighthouse ≥90 측정
+  - [ ] 미달 항목 조치·재측정
+- **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). **숫자 측정 Blocked**: 로컬에 Supabase 자격증명 없어 데이터 구동 페이지 렌더 불가 → 실측 무의미. **인간 액션 선행**: Vercel preview에 env 설정/배포. next/image 전면 전환은 시각 검증 병행 후속.
 
 ## Done
 
