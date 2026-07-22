@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import type { CategoryEnum, Post } from '@/types/supabase'
@@ -59,9 +60,9 @@ export default async function RelatedPosts({
             href={`/posts/${post.id}`}
             className="flex gap-3 group"
           >
-            <div className="w-16 h-16 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0">
+            <div className="relative w-16 h-16 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0">
               {post.thumbnail_url && (
-                <img src={post.thumbnail_url} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <Image src={post.thumbnail_url} alt={post.title} fill sizes="64px" className="object-cover group-hover:scale-105 transition" />
               )}
             </div>
             <div className="flex-1 min-w-0">

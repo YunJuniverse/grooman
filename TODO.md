@@ -42,7 +42,7 @@ _(없음)_
   - [x] 안전 최적화 적용 — viewport/themeColor·리스트 이미지 lazy/async
   - [ ] **[Blocked]** 배포 환경(Vercel preview + env)에서 5경로 모바일 Lighthouse ≥90 측정
   - [ ] 미달 항목 조치·재측정
-- **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). **숫자 측정 Blocked**: 로컬에 Supabase 자격증명 없어 데이터 구동 페이지 렌더 불가 → 실측 무의미. **인간 액션 선행**: Vercel preview에 env 설정/배포. next/image 전면 전환은 시각 검증 병행 후속.
+- **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). **숫자 측정 Blocked**: 로컬에 Supabase 자격증명 없어 데이터 구동 페이지 렌더 불가 → 실측 무의미. **인간 액션 선행**: Vercel preview에 env 설정/배포. next/image 전면 전환 완료(raw img 14→0, PR#13). 시각 정합은 배포 후 확인 권고.
 
 ## Done
 

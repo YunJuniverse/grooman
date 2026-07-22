@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useOptimistic, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -108,9 +109,9 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
               {post.profiles && (
                 <>
                   <Link href={`/profile/${post.profiles.username}`} className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="relative w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
                       {post.profiles.avatar_url
-                        ? <img src={post.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ? <Image src={post.profiles.avatar_url} alt="" fill sizes="32px" className="object-cover" />
                         : <span className="w-full h-full flex items-center justify-center text-xs text-gray-500">
                             {post.profiles.username[0]}
                           </span>

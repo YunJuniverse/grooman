@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { Flame, TrendingUp, Calendar, Eye, ThumbsUp, MessageSquare, ChevronRight } from 'lucide-react'
@@ -125,8 +126,8 @@ export default function HotBoard() {
 
               {/* 썸네일 */}
               {post.thumbnail_url && (
-                <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--border)]">
-                  <img src={post.thumbnail_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
+                <div className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--border)]">
+                  <Image src={post.thumbnail_url} alt="" fill sizes="36px" className="object-cover group-hover:scale-110 transition duration-300" />
                 </div>
               )}
 

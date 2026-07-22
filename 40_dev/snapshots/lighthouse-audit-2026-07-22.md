@@ -34,8 +34,7 @@
 
 1. **이미지 디코딩·지연 로딩**: 리스트/썸네일·아바타 raw `<img>`에 `loading="lazy"`·`decoding="async"` 추가(레이아웃 불변, best-practices/perf 순수 이득). LCP 후보(상단 대형 이미지)는 lazy 제외.
 2. **`viewport`/`themeColor`**: `layout`에 `export const viewport` 추가(라이트/다크 테마 컬러) — 모바일·PWA 신호 보강.
-
-> next/image 전면 전환은 **시각 검증이 필요**(fill 모드·sizes·부모 포지셔닝)해 이 세션 범위에서 제외 — GRM-001 후속(배포 후 시각 확인 병행) 권고.
+3. **next/image 전면 전환 완료**: raw `<img>` 14곳 → `next/image`(0개 잔존). fill 패턴(부모 `relative`+`sizes`)·admin은 fixed(width/height). 자동 lazy·WebP·반응형 크기 → Lighthouse best-practices/perf(CLS·차세대 포맷·적절한 크기) 정적 개선. tsc·build 검증(구조). **시각 정합은 배포 후 확인 권고**(fill+object-cover는 기존 `w-full h-full object-cover`와 시각 동일 패턴).
 
 ## 실행 체크리스트 (배포 환경에서 — 숫자 검증)
 

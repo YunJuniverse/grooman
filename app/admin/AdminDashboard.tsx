@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import { RefreshCw, Users, FileText, Rss, CheckCircle, XCircle, Clock, Bot, Megaphone, ShieldCheck, Eye, EyeOff, Trash2, ToggleLeft, ToggleRight, Flag, Ban } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -319,7 +320,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
             {users.map(user => (
               <div key={user.id} className="flex items-center gap-4 px-6 py-3">
                 {user.avatar_url ? (
-                  <img src={user.avatar_url} alt={user.username} className="w-8 h-8 rounded-full object-cover" />
+                  <Image src={user.avatar_url} alt={user.username} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
                     {user.username?.[0]}
@@ -431,7 +432,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
             {ads.map(ad => (
               <div key={ad.id} className="flex items-center gap-4 px-6 py-3">
                 {ad.image_url && (
-                  <img src={ad.image_url} alt={ad.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                  <Image src={ad.image_url} alt={ad.title} width={48} height={48} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800">{ad.title}</p>

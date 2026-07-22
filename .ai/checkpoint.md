@@ -28,6 +28,7 @@
   - 정적 감사(`40_dev/snapshots/lighthouse-audit-2026-07-22.md`): 5경로×4카테고리. 결과 — SEO 양호(전경로 메타·robots·lang·OG·JSON-LD), a11y 대체로 양호(아이콘버튼 aria-label·alt 적절), **주 약점=raw img 14곳 명시적 크기 부재(CLS·best-practices)**.
   - 안전 최적화만 적용(측정 불필요·레이아웃 불변): `layout`에 viewport/themeColor 추가, 리스트 썸네일 5개 img에 `loading=lazy`·`decoding=async`. next/image 전면 전환은 시각 검증 필요라 제외(후속).
   - 검증: 테스트 21/21·tsc·build ✓.
+- **next/image 전면 전환**(사용자 요청): raw `<img>` 14곳 → `next/image` 0개 잔존. fill 패턴(부모 relative+sizes)·admin fixed(w/h). remotePatterns 기설정. tsc·build·테스트 통과. 시각 정합은 배포 후 확인 권고(fill+object-cover=기존과 동일 패턴). PR#13에 포함.
 - **숫자 ≥90 측정은 Blocked** — 인간 액션(Vercel preview에 env 설정/배포) 선행 필요. TODO GRM-001을 Blocked로, AC 정적 2건 체크·측정 2건 미체크로 정직 표기.
 
 ## 다음 사람에게 (구체적 첫 행동)

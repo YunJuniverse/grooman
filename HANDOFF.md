@@ -40,6 +40,7 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
+- 2026-07-22: **next/image 전면 전환**(raw img 14→0) — GRM-001 후속 최적화, PR#13에 포함 · Class A
 - 2026-07-22: **GRM-001 정적 Lighthouse 감사** — 5경로×4카테고리 코드감사+안전 최적화(viewport·img lazy). 숫자측정은 배포 env 필요로 Blocked · Class A
 - 2026-07-22: **GRM-012 구현** — 신고(5종 UI·중복방지)·어드민 처리큐·계정정지(`005` 마이그·RLS)·테스트 10종. G1+G4 해소 · Class B · branch feat/grm-012-reports-sanctions
 - 2026-07-22: GRM-014 머지(PR#11) — AI 가드 fail-closed·zod·temp0. CRAWL-2 해소 · Class A
