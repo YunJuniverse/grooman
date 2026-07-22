@@ -12,6 +12,7 @@ export interface Profile {
   post_count: number
   is_admin: boolean
   is_bot: boolean
+  suspended_until: string | null
   created_at: string
 }
 
@@ -120,6 +121,9 @@ export interface Report {
   target_id: string
   reason: string
   status: 'pending' | 'resolved' | 'dismissed'
+  resolved_by: string | null
+  resolved_at: string | null
+  admin_note: string | null
   created_at: string
 }
 

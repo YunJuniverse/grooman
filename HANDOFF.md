@@ -7,14 +7,14 @@
 
 ## Current Focus
 
-- Working on: **M1 구현 착수** — GRM-014 완료(리뷰 대기). 남은 M1: GRM-013 → GRM-012 → GRM-001
+- Working on: **M1 구현** — GRM-014·GRM-012 완료. 남은 M1: GRM-013(측정) · GRM-001(Lighthouse)
 - Current mode: fullstack
-- Next TODO: GRM-014 PR 리뷰(Class A·테스트 11종) → GRM-013 측정 인프라 / **법률 검토 착수(크리티컬 패스 — 여전히 미착수)**
+- Next TODO: GRM-012 PR 리뷰(Class B·테스트 21종) → GRM-013(GA4 계정=사람 선행) / **법률 검토 착수(크리티컬 패스 — 여전히 미착수)**
 - Blockers: 없음
 
 ## Active Links
 
-- Current PR: (미푸시) branch chore/apply-methodology
+- Current PR: branch feat/grm-012-reports-sanctions (GRM-012)
 - Current issue:
 - Relevant ADRs: [ADR-0001](40_dev/adr/0001-rss-auto-crawl-ai-pipeline.md)·[ADR-0002](40_dev/adr/0002-bot-seeding-cold-start.md)·[ADR-0003](40_dev/adr/0003-rls-security-model.md)
 - Relevant snapshots:
@@ -30,7 +30,7 @@
 | ID | Issue | Severity | Next Step |
 |----|-------|----------|-----------|
 | ~~BOT-1~~ | ~~봇 teardown 불가~~ → **Resolved 2026-07-22** (GRM-010): is_bot 마커·teardown 스크립트·릴리스 게이트 SOP 구현 | ~~High~~ | 공개 배포 시 SOP_public-release-gate 대로 실행 |
-| G1+G4 | **신고 UI + 계정 정지 수단 미구현** — reports UI 없음(G1) + profiles 정지 컬럼·관리자 정지 액션 없음(G4, 제재 집행 불가) | High | **P1 필수 확정(2026-07-22)** → GRM-012 구현 (Class B) |
+| ~~G1+G4~~ | ~~신고 UI + 계정 정지 수단~~ → **Resolved 2026-07-22** (GRM-012): 신고 5종 UI·어드민 처리 큐·`suspended_until`+INSERT RLS·정지/해제. 부수: profiles_update_admin으로 기존 toggleAdmin RLS 잠재버그도 해소 | ~~High~~ | 마이그 005 프로덕션 적용은 배포 시 |
 | G5 | **측정 인프라 전무** — GA4류·Search Console 등록·소유권 메타 없음 → 마케팅 KPI 측정 불가 (마케팅기획서 §9) | High | GRM-013 (P1 필수, Class A) — 계정은 사람·코드는 AI |
 | SEC-1 | 새 테이블 RLS 정책 누락 시 조용한 취약점 (ADR-0003) | Med | 마이그레이션 추가 시 RLS 점검 루틴화 |
 | CRAWL-1 | 자동 크롤 글이 사람 검수 없이 즉시 published·색인 (ADR-0001) | Med | 자동수집 뱃지·출처는 이미 표기됨. 검수 게이트 도입은 선택 |
@@ -40,8 +40,6 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-22: **GRM-014 구현** — fail-closed·zod 검증(`crawl-analysis.ts`)·temp 0 + vitest 도입(테스트 11종). CRAWL-2 해소 · Class A · branch feat/grm-014-ai-guard
-- 2026-07-22: MASTER_PLAN v1 + 정합화 머지(PR#10) — **GRM-011 완결·master-plan-approval 통과·M1 착수** · Class A
-- 2026-07-22: 16 AI-001+17 평가 v1(**fail-open 적발**→GRM-014) 머지(PR#9) — 기획 시리즈 7/7 · Class A
-- 2026-07-22: 15 PM기획서 v1(방법론 인스턴스화·프리모템→**법률 검토 크리티컬 패스**) 머지(PR#8) · Class A
-- 2026-07-22: 14 브랜드기획서 v1 초안(Dunford·가치실체·다면메시지·정량화톤·DBA·SoS) 머지(PR#4) · Class A
+- 2026-07-22: **GRM-012 구현** — 신고(5종 UI·중복방지)·어드민 처리큐·계정정지(`005` 마이그·RLS)·테스트 10종. G1+G4 해소 · Class B · branch feat/grm-012-reports-sanctions
+- 2026-07-22: GRM-014 머지(PR#11) — AI 가드 fail-closed·zod·temp0. CRAWL-2 해소 · Class A
+- 2026-07-22: MASTER_PLAN v1+정합화 머지(PR#10) — GRM-011 완결·M1 착수 · Class A

@@ -8,6 +8,7 @@ import { toggleLike, toggleBookmark, deletePost } from '@/app/posts/actions'
 import { useAuth } from '@/hooks/useAuth'
 import CommentSection from '@/components/comments/CommentSection'
 import TiptapRenderer from '@/components/editor/TiptapRenderer'
+import ReportButton from '@/components/moderation/ReportButton'
 import type { Post } from '@/types/supabase'
 import { cn } from '@/lib/utils/cn'
 
@@ -201,13 +202,16 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
               북마크
             </button>
           </div>
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm text-gray-600 border border-gray-200 hover:bg-gray-50 transition"
-          >
-            <Share2 size={15} />
-            공유
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm text-gray-600 border border-gray-200 hover:bg-gray-50 transition"
+            >
+              <Share2 size={15} />
+              공유
+            </button>
+            <ReportButton targetType="post" targetId={post.id} />
+          </div>
         </div>
       </article>
 

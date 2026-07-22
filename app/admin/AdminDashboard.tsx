@@ -1,8 +1,12 @@
 'use client'
-import { useState } from 'react'
-import { RefreshCw, Users, FileText, Rss, CheckCircle, XCircle, Clock, Bot, Megaphone, ShieldCheck, Eye, EyeOff, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { RefreshCw, Users, FileText, Rss, CheckCircle, XCircle, Clock, Bot, Megaphone, ShieldCheck, Eye, EyeOff, Trash2, ToggleLeft, ToggleRight, Flag, Ban } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { CrawlQueue, CrawlSource, Profile, Post, Ad } from '@/types/supabase'
+import type { CrawlQueue, CrawlSource, Profile, Post, Ad, Report } from '@/types/supabase'
+import { REPORT_REASONS, SANCTION_STEPS, isSuspended, isReportReason, type SanctionStep } from '@/lib/moderation/reports'
+import { resolveReport, suspendUser, unsuspendUser } from '@/app/moderation/actions'
+
+type ReportRow = Report & { reporter?: { username: string } | null }
 
 interface AdminDashboardProps {
   stats: { totalPosts: number; crawledPosts: number; totalUsers: number }
@@ -11,9 +15,10 @@ interface AdminDashboardProps {
   users: Profile[]
   posts: (Post & { profiles?: { username: string } | null })[]
   ads: Ad[]
+  reports: ReportRow[]
 }
 
-type Tab = 'dashboard' | 'users' | 'posts' | 'ads' | 'bots'
+type Tab = 'dashboard' | 'reports' | 'users' | 'posts' | 'ads' | 'bots'
 
 const STATUS_ICONS = {
   done: <CheckCircle size={14} className="text-green-500" />,
@@ -22,16 +27,57 @@ const STATUS_ICONS = {
   processing: <RefreshCw size={14} className="text-blue-500 animate-spin" />,
 }
 
-export default function AdminDashboard({ stats, recentQueue, sources, users: initialUsers, posts: initialPosts, ads: initialAds }: AdminDashboardProps) {
+export default function AdminDashboard({ stats, recentQueue, sources, users: initialUsers, posts: initialPosts, ads: initialAds, reports: initialReports }: AdminDashboardProps) {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [crawling, setCrawling] = useState(false)
   const [crawlResult, setCrawlResult] = useState<string | null>(null)
   const [users, setUsers] = useState(initialUsers)
   const [posts, setPosts] = useState(initialPosts)
   const [ads, setAds] = useState(initialAds)
+  const [reports, setReports] = useState(initialReports)
+  const [reportFilter, setReportFilter] = useState<'pending' | 'resolved' | 'dismissed' | 'all'>('pending')
   const [botLoading, setBotLoading] = useState<string | null>(null)
   const [botResult, setBotResult] = useState<string | null>(null)
+  const [, startTransition] = useTransition()
+  const now = new Date()
   const supabase = createClient()
+
+  function handleResolveReport(reportId: string, status: 'resolved' | 'dismissed') {
+    startTransition(async () => {
+      const result = await resolveReport(reportId, status)
+      if (!result.error) {
+        setReports(prev => prev.map(r => r.id === reportId ? { ...r, status } : r))
+      } else {
+        alert(result.error)
+      }
+    })
+  }
+
+  function handleSuspend(userId: string, step: SanctionStep) {
+    if (!confirm(`${SANCTION_STEPS[step].label} 처리하시겠습니까?`)) return
+    startTransition(async () => {
+      const result = await suspendUser(userId, step)
+      if (result.success && result.suspended_until) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, suspended_until: result.suspended_until! } : u))
+      } else if (result.error) {
+        alert(result.error)
+      }
+    })
+  }
+
+  function handleUnsuspend(userId: string) {
+    startTransition(async () => {
+      const result = await unsuspendUser(userId)
+      if (!result.error) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, suspended_until: null } : u))
+      } else {
+        alert(result.error)
+      }
+    })
+  }
+
+  const pendingReportCount = reports.filter(r => r.status === 'pending').length
+  const visibleReports = reportFilter === 'all' ? reports : reports.filter(r => r.status === reportFilter)
 
   async function triggerCrawl() {
     setCrawling(true)
@@ -91,6 +137,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
 
   const TABS = [
     { id: 'dashboard' as Tab, label: '대시보드', icon: <FileText size={15} /> },
+    { id: 'reports' as Tab, label: '신고관리', icon: <Flag size={15} /> },
     { id: 'users' as Tab, label: '회원관리', icon: <Users size={15} /> },
     { id: 'posts' as Tab, label: '게시글관리', icon: <Eye size={15} /> },
     { id: 'ads' as Tab, label: '광고관리', icon: <Megaphone size={15} /> },
@@ -187,6 +234,81 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
         </div>
       )}
 
+      {/* 신고관리 탭 */}
+      {tab === 'reports' && (
+        <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-base font-bold text-gray-900">
+              신고 처리 큐
+              {pendingReportCount > 0 && (
+                <span className="ml-2 text-[11px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">
+                  대기 {pendingReportCount}
+                </span>
+              )}
+            </h2>
+            <div className="flex gap-1">
+              {(['pending', 'resolved', 'dismissed', 'all'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setReportFilter(f)}
+                  className={`text-xs px-2.5 py-1 rounded-lg transition ${
+                    reportFilter === f ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                >
+                  {f === 'pending' ? '대기' : f === 'resolved' ? '처리됨' : f === 'dismissed' ? '기각' : '전체'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {visibleReports.map(report => (
+              <div key={report.id} className="flex items-center gap-3 px-6 py-3">
+                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded flex-shrink-0">
+                  {report.target_type === 'post' ? '게시글' : '댓글'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800">
+                    {isReportReason(report.reason) ? REPORT_REASONS[report.reason] : report.reason}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {report.reporter?.username ?? '(탈퇴)'} 신고 · {new Date(report.created_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })} · 대상 {report.target_id.slice(0, 8)}
+                  </p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex-shrink-0 ${
+                  report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                  report.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                  'bg-gray-100 text-gray-500'
+                }`}>
+                  {report.status === 'pending' ? '대기' : report.status === 'resolved' ? '처리됨' : '기각'}
+                </span>
+                {report.status === 'pending' && (
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => handleResolveReport(report.id, 'resolved')}
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition"
+                    >
+                      처리
+                    </button>
+                    <button
+                      onClick={() => handleResolveReport(report.id, 'dismissed')}
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
+                    >
+                      기각
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {visibleReports.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-8">해당 상태의 신고가 없습니다.</p>
+            )}
+          </div>
+          <p className="px-6 py-3 text-[11px] text-gray-400 border-t border-gray-50">
+            콘텐츠 조치(숨김·삭제)는 게시글관리, 계정 제재는 회원관리 탭에서. 처리 기준: 12_운영기획서 §4.1·§5.
+          </p>
+        </section>
+      )}
+
       {/* 회원관리 탭 */}
       {tab === 'users' && (
         <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -208,11 +330,38 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                     <p className="text-sm font-medium text-gray-800">{user.username}</p>
                     {user.is_admin && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">관리자</span>}
                     <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">Lv.{user.level}</span>
+                    {isSuspended(user.suspended_until, now) && (
+                      <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold">
+                        정지 ~{new Date(user.suspended_until!).toLocaleDateString('ko-KR')}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-400">
                     {new Date(user.created_at).toLocaleDateString('ko-KR')} 가입 · 게시글 {user.post_count}
                   </p>
                 </div>
+                {isSuspended(user.suspended_until, now) ? (
+                  <button
+                    onClick={() => handleUnsuspend(user.id)}
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 transition"
+                  >
+                    <Ban size={13} /> 정지 해제
+                  </button>
+                ) : (
+                  <div className="flex gap-1">
+                    {(Object.keys(SANCTION_STEPS) as SanctionStep[]).map(step => (
+                      <button
+                        key={step}
+                        onClick={() => handleSuspend(user.id, step)}
+                        disabled={user.is_admin}
+                        title={SANCTION_STEPS[step].label}
+                        className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-orange-100 hover:text-orange-700 disabled:opacity-30 transition"
+                      >
+                        {step === 'permanent' ? '영구' : `${SANCTION_STEPS[step].days}일`}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
                   onClick={() => toggleAdmin(user.id, user.is_admin)}
                   className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition ${
