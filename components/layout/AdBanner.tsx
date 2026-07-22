@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import type { Ad } from '@/types/supabase'
@@ -56,11 +57,13 @@ function SidebarAd({ ad }: { ad: Ad }) {
       className="block bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition group"
     >
       {ad.image_url && (
-        <div className="w-full h-28 overflow-hidden">
-          <img
+        <div className="relative w-full h-28 overflow-hidden">
+          <Image
             src={ad.image_url}
             alt={ad.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            fill
+            sizes="(max-width: 768px) 100vw, 400px"
+            className="object-cover group-hover:scale-105 transition duration-300"
           />
         </div>
       )}
@@ -89,11 +92,13 @@ function FeedAd({ ad }: { ad: Ad }) {
       className="flex gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3 hover:bg-gray-100 transition group"
     >
       {ad.image_url && (
-        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-          <img
+        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+          <Image
             src={ad.image_url}
             alt={ad.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition"
+            fill
+            sizes="64px"
+            className="object-cover group-hover:scale-105 transition"
           />
         </div>
       )}
@@ -123,10 +128,12 @@ function BannerAd({ ad }: { ad: Ad }) {
     >
       {ad.image_url && (
         <div className="absolute inset-0 opacity-30">
-          <img
+          <Image
             src={ad.image_url}
             alt=""
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+            fill
+            sizes="100vw"
+            className="object-cover group-hover:scale-105 transition duration-500"
           />
         </div>
       )}

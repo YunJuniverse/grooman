@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { ThumbsUp, CornerDownRight, Trash2, ChevronDown } from 'lucide-react'
@@ -96,9 +97,9 @@ export default function CommentItem({ comment, postId, onRefresh, depth = 0 }: C
           <div className="flex items-center gap-2">
             {comment.profiles && (
               <>
-                <div className="w-7 h-7 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                <div className="relative w-7 h-7 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                   {comment.profiles.avatar_url
-                    ? <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ? <Image src={comment.profiles.avatar_url} alt="" fill sizes="28px" className="object-cover" />
                     : <span className="w-full h-full flex items-center justify-center text-xs text-gray-500">
                         {comment.profiles.username[0]}
                       </span>

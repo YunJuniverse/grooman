@@ -96,9 +96,9 @@ export default function PostCard({ post, showCategory = false, compact = false }
               <div className="flex items-center gap-1.5 min-w-0">
                 {post.profiles && (
                   <>
-                    <div className="w-4 h-4 rounded-full bg-[var(--border)] overflow-hidden flex-shrink-0">
+                    <div className="relative w-4 h-4 rounded-full bg-[var(--border)] overflow-hidden flex-shrink-0">
                       {post.profiles.avatar_url
-                        ? <img src={post.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ? <Image src={post.profiles.avatar_url} alt="" fill sizes="16px" className="object-cover" />
                         : <span className="w-full h-full flex items-center justify-center text-[8px] text-[var(--text-2)]">
                             {post.profiles.username[0]}
                           </span>

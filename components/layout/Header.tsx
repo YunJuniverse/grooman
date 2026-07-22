@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, FormEvent } from 'react'
@@ -88,9 +89,9 @@ export default function Header() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <NotificationBell userId={user.id} />
               <Link href="/my" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 rounded-full bg-[var(--border)] overflow-hidden flex-shrink-0 ring-2 ring-transparent group-hover:ring-[var(--accent)]/40 transition">
+                <div className="relative w-8 h-8 rounded-full bg-[var(--border)] overflow-hidden flex-shrink-0 ring-2 ring-transparent group-hover:ring-[var(--accent)]/40 transition">
                   {profile.avatar_url
-                    ? <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+                    ? <Image src={profile.avatar_url} alt={profile.username} fill sizes="32px" className="object-cover" />
                     : <span className="w-full h-full flex items-center justify-center text-xs text-[var(--text-2)] font-bold">
                         {profile.username[0].toUpperCase()}
                       </span>
