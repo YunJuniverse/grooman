@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "eb068bafb8a3f41dee2ccd7b5313014292c97620",
-  "last_validated_at": "2026-07-23T14:51:28Z",
+  "last_validated_commit": "7e61614dc63432d2d8a4f9309ed2a65c0bf15b1f",
+  "last_validated_at": "2026-07-23T15:16:37Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "a248c2190e81eaf48debbd0be6b0a3c477b66541cb78f93980fac79072a6f270"
+      "sha256": "ee8a6086ac30eb191d8bda69f09551e553e53e5f2d24ba83edf85cec4852b050"
     },
     "TODO.md": {
-      "sha256": "1162c3d5fb099edce908f85061414255d9385f545ecd72023403a5d25e5f0f4c"
+      "sha256": "9b647a77f6ba1212373d62415a63923895331a3e4e2519daa6e68cef46dda0dd"
     },
     ".ai/checkpoint.md": {
-      "sha256": "c9b33092b6836fe498efd5c1841523efbdb5aee4b1091801ad6dad48f62d96b4"
+      "sha256": "ca266510dacda9f8a68f8754f15c419bd7fd051b82e7ccf88f42e63b718f099a"
     }
   },
   "observations": {
@@ -34,6 +34,8 @@
       "50_resources/ai_observations/2026-07-22_grm-013-gtm-analytics.md",
       "50_resources/ai_observations/2026-07-22_next-image-conversion.md",
       "50_resources/ai_observations/2026-07-22_supabase-provision-and-legal-review.md",
+      "50_resources/ai_observations/2026-07-23_admin-trigger-session-auth-pr.md",
+      "50_resources/ai_observations/2026-07-23_admin-trigger-session-auth.md",
       "50_resources/ai_observations/2026-07-23_cron-auth-mismatch-fix.md",
       "50_resources/ai_observations/2026-07-23_pr16-merge-verification.md",
       "50_resources/ai_observations/2026-07-23_supabase-publishable-secret-key-migration.md"

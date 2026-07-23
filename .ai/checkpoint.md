@@ -1,4 +1,4 @@
-# Checkpoint — PR#16 머지 확인 및 라이브 파일 정리
+# Checkpoint — SEC-2 어드민 트리거 세션 인증 전환
 
 > **역할 = 이번 세션의 서사 바통** (콜드스타트 인계문). 매 세션 종료 시 *덮어씀*.
 > **누적 상태(오픈이슈·결정·링크·최근이력 표)는 `HANDOFF.md`가 정본**이므로 여기서 중복하지 말고 참조. (경계: CLAUDE.md §4)
@@ -6,26 +6,33 @@
 ## 작성자
 
 - Agent: Claude (Sonnet 5, Claude Code)
-- Branch: `main` (PR#16 머지 후 전환·pull 완료)
+- Branch: `fix/admin-trigger-session-auth` (worktree `objective-villani-6b2c68`에서 신규 생성, main에서 분기)
 
 ## 방금 한 것 (이번 세션)
 
-- 사용자가 PR#16(KEY-1 Supabase 키 마이그레이션 + CRON-1 크론 인증 버그 수정)을 머지했다고 확인.
-- `main` 체크아웃 + pull로 머지 확인(`eb068ba Merge pull request #16`).
-- 사용자가 배포 전 사람 액션 체크리스트 중 "3번(SUPABASE_JWKS_URL 삭제, 선택) 빼고 다했다"고 확인 — 즉 `CRON_SECRET` 등록·`NEXT_PUBLIC_GTM_ID` Production 전용 체크·PR 머지는 완료.
-- 라이브 파일 정리: `TODO.md`에서 KEY-1을 InProgress→Done으로 이동(CRON-1 파생 발견도 같이 기록), GRM-013의 GTM Production-env 체크박스 완료 처리. `HANDOFF.md`의 Current Focus/Active Links/Open Issues(KEY-1 resolved 표시)/Recent Changes 갱신. **새 Open Issue 추가**: SEC-2 — `AdminDashboard.tsx`의 `NEXT_PUBLIC_CRON_SECRET_HINT`(클라이언트 노출 변수) 문제, 지난 세션에 spawn_task로 백그라운드 작업 카드를 이미 만들어뒀으나 HANDOFF에도 durable하게 기록(카드가 dismiss/유실될 경우 대비).
+- SEC-2(HANDOFF Open Issues에 이미 등록돼 있던 항목) 해결: `AdminDashboard.tsx`의 `triggerCrawl`/`triggerBot`이 `process.env.NEXT_PUBLIC_CRON_SECRET_HINT`(클라이언트 번들에 인라인되는 변수)를 시크릿으로 만들어 보내던 구조를 제거.
+- `lib/supabase/require-admin.ts` 신설 — `app/moderation/actions.ts`의 기존 `requireAdmin()`(세션 쿠키 → `auth.uid()` → `profiles.is_admin`) 로직을 공유 헬퍼로 추출, `actions.ts`도 이걸 쓰도록 갱신.
+- 4개 라우트의 **사람이 부르는 경로**를 세션+`is_admin` 인증으로 교체(**Vercel Cron이 부르는 GET 경로는 Bearer `CRON_SECRET` 그대로 유지**):
+  - `app/api/crawl/route.ts` — GET(Cron 전용, Bearer만 남김) / POST 신설(세션 인증) 분리, 로직은 `runCrawl()`로 공유.
+  - `app/api/admin/bot-activity/route.ts` — GET(Cron, 기존 유지) / POST(시크릿→세션 인증으로 교체).
+  - `app/api/admin/bot-likes/route.ts`, `app/api/admin/seed-bots/route.ts` — 크론 없음(사람 전용) → POST 전체를 세션 인증으로 교체.
+- `AdminDashboard.tsx`의 `triggerCrawl`/`triggerBot`을 단순 인증 fetch(쿠키 자동 포함, `credentials` 옵션 불필요 — 동일 출처 기본값)로 정리, secret 관련 코드 전부 제거.
+- `.env.example`은 애초에 `NEXT_PUBLIC_CRON_SECRET_HINT` 언급이 없어 수정 불요(확인만 함).
+- 검증: `npx tsc --noEmit` 클린 · `npm test` 21/21 통과 · `npm run build` 성공 · 빌드된 `.next/static`에 `CRON_SECRET` 문자열 없음(grep 확인).
+- 라이브 파일 갱신: `HANDOFF.md`(SEC-2 Resolved 표시, Current Focus/Active Links/Recent Changes 갱신 — Done 비대화 방지 위해 GRM-001 최고령 항목 정리), `TODO.md`(Done에 SEC-2 추가, 6건 상한 유지 위해 최고령 GRM-011 항목 정리·git 히스토리에 보존됨).
 
 ## 다음 구체 행동
 
-1. GRM-013 잔여: **사람** GTM 콘솔에서 GA4 구성 태그 연결+게시 → 확인되면 AI가 가입 전환 이벤트(`sendGTMEvent`) 코드 삽입
-2. **사람**: Search Console 등록·소유권 확인·sitemap 제출
-3. GRM-001 숫자 측정 — 이제 배포 env가 다 갖춰졌으니 Blocked 해제하고 실측 진행 가능(이전 세션에 로컬 실측 경로도 이미 확인해둠)
-4. (대기 중) SEC-2 — 사용자가 스폰된 작업 카드를 클릭하면 별도 세션에서 처리됨
+1. 사용자가 "ship 해" 지시 → `methodology.py ship`으로 wrap+test+build+commit+push 완료(커밋 `7e61614`, 브랜치 `fix/admin-trigger-session-auth` 푸시됨).
+2. 사용자가 "PR 만들어줘" 지시 → `gh pr create`로 [PR#19](https://github.com/YunJuniverse/grooman/pull/19) 생성 완료. HANDOFF/TODO에 PR 링크 반영.
+3. 다음 세션 시작 시: PR#19가 머지됐는지 먼저 확인(`gh pr view 19` 또는 `git log main`). 머지됐으면 TODO Done 노트에 머지 확정 표시, HANDOFF Current PR 비우기.
+4. (참고) 지난 세션에 SEC-2용 spawn_task 백그라운드 작업 카드가 이미 만들어져 있었을 수 있음 — 이번 세션에서 직접 해결·PR까지 완료했으므로, 그 카드가 아직 남아있다면 사용자가 다음에 열었을 때 중복 작업으로 뜰 수 있음(이 세션엔 카드의 task_id가 없어 직접 dismiss 불가 — 사용자에게 안내 필요).
+5. GRM-013 잔여(GA4 콘솔 연결·Search Console)·GRM-001 숫자측정은 이번 세션과 무관하게 그대로 대기 중.
 
 ## 막힌 것 / 주의
 
-- 없음. 이번 세션은 순수 정리(라이브 파일 갱신)였고 코드 변경은 없었다.
+- 없음. 코드·라이브 파일 변경·커밋·푸시·PR 생성까지 전부 완료. 남은 건 사람의 PR#19 리뷰·머지뿐.
 
 ## 환경
 
-- Next 14.2.35 / npm / Supabase `wqrxuzplcfjtjoiraqsf`(서울, ACTIVE_HEALTHY) / Vercel env 전부 설정 완료(Production: Supabase 3종+CRON_SECRET+GTM_ID, Preview: Supabase 3종만) / 로컬 `.env.local`은 여전히 미생성(비차단)
+- Next 14.2.35 / npm / tsc 5.9.3 / vitest 4.1.10. Worktree: `/Users/hayden/grooman/.claude/worktrees/objective-villani-6b2c68` (branch `fix/admin-trigger-session-auth`, main repo `/Users/hayden/grooman`은 별도 worktree로 `main` 유지 중).
