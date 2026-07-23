@@ -23,14 +23,15 @@
 
 ## 다음 구체 행동
 
-1. `methodology.py wrap`으로 4/4 확인 후 diff 최종 보고 — **커밋·push는 사용자 승인 후에만**.
-2. 사용자 승인 시: `git add` (4 route files + AdminDashboard.tsx + moderation/actions.ts + 신규 require-admin.ts + 방법론 3파일) → conventional commit(`fix(admin): ...`) → PR 생성.
-3. (참고) 지난 세션에 SEC-2용 spawn_task 백그라운드 작업 카드가 이미 만들어져 있었을 수 있음 — 이번 세션에서 직접 해결했으므로, 그 카드가 아직 남아있다면 사용자가 다음에 열었을 때 중복 작업으로 뜰 수 있음(이 세션엔 카드의 task_id가 없어 직접 dismiss 불가 — 사용자에게 안내 필요).
-4. GRM-013 잔여(GA4 콘솔 연결·Search Console)·GRM-001 숫자측정은 이번 세션과 무관하게 그대로 대기 중.
+1. 사용자가 "ship 해" 지시 → `methodology.py ship`으로 wrap+test+build+commit+push 완료(커밋 `7e61614`, 브랜치 `fix/admin-trigger-session-auth` 푸시됨).
+2. 사용자가 "PR 만들어줘" 지시 → `gh pr create`로 [PR#19](https://github.com/YunJuniverse/grooman/pull/19) 생성 완료. HANDOFF/TODO에 PR 링크 반영.
+3. 다음 세션 시작 시: PR#19가 머지됐는지 먼저 확인(`gh pr view 19` 또는 `git log main`). 머지됐으면 TODO Done 노트에 머지 확정 표시, HANDOFF Current PR 비우기.
+4. (참고) 지난 세션에 SEC-2용 spawn_task 백그라운드 작업 카드가 이미 만들어져 있었을 수 있음 — 이번 세션에서 직접 해결·PR까지 완료했으므로, 그 카드가 아직 남아있다면 사용자가 다음에 열었을 때 중복 작업으로 뜰 수 있음(이 세션엔 카드의 task_id가 없어 직접 dismiss 불가 — 사용자에게 안내 필요).
+5. GRM-013 잔여(GA4 콘솔 연결·Search Console)·GRM-001 숫자측정은 이번 세션과 무관하게 그대로 대기 중.
 
 ## 막힌 것 / 주의
 
-- 없음. 코드·라이브 파일 변경 전부 완료, 검증 전부 통과. 커밋/푸시만 사용자 승인 대기.
+- 없음. 코드·라이브 파일 변경·커밋·푸시·PR 생성까지 전부 완료. 남은 건 사람의 PR#19 리뷰·머지뿐.
 
 ## 환경
 

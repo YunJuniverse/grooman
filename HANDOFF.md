@@ -7,14 +7,14 @@
 
 ## Current Focus
 
-- Working on: SEC-2(어드민 수동 트리거 세션 인증 전환) 완료, PR 대기. 남은 축: GRM-013 잔여(GA4 연결·Search Console) · GRM-001 숫자측정
+- Working on: SEC-2(어드민 수동 트리거 세션 인증 전환) [PR#19](https://github.com/YunJuniverse/grooman/pull/19) 리뷰 대기. 남은 축: GRM-013 잔여(GA4 연결·Search Console) · GRM-001 숫자측정
 - Current mode: fullstack
-- Next TODO: SEC-2 PR 리뷰·머지 → **사람**: GTM 콘솔에서 GA4 구성 태그 연결+게시 → AI가 가입 전환 이벤트(`sendGTMEvent`) 삽입 → Search Console 등록·소유권 확인·sitemap 제출 → GRM-001 숫자측정
+- Next TODO: **사람**: PR#19 리뷰·머지 → GTM 콘솔에서 GA4 구성 태그 연결+게시 → AI가 가입 전환 이벤트(`sendGTMEvent`) 삽입 → Search Console 등록·소유권 확인·sitemap 제출 → GRM-001 숫자측정
 - Blockers: 없음
 
 ## Active Links
 
-- Current PR: `fix/admin-trigger-session-auth` (SEC-2, 미생성/미머지 — 커밋·push는 사용자 승인 대기)
+- Current PR: [#19](https://github.com/YunJuniverse/grooman/pull/19) (SEC-2, 리뷰 대기)
 - Current issue:
 - Relevant ADRs: [ADR-0001](40_dev/adr/0001-rss-auto-crawl-ai-pipeline.md)·[ADR-0002](40_dev/adr/0002-bot-seeding-cold-start.md)·[ADR-0003](40_dev/adr/0003-rls-security-model.md)·[ADR-0004](40_dev/adr/0004-supabase-publishable-secret-keys.md)
 - Relevant snapshots:
@@ -44,7 +44,7 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-24: SEC-2 해소(브랜치 `fix/admin-trigger-session-auth`, 미머지) — 어드민 수동 트리거(크롤/봇 3종) 시크릿→세션+`is_admin` 인증 전환, `lib/supabase/require-admin.ts` 신설 · Class B
+- 2026-07-24: SEC-2 해소, [PR#19](https://github.com/YunJuniverse/grooman/pull/19) 생성(미머지) — 어드민 수동 트리거(크롤/봇 3종) 시크릿→세션+`is_admin` 인증 전환, `lib/supabase/require-admin.ts` 신설 · Class B
 - 2026-07-23: **KEY-1+CRON-1 머지(PR#16)** — Supabase publishable/secret 키 전환(ADR-0004) + 크론 인증 버그 수정. 사람 env 액션(Vercel 키·CRON_SECRET·GTM Production 전용) 전부 완료 확인 → 배포 차단 요인 해소 · Class B
 - 2026-07-22: GRM-013 머지(PR#15) — GTM `GTM-WJVFXRBT` 설치(`@next/third-parties`+noscript, env 게이트) · 개인정보처리방침 처리위탁·분석쿠키·정보주체권리 신설 · Class A
 - 2026-07-22: **Supabase 프로비저닝**(grooman/서울, 마이그 001·003·004·005 적용) + **006 보안 하드닝**(advisor 11→1건, SECURITY DEFINER RPC 노출 차단) · Class B
