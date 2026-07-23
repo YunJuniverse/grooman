@@ -50,6 +50,10 @@ _(없음)_
 
 ## Done
 
+### SEC-2
+- **title**: 어드민 수동 트리거 시크릿 → 세션 기반 관리자 인증 전환
+- **notes**: Completed 2026-07-24. `AdminDashboard.tsx`의 `triggerCrawl`/`triggerBot`이 클라이언트 번들에 인라인되는 `NEXT_PUBLIC_CRON_SECRET_HINT`로 시크릿을 만들어 보내던 방식 제거(비활성 상태였지만 값이 채워지면 즉시 실취약점). `app/api/crawl`(POST 신설)·`app/api/admin/{bot-activity,bot-likes,seed-bots}`의 사람 트리거 경로를 세션 쿠키+`profiles.is_admin` 확인(`lib/supabase/require-admin.ts` 신설, `app/moderation/actions.ts`의 기존 `requireAdmin` 로직 통합)으로 교체. Vercel Cron이 부르는 GET 경로(Bearer `CRON_SECRET`)는 그대로 유지. tsc·vitest(21/21)·build 전부 통과. Class B(인증 변경).
+
 ### GRM-015
 - **title**: Supabase 프로비저닝 + 법적 준수 조치
 - **notes**: Completed 2026-07-22. Supabase 프로젝트 grooman 생성(서울, 월 $10 승인)·마이그 001/003/004/005 적용·11테이블 RLS 확인. **006 보안 하드닝**(advisor 11→1건, `handle_new_user` SECURITY DEFINER의 anon RPC 노출 차단). 법적 검토(변호사 부재, 조사 기반): 정보통신망법 §44-2 절차가 약관에 없어 **법정의무 위반 상태 발견→약관 제6조 신설**, 의료법 §56 근거로 clinic 기준 정렬(제7조)+운영기획서 §4.3. 검토메모 `40_dev/snapshots/legal-compliance-review-2026-07-22.md`(한계·잔여 4건 명시→LEGAL-1). Class B.
@@ -61,10 +65,6 @@ _(없음)_
 ### GRM-014
 - **title**: AI-001 가드 강화 — fail-closed + zod 스키마 검증 + temperature 0
 - **notes**: Completed 2026-07-22. `lib/ai/crawl-analysis.ts` 신설(zod 스키마 — clinic enum 구조 거부) + `claude.ts` fail-closed 재작성 + **테스트 인프라 도입**(vitest, 단위 테스트 11종 전부 통과) + tsc·build 클린. CRAWL-2 해소. AC④: fail-closed로 키 부재가 안전해져 릴리스 게이트 추가 불요 판정. [[AI-001_crawl-analysis]] v1.1.
-
-### GRM-011
-- **title**: 30_planning 기획서 시리즈 디벨롭 (지침 10~17 기반)
-- **notes**: Completed 2026-07-22. 7/7 — 10 사업·14 브랜드·11 서비스·12 운영·13 마케팅·15 PM·16 AI-001+17 평가(PR#3~#9 머지). 부산물: 구현 갭 4건 적발(G1 신고·G4 제재·G5 측정·CRAWL-2 fail-open)→GRM-012/013/014, 법률 검토 크리티컬 패스 승격(프리모템). 전 문서 status: active 전환.
 
 ### GRM-010
 - **title**: 봇 teardown 수단 + 공개 배포 릴리스 게이트

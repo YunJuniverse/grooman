@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-admin'
 import { BOT_PROFILES } from '@/lib/bots/data'
 
-export async function POST(req: Request) {
-  const { secret } = await req.json().catch(() => ({ secret: '' }))
-  if (secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+// 어드민 대시보드의 수동 트리거 버튼 — 세션 기반 관리자 인증 (크론 없음, 사람 전용)
+export async function POST() {
+  const authClient = createClient()
+  const admin = await requireAdmin(authClient)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const supabase = createAdminClient()
   let likes = 0

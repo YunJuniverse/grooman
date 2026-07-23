@@ -1,4 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-admin'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { fetchRssFeed } from '@/lib/crawlers/rss'
@@ -19,19 +21,24 @@ function md5Hash(str: string): string {
   return Math.abs(hash).toString(36)
 }
 
+// Vercel Cron 전용 — Authorization: Bearer $CRON_SECRET
 export async function GET(request: NextRequest) {
-  // Vercel Cron은 Authorization: Bearer $CRON_SECRET로 호출한다.
-  // x-cron-secret 헤더·쿼리 파라미터는 어드민 대시보드 수동 트리거(AdminDashboard.tsx) 경로.
   const authHeader = request.headers.get('authorization')
-  const bearerSecret = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-  const cronSecret = bearerSecret
-    ?? request.headers.get('x-cron-secret')
-    ?? request.nextUrl.searchParams.get('secret')
-
-  if (!process.env.CRON_SECRET || cronSecret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: '인증 실패' }, { status: 401 })
   }
+  return runCrawl()
+}
 
+// 어드민 대시보드의 수동 트리거 버튼 — 세션 기반 관리자 인증
+export async function POST() {
+  const authClient = createClient()
+  const admin = await requireAdmin(authClient)
+  if (!admin) return NextResponse.json({ error: '권한이 없습니다.' }, { status: 401 })
+  return runCrawl()
+}
+
+async function runCrawl() {
   const supabase = createAdminClient()
   let processed = 0, skipped = 0, failed = 0
 

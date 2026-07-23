@@ -1,5 +1,6 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-admin'
 import { revalidatePath } from 'next/cache'
 import {
   isReportReason,
@@ -7,7 +8,6 @@ import {
   SANCTION_STEPS,
   type SanctionStep,
 } from '@/lib/moderation/reports'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 // ── 사용자: 글/댓글 신고 (운영기획서 §4.1) ──
 export async function createReport(
@@ -32,15 +32,6 @@ export async function createReport(
     return { error: error.message }
   }
   return { success: true }
-}
-
-// ── 관리자 가드 (서버 측 재확인 — RLS와 이중 방어) ──
-async function requireAdmin(supabase: SupabaseClient) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: profile } = await supabase
-    .from('profiles').select('is_admin').eq('id', user.id).single()
-  return (profile as { is_admin: boolean } | null)?.is_admin ? user : null
 }
 
 // ── 관리자: 신고 처리 상태 전환 (§4.1 조치) ──
