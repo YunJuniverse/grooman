@@ -7,17 +7,17 @@
 
 ## Current Focus
 
-- Working on: GRM-001 Performance·Accessibility 조치 완료(폰트 self-host + color-contrast, PR#18) — 리뷰 대기. SEC-2(어드민 수동 트리거 세션 인증 전환)는 PR#19로 머지 완료
+- Working on: **talmo-com 교차조사 반영** — clinic 재게시 차단·법적 갭 문서화·표현 경계 필터·HOT 임계값(권고 1~4번) 구현 완료, 리뷰 대기
 - Current mode: fullstack
-- Next TODO: PR#18 리뷰·머지 → **사람**: production 배포 후 Lighthouse 재측정 확인. 병행: GTM 콘솔에서 GA4 구성 태그 연결+게시 → AI가 가입 전환 이벤트(`sendGTMEvent`) 삽입 → Search Console 등록·소유권 확인·sitemap 제출
+- Next TODO: 이 PR 리뷰·머지 → talmo 권고 5~8번(폰트 static 전환·DESIGN.md·UX 진단·clinic 신뢰장치) 중 선택. 병행: **사람** GTM 콘솔 GA4 연결 → AI가 전환 이벤트 삽입 → Search Console 등록
 - Blockers: 없음
 
 ## Active Links
 
-- Current PR: [#18](https://github.com/YunJuniverse/grooman/pull/18)(GRM-001, 측정+조치 추가 커밋됨, 리뷰 대기) · #19(SEC-2) 머지 완료
+- Current PR: branch feat/talmo-insights-legal-hot(신규) · #18(GRM-001)·#19(SEC-2) 머지 완료
 - Current issue:
 - Relevant ADRs: [ADR-0001](40_dev/adr/0001-rss-auto-crawl-ai-pipeline.md)·[ADR-0002](40_dev/adr/0002-bot-seeding-cold-start.md)·[ADR-0003](40_dev/adr/0003-rls-security-model.md)·[ADR-0004](40_dev/adr/0004-supabase-publishable-secret-keys.md)
-- Relevant snapshots: [lighthouse-audit-2026-07-22](40_dev/snapshots/lighthouse-audit-2026-07-22.md)(정적)·[lighthouse-measurement-2026-07-24](40_dev/snapshots/lighthouse-measurement-2026-07-24.md)(실측)
+- Relevant snapshots: [lighthouse-measurement-2026-07-24](40_dev/snapshots/lighthouse-measurement-2026-07-24.md)(실측)·[**talmo-com 교차조사**](40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md)(권고 8건, 5~8번 미착수)·[법적 검토](40_dev/snapshots/legal-compliance-review-2026-07-22.md)(§4-2 보강)
 
 ## Open Decisions
 
@@ -36,6 +36,9 @@
 | ~~CRON-1~~ | ~~`vercel.json` 크론 2건이 실제 Vercel Cron 호출 형식(GET+`Authorization: Bearer`)과 안 맞아 배포 후에도 절대 실행 안 됨~~ → **Resolved 2026-07-23**: `/api/crawl` Bearer 인식 추가(기존 쿼리파라미터 방식은 어드민 수동 트리거용으로 유지), `/api/admin/bot-activity`에 GET 핸들러 신설(기존 POST는 어드민 수동 트리거 유지, 로직 공유) | ~~High~~ | — |
 | SEC-1 | 새 테이블 RLS 정책 누락 시 조용한 취약점 (ADR-0003) | Med | 마이그레이션 추가 시 RLS 점검 + **Supabase advisor 정기 확인**(006로 11→1건 해소) |
 | LEGAL-1 | clinic "유인성" 회색지대·광고↔clinic 분리 원칙 미정 (검토메모 §5) | Med | 분쟁 발생·수익화 시 변호사 검토. P3 광고 도입 전 분리 원칙 결정 |
+| ~~LEGAL-2~~ | ~~**clinic 후기가 홈·전 카테고리 HOT과 연관글에 재게시**돼 있었음 — 재게시는 광고로 전환되고(복지부 2021), 그 경우 의료법 §56①(광고 주체 한정)에 걸려 고지로 치유 불가~~ → **Resolved 2026-07-24**(사용자 결정 Class C): 재게시 표면에서 clinic 제외(`lib/community/policy.ts`) | ~~High~~ | — |
+| LEGAL-3 | **식약처 표시광고 축**(화장품법·건기식법)이 검토에 통째로 없었음 — 탈모는 반복 단속 대상이고 단속 채널에 커뮤니티 포함(622건+376건). 경고 필터(`expression.ts`)는 넣었으나 **경고가 충분한 주의의무인지 미확인** | Med | 검토메모 §5-6. 수익화·분쟁 시 변호사 확인 |
+| LEGAL-4 | **의료법 §27(환자 유인)** 미검토 — §56과 별개 축. 약관 제7조가 사실상 대응하나 근거 조문 미명시였음(문서화 완료) | Med | 검토메모 §5-5. clinic 운영 확대 시 재검토 |
 | CRAWL-1 | 자동 크롤 글이 사람 검수 없이 즉시 published·색인 (ADR-0001) | Med | 자동수집 뱃지·출처는 이미 표기됨. 검수 게이트 도입은 선택 |
 | ~~PERF-1~~ | ~~Performance 미달(`/` 61·`/hair` 88) — 폰트 `@import` 렌더블로킹~~ → **Resolved 2026-07-24**: `next/font/local` self-host, 로컬 CLS 0.359→0.097 확인 | ~~Med~~ | production 재측정으로 최종 확인 |
 | ~~SEC-2~~ | ~~`AdminDashboard.tsx`의 수동 크롤/봇 트리거가 `NEXT_PUBLIC_CRON_SECRET_HINT`(클라이언트 노출 변수)를 시크릿으로 씀~~ → **Resolved 2026-07-24** (PR#19 머지): 세션+`is_admin`(`lib/supabase/require-admin.ts`)으로 교체, Cron GET 경로는 유지 | ~~Med~~ | — |
@@ -46,8 +49,8 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-24: **SEC-2 머지(PR#19)** — 어드민 수동 트리거(크롤/봇 3종) 시크릿→세션+`is_admin` 인증 전환, `lib/supabase/require-admin.ts` 신설. Cron GET 경로(Bearer)는 유지 · Class B
-- 2026-07-24: **GRM-001 Performance·Accessibility 조치**(PR#18 추가 커밋) — `next/font/local` self-host(렌더블로킹 `@import` 제거), color-contrast 100/100(로컬). 부수 발견: 헤더·하단내비 배경 완전 투명 렌더 버그(Tailwind var()+opacity 컴파일 실패) 수정 → PERF-2로 잔여 등록 · Class A
-- 2026-07-24: **GRM-001 배포환경 실측** — production alias(`grooman.vercel.app`)에서 Lighthouse 실행, 3/5경로(나머지는 콘텐츠 0건으로 측정 불가) · Class A
-- 2026-07-23: **KEY-1+CRON-1 머지(PR#16)** — Supabase publishable/secret 키 전환(ADR-0004) + 크론 인증 버그 수정. 사람 env 액션 전부 완료 확인 → 배포 차단 요인 해소 · Class B
-- 2026-07-22: GRM-013 머지(PR#15) — GTM `GTM-WJVFXRBT` 설치(`@next/third-parties`+noscript, env 게이트) · 개인정보처리방침 처리위탁·분석쿠키·정보주체권리 신설 · Class A
+- 2026-07-24: **talmo-com 교차조사 반영**(권고 1~4) — clinic 재게시 차단(LEGAL-2, Class C 결정)·검토메모 §4-2 보강(§27·식약처 축)·카테고리 인지형 표현 경고(`expression.ts`, 테스트 16종)·HOT 최소 추천 임계값 · Class B
+- 2026-07-24: **talmo-com 전수조사** — 같은 방법론·같은 도메인 자매 프로젝트에서 법적 갭 4건·설계 인사이트 5건·디자인/QA 자산 5건 도출, 권고 8건 우선순위화 · [스냅샷](40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md)
+- 2026-07-24: **SEC-2 머지(PR#19)** — 어드민 수동 트리거 시크릿→세션+`is_admin` 인증 전환, `lib/supabase/require-admin.ts` 신설 · Class B
+- 2026-07-24: **GRM-001 Performance·Accessibility 조치**(PR#18) — `next/font/local` self-host, color-contrast 100/100(로컬). 부수: 헤더·하단내비 투명 렌더 버그 수정 → PERF-2 등록 · Class A
+- 2026-07-24: **GRM-001 배포환경 실측** — production alias에서 Lighthouse 3/5경로(나머지는 콘텐츠 0건으로 측정 불가) · Class A

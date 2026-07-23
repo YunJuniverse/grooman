@@ -1,9 +1,11 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { createPost } from '@/app/posts/actions'
+import { checkExpression } from '@/lib/community/expression'
+import { extractText } from '@/lib/utils/tiptap'
 import type { CategoryEnum } from '@/types/supabase'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertTriangle } from 'lucide-react'
 
 const TiptapEditor = dynamic(() => import('@/components/editor/TiptapEditor'), { ssr: false })
 
@@ -18,8 +20,16 @@ const CATEGORIES: { value: CategoryEnum; label: string }[] = [
 
 export default function WriteForm() {
   const [content, setContent] = useState<Record<string, unknown>>({})
+  const [category, setCategory] = useState<CategoryEnum | ''>('')
+  const [title, setTitle] = useState('')
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  // 표시광고 표현 경계 경고 — **저장을 막지 않는다**(과차단 회피). 근거: lib/community/expression.ts
+  const expressionFindings = useMemo(() => {
+    if (!category) return []
+    return checkExpression(`${title} ${extractText(content)}`, category)
+  }, [title, content, category])
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -45,6 +55,8 @@ export default function WriteForm() {
         <select
           name="category"
           required
+          value={category}
+          onChange={e => setCategory(e.target.value as CategoryEnum | '')}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
         >
           <option value="">선택하세요</option>
@@ -63,6 +75,8 @@ export default function WriteForm() {
           required
           minLength={5}
           maxLength={200}
+          value={title}
+          onChange={e => setTitle(e.target.value)}
           placeholder="제목을 입력하세요 (5~200자)"
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
         />
@@ -84,6 +98,26 @@ export default function WriteForm() {
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
         />
       </div>
+
+      {/* 표현 경계 안내 — 발행을 막지 않는다. 작성자가 스스로 고칠 기회를 준다. */}
+      {expressionFindings.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3" role="status">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-amber-900">
+            <AlertTriangle size={14} aria-hidden="true" />
+            표시광고 규정상 주의가 필요한 표현이 있습니다
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {expressionFindings.map((f, i) => (
+              <li key={`${f.matched}-${i}`} className="text-xs leading-relaxed text-amber-900">
+                <span className="font-semibold">&ldquo;{f.matched}&rdquo;</span> — {f.reason}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-amber-800">
+            발행은 가능하지만, 신고 시 운영자 검토 대상이 될 수 있습니다.
+          </p>
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

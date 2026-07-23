@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { canRedisplayAcrossCategories, REDISPLAY_EXCLUDED_FILTER } from '@/lib/community/policy'
 import type { CategoryEnum, Post } from '@/types/supabase'
 
 export default async function RelatedPosts({
@@ -17,14 +18,22 @@ export default async function RelatedPosts({
   const supabase = createClient()
   let posts: Post[] = []
 
-  // 같은 태그 우선, 없으면 같은 카테고리
+  // 같은 태그 우선, 없으면 같은 카테고리.
+  // 태그 경로는 카테고리를 넘나들므로 **재게시 표면**이다 — 현재 글이 clinic이 아니라면
+  // clinic 글을 끌어오지 않는다(정책 근거: lib/community/policy.ts).
   if (tags.length > 0) {
-    const { data } = await supabase
+    let query = supabase
       .from('posts')
       .select('id, title, thumbnail_url, category, created_at, profiles!user_id(username)')
       .eq('status', 'published')
       .neq('id', currentPostId)
       .contains('tags', [tags[0]])
+
+    if (canRedisplayAcrossCategories(category)) {
+      query = query.not('category', 'in', REDISPLAY_EXCLUDED_FILTER)
+    }
+
+    const { data } = await query
       .order('hot_rank', { ascending: false })
       .limit(3)
     posts = (data ?? []) as unknown as Post[]

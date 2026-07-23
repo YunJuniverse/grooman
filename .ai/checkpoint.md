@@ -1,45 +1,50 @@
-# Checkpoint — GRM-001 Performance·Accessibility 조치 + PR#18/#19 병합 충돌 해소
+# Checkpoint — talmo-com 교차조사 + 권고 1~4번 반영
 
 > **역할 = 이번 세션의 서사 바통** (콜드스타트 인계문). 매 세션 종료 시 *덮어씀*.
 > **누적 상태(오픈이슈·결정·링크·최근이력 표)는 `HANDOFF.md`가 정본**이므로 여기서 중복하지 말고 참조. (경계: CLAUDE.md §4)
 
 ## 작성자
 
-- Agent: Claude (Sonnet 5, Claude Code)
-- Branch: `docs/grm-001-lighthouse-measurement` (PR#18)
+- Agent: Claude (Opus 4.8, Claude Code)
+- Branch: `feat/talmo-insights-legal-hot` (main에서 분기, #18·#19 머지 후)
 
 ## 방금 한 것 (이번 세션)
 
-사용자가 이전 턴에서 제시한 두 옵션("폰트 self-host" + "color-contrast 몇 곳")에 **"둘 다 진행해줘"**로 승인. 실제로는 폰트 fix 도중 진짜 UI 버그를 발견해 범위가 조금 늘어났다.
+### 1) talmo-com 전수조사
 
-1. **폰트 self-host**: `npm install pretendard`로 실제 파일 확보(variable woff2, weight 45~920, SIL OFL 1.1) → `app/fonts/PretendardVariable.woff2`에 복사 → `npm uninstall pretendard`(런타임엔 파일만 필요, 패키지 의존성 불필요). `app/fonts.ts`에 `next/font/local` 선언(`display: swap`, `variable: --font-pretendard`). `app/layout.tsx`에 적용, `globals.css`의 렌더블로킹 `@import` 제거하고 `font-family: var(--font-pretendard), ...`로 전환. 덤으로 `app/fonts/`에 있던 미사용 Geist 스타터 폰트 파일 2개도 삭제.
-2. **color-contrast**: Lighthouse JSON의 정확한 위반 노드·계산된 색상값을 직접 파싱해서 진짜 원인을 찾았다.
-   - 로그인 버튼(`Header.tsx`)·사이드바 활성 항목(`Sidebar.tsx`)의 `bg-[var(--accent)]`가 다크모드 값(#818cf8) 기준 흰 텍스트와 2.98:1(미달) → 테마 무관 `bg-indigo-600`(6.29:1)으로 교체.
-   - 홈 배지(`app/page.tsx`)의 `dark:text-gray-600`이 방향이 거꾸로(다크 배경엔 더 밝은 회색 필요) → `dark:text-gray-400`.
-   - Footer(`bg-white` 하드코딩)의 `text-gray-400`(2.53:1) → `text-gray-500`(4.83:1).
-3. **부수 발견(진짜 버그)**: `Header.tsx`·`BottomNav.tsx`가 `bg-[var(--bg-card)]/90`·`/95`를 쓰고 있었는데, **Tailwind가 `var()` 기반 arbitrary color에 opacity modifier를 적용 못 해 해당 유틸리티 클래스가 컴파일된 CSS에 아예 생성되지 않았다** — `npx tailwindcss -i ... -o ... --content ...`로 직접 컴파일해서 빈 결과를 확인, 추측이 아니라 검증된 사실. 헤더·하단내비 배경이 완전히 투명하게 떠 있었다. `globals.css`에 알파값을 미리 baked-in한 `--bg-card-translucent`를 추가해 해결.
-4. **PR#18↔PR#19 머지 충돌 해소**: 사용자가 백그라운드로 스폰한 SEC-2 작업(어드민 수동 트리거 시크릿→세션 인증 전환)이 별도 세션에서 완료돼 PR#19로 먼저 머지됐다. 같은 라이브 파일(HANDOFF/TODO/checkpoint)을 동시에 건드려 PR#18에 conflict 발생 → `git merge origin/main --no-commit`으로 정확히 어디가 부딪히는지 확인 후 수동 병합: HANDOFF.md는 양쪽 서사를 모두 보존하는 시맨틱 병합(Current Focus에 SEC-2 머지 완료 + GRM-001 리뷰 대기 둘 다 반영, Open Issues 표에 SEC-2 Resolved 행과 PERF-1/PERF-2 행 모두 유지), TODO.md는 git이 자동 병합 성공(충돌 없음, 두 작업이 다른 섹션을 건드려서), checkpoint.md는 이 세션 것으로 덮어씀(지난 세션에 이미 있던 "latest session wins" 원칙 유지).
+사용자 요청으로 자매 프로젝트 `/Users/hayden/talmo-com`을 전수조사했다. **같은 방법론(v4.0)·같은 도메인(탈모/두피)·6일 앞선 출발**이라 grooman이 아직 안 겪은 문제를 이미 겪고 문서화해둔 상태였다. 산출물: `40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md`(권고 8건 우선순위표 포함).
+
+핵심: talmo는 Next 16/React 19/Tailwind 4 + 기획서 6종 + **specs 5종 + ADR 5종 + DESIGN.md**(grooman에 없는 문서 유형)를 갖췄지만 **테스트가 0개**고 main 직접 커밋이 많다 → 역방향 주입 후보(테스트·PR 워크플로우·방법론 sync)도 §5에 정리.
+
+### 2) 권고 1~4번 구현 (사용자 "응 진행해")
+
+- **①(Class C) clinic 재게시 차단** — 사용자에게 3지선다로 물어 "HOT에서 clinic 제외" 선택받음. 근거를 내가 조사 중 도출: talmo는 고지 문구(`REPUBLISH_DISCLOSURE`)로 처리했지만 **그건 그쪽 재게시 면이 화장품·건기식(표시광고법)이라 통하는 것**이고, grooman clinic은 의료 시술이라 광고 전환 시 **의료법 §56①(광고 주체를 의료인·의료기관으로 한정)**에 걸려 고지로 치유되지 않는다. → `lib/community/policy.ts` 신설.
+  - 조사하다 **`RelatedPosts`의 태그 경로에도 카테고리 필터가 없다**는 걸 추가 발견(홈 HOT만이 아니었음) → 같이 차단.
+- **② 검토메모 §4-2 보강** — 의료법 **§27(환자 유인)**, **식약처 표시광고 축**(화장품법·건기식법)이 통째로 빠져 있었음. §5 남은 불확실성에 5·6·7번 추가, §6 조치 요약 갱신. 부수로 §5-4(개인정보처리방침)는 GRM-013으로 이미 해소됐으므로 취소선 처리.
+- **③ 카테고리 인지형 표현 경고** — `lib/community/expression.ts`. **차단이 아니라 경고**로 설계한 이유를 코드 주석에 박음: 블랭킷 차단은 합법 표현("탈모 증상 완화"는 기능성화장품 허용)까지 죽이고, 대상이 판매자 상품 등록이 아니라 **이용자 커뮤니티 발화**다. `WriteForm`에 실시간 노출(발행은 막지 않음).
+- **④ HOT 최소 추천 임계값** — `hot_rank = log(engagement) + epoch/45000`은 Reddit 공식인데, 임계값이 없으면 시간항이 지배해 **"HOT = 그냥 최신"**이 된다. talmo 실측(글 80개에 임계값 5 → 78%가 BEST) 근거로 `HOT_MIN_LIKES = 3` 도입.
+- 부수 리팩터: `extractText`/`extractThumbnail`이 `'use server'` 파일에 갇혀 클라이언트에서 못 쓰던 것 → `lib/utils/tiptap.ts`로 추출(중복도 제거).
 
 ## 검증한 것
 
-- tsc 0 · vitest 21 passed · build 27 routes
-- **로컬 재측정**(Lighthouse, 동일 env 조건): Accessibility 95→**100**(color-contrast 0건, 재현 확인). CLS 0.359→0.097(font fix 효과 확인). FCP/Speed Index도 개선.
-- **Performance 절대 수치는 신뢰 안 함**: 로컬에서 재측정할 때마다 LCP가 5.0s→13.5s로 널뛰었다 — 원인은 이 macOS 세션에 사용자가 병렬로 띄운 다른 백그라운드 Claude Code 세션(SEC-2 작업)이 같은 머신에서 CPU를 경합하고 있어서로 추정. Performance의 최종 확정은 이 PR 배포 후 production에서 해야 한다고 TODO/HANDOFF에 명시해뒀다.
-- 브라우저로 직접 라이트/다크 두 모드 다 스크린샷 확인 — 헤더·하단내비 배경 정상 렌더, 로그인 버튼 잘 보임, 푸터 텍스트 가독성 확인.
+- tsc 0 · vitest **43/43**(27→43, 신규 16종) · build 27 routes
+- **PostgREST 필터 실측**: `category=not.in.(clinic)` → HTTP 200 / 괄호 뺀 오형식 → HTTP 400. 즉 **조용히 무시되지 않는다**는 걸 대조군으로 확인.
+- **경고 UI 실재 확인**: 오늘 겪은 "타입은 통과하는데 CSS가 안 나오는" 함정(Tailwind var+opacity) 때문에, 빌드 산출물에서 경고 문구가 클라이언트 청크에 포함됐는지 + amber 클래스 4종이 실제 CSS로 컴파일됐는지 grep으로 확인.
+- **미검증(정직)**: production에 글이 0건이라 **clinic 제외의 행 단위 동작은 실데이터로 확인 못 했다.** 문법 검증 + 단위 테스트(리터럴 형식 고정)로 대체.
 
 ## 다음 구체 행동
 
-1. **아직 머지 커밋 안 함** — `git merge --no-commit`으로 충돌만 해소한 상태. HANDOFF.md·checkpoint.md 수동 해결 완료, `.ai/wrap-state.json`은 손으로 병합하지 말고 wrap 재실행으로 재생성할 것. 이어서 `git add` + merge commit → wrap → (필요시) ship.
-2. PR#18 리뷰·머지 → **사람**: production 배포 후 Lighthouse 재측정으로 Performance 수치 최종 확인
-3. GTM 콘솔 GA4 연결 (병행 가능, 별개 트랙)
+1. **아직 커밋 안 함** — wrap → ship → PR 생성이 다음 스텝.
+2. 리뷰·머지 후: TODO **GRM-016**(권고 5~8: 폰트 static 전환·DESIGN.md·UX 진단·clinic 신뢰장치) 중 선택.
+3. 병행 대기: GTM 콘솔 GA4 연결(사람) → 전환 이벤트 삽입(AI).
 
 ## 막힌 것 / 주의
 
-- **범위 관리**: color-contrast를 고치다가 "다크모드 텍스트 색이 전역적으로 `dark:` variant 없이 90여 곳 흩어져 있다"는 훨씬 큰 이슈를 발견했다. Lighthouse가 실제로 잡은 것만 좁게 고치고 나머지는 스폰된 백그라운드 작업으로 분리했다(task_870a06d3, PERF-2로 HANDOFF에도 기록).
-- 같은 `var()`+opacity 컴파일 실패 패턴이 `PostCard.tsx`(hover border)·`Header.tsx`(avatar ring)에도 남아있음 — 위 스폰 작업에 포함시켜뒀다.
-- **동시 세션 충돌 패턴**: 이번이 이 프로젝트에서 두 번째 "백그라운드로 스폰한 작업이 먼저 머지되면서 라이브 파일 충돌" 사례다(PR#14 때도 동일 패턴). spawn_task로 병렬 작업을 띄울 때는 라이브 파일 충돌 가능성을 항상 염두에 둘 것.
+- **HOT_MIN_LIKES=3은 공개 전 추정값이다.** talmo가 실제 데이터 보고 5→10으로 올린 것처럼, grooman도 글이 쌓이면 재보정해야 한다(정책 파일 주석에 명시).
+- clinic을 HOT에서 뺐으므로 **clinic 카테고리 유입이 홈에서 끊긴다.** 제품상 대가이며, 사용자가 선택지 설명을 읽고 결정했다.
+- 병렬 세션(PERF-2 다크모드 감사)이 돌고 있어 라이브 파일 충돌 가능성 있음 — 이번에도 머지 시 확인할 것(이번 세션에 이미 2회 겪음).
 
 ## 환경
 
-- 로컬 스크래치: `/private/tmp/claude-501/.../scratchpad/lighthouse/*.json`
-- `app/fonts/PretendardVariable.woff2` 2.0MB — 저장소에 커밋됨(OFL 라이선스, 재배포 가능)
+- 브랜치 `feat/talmo-insights-legal-hot`, main은 #19까지 머지된 상태
+- talmo-com 참조 경로: `/Users/hayden/talmo-com`(private repo, Supabase `qnxaazbucggumshwbgfo`)
