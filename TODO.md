@@ -44,8 +44,10 @@ _(없음)_
 - **acceptance criteria**:
   - [x] 정적(코드 레벨) 감사 — 5경로 × 4카테고리 (`40_dev/snapshots/lighthouse-audit-2026-07-22.md`)
   - [x] 안전 최적화 적용 — viewport/themeColor·리스트 이미지 lazy/async
-  - [ ] **[Blocked]** 배포 환경(Vercel preview + env)에서 5경로 모바일 Lighthouse ≥90 측정
-  - [ ] 미달 항목 조치·재측정
+  - [x] 배포 환경(production alias `grooman.vercel.app`)에서 Lighthouse 실측 — 3/5경로(`/`·`/hair`·`/search`), 나머지 2경로는 production에 게시글 0건이라 측정 불가 (`40_dev/snapshots/lighthouse-measurement-2026-07-24.md`)
+  - [ ] **[Blocked]** `/posts/[id]`·`/profile/[username]` 재측정 — 크롤/봇 콘텐츠 생성 후
+  - [ ] Performance 미달(`/` 61·`/hair` 88) 조치 — 원인 진단 완료(폰트 `@import` 렌더블로킹+CLS), fix는 폰트 self-host(`next/font/local`, 자산 파일 추가 필요)로 사람 확인 후 진행
+  - [ ] Accessibility 감점(95, color-contrast 7~11건) 조치 — Tailwind 색상 클래스 치환, 상대적으로 안전
 - **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). next/image 전면 전환 완료(raw img 14→0, PR#13). 시각 정합은 배포 후 확인 권고. **블로커 해소 경로 확인(2026-07-22)**: GRM-013 작업 중, `NEXT_PUBLIC_SUPABASE_URL` + anon key만 빌드에 주입하면 로컬 `next start`로 페이지가 정상 렌더됨을 실증(service_role 불필요 — 공개 읽기는 RLS 허용). 즉 **Vercel 배포를 기다리지 않고 로컬 실측 가능**. 주의: `NEXT_PUBLIC_*`는 빌드 타임 인라인이라 build·start 양쪽에 넣어야 한다.
 
 ## Done
