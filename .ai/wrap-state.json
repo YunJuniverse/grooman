@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "fd79e000c7826ee1e00cef08dbfd9da33572248d",
-  "last_validated_at": "2026-07-23T13:38:58Z",
+  "last_validated_commit": "eb068bafb8a3f41dee2ccd7b5313014292c97620",
+  "last_validated_at": "2026-07-23T14:51:28Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "3df3e85fee79a95c3ad1d13c6ccde7f221c40db9169073ef0ce3afad224ae306"
+      "sha256": "a248c2190e81eaf48debbd0be6b0a3c477b66541cb78f93980fac79072a6f270"
     },
     "TODO.md": {
-      "sha256": "81b5bd1d9890187d58eb693dd47a12f5db40ef7f646ceaceb35ea4a2b17fc173"
+      "sha256": "1162c3d5fb099edce908f85061414255d9385f545ecd72023403a5d25e5f0f4c"
     },
     ".ai/checkpoint.md": {
-      "sha256": "eaf01c641c86e6df65b20bf4767746e56ee37bd38ec49239a4a6c04338783482"
+      "sha256": "c9b33092b6836fe498efd5c1841523efbdb5aee4b1091801ad6dad48f62d96b4"
     }
   },
   "observations": {
@@ -35,6 +35,7 @@
       "50_resources/ai_observations/2026-07-22_next-image-conversion.md",
       "50_resources/ai_observations/2026-07-22_supabase-provision-and-legal-review.md",
       "50_resources/ai_observations/2026-07-23_cron-auth-mismatch-fix.md",
+      "50_resources/ai_observations/2026-07-23_pr16-merge-verification.md",
       "50_resources/ai_observations/2026-07-23_supabase-publishable-secret-key-migration.md"
     ]
   }

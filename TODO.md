@@ -26,29 +26,12 @@ _(없음)_
 - **acceptance criteria**:
   - [x] GTM 컨테이너 `GTM-WJVFXRBT` 설치 — `@next/third-parties` + noscript 폴백, `NEXT_PUBLIC_GTM_ID` 게이트
   - [x] 개인정보처리방침에 분석 쿠키·처리위탁·정보주체 권리 반영 (설치의 법적 전제)
-  - [ ] **[사람]** Vercel Production 환경에만 `NEXT_PUBLIC_GTM_ID=GTM-WJVFXRBT` 설정 후 재배포
+  - [x] **[사람]** Vercel Production 환경에만 `NEXT_PUBLIC_GTM_ID=GTM-WJVFXRBT` 설정 — 2026-07-23 Preview 체크 해제 확인
   - [ ] **[사람]** GTM 콘솔에서 GA4 구성 태그 연결 + 게시
   - [ ] 가입 전환 이벤트 `sendGTMEvent` 삽입 (GA4 연결 확인 후)
   - [ ] **[사람]** Search Console 등록 + 소유권 확인 + sitemap 제출
   - [ ] 마케팅기획서 §9 KPI 표의 지표가 실제 수집되는지 확인
 - **notes**: 마케팅기획서 작성 중 발견(G5). 계정·콘솔 작업은 사람(hayden), 코드 삽입은 AI. **env 게이트 의도**: 미설정 시 GTM 미렌더 → PR preview·로컬 트래픽이 프로덕션 컨테이너를 오염시키지 않음. Production 환경에만 설정할 것(Preview 체크 해제). 로컬 검증 완료: `google_tag_manager["GTM-WJVFXRBT"]` 로드·`gtm.start` 푸시·noscript iframe 확인.
-
-### KEY-1
-- **title**: Supabase publishable/secret 키 마이그레이션 (ADR-0004)
-- **mode**: fullstack
-- **change-class**: B
-- **owner**: AI + Human
-- **acceptance criteria**:
-  - [x] `lib/supabase/{client,server,admin}.ts`·`lib/utils/posts.ts` 환경변수명 전환(`NEXT_PUBLIC_SUPABASE_ANON_KEY`→`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`→`SUPABASE_SECRET_KEY`)
-  - [x] `.env.example` 신설(기존 부재)
-  - [x] ADR-0004 작성 — `@supabase/server`(Edge Functions 전용) 미도입 판단 근거 포함
-  - [x] **[사람]** Supabase Dashboard → Settings → API Keys에서 publishable/secret 키 발급 — Vercel에 등록 확인됨(스크린샷, 2026-07-23)
-  - [x] **[사람]** Vercel(Production+Preview)에 `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY` 설정 완료
-  - [ ] **[사람]** Vercel에 `CRON_SECRET` 추가 설정(AI가 `openssl rand -hex 32`로 생성해 전달, 값은 checkpoint 참조) — 미설정 시 CRON-1에서 고친 크론 인증도 실제로는 항상 401
-  - [ ] **[사람]** Vercel `NEXT_PUBLIC_GTM_ID`가 Preview에도 켜져 있음(스크린샷 확인) — **Production 전용으로 체크 해제 필요**
-  - [ ] **[사람]** 로컬 `.env.local`에도 동일 값 설정(로컬 개발용, 아직 미생성)
-  - [ ] (선택) Vercel `SUPABASE_JWKS_URL` 제거 — 코드에서 안 씀(`@supabase/server` 미도입이라 무용)
-- **notes**: 사용자가 Supabase 대시보드의 `@supabase/server` 설치 안내를 전달 → 확인 질문 후 "전체 마이그레이션" 승인. 조사 결과 `@supabase/server`는 Deno/Edge Functions 전용 SDK로 Vercel Node.js 런타임인 grooman과 안 맞아 **도입하지 않음** — 대신 키 값만 새 체계로 교체(코드 시그니처 변경 없음, `@supabase/ssr`이 새 포맷 그대로 받음). legacy 키는 2026년 말까지 병행 지원되나 조기 전환. 로컬 검증: 새 변수명으로 빌드+런타임 정상 렌더 확인(실제 새 키 값은 미보유 — legacy anon 값으로 배선만 검증, 실제 신규 키 호환은 사람이 키 발급 후 확인 필요). **파생 발견**: CRON_SECRET 관련 라우트 점검 중 크론 인증 버그(CRON-1, HANDOFF 참조) 발견·같은 브랜치에서 수정.
 
 ## Blocked
 
@@ -86,5 +69,9 @@ _(없음)_
 ### GRM-010
 - **title**: 봇 teardown 수단 + 공개 배포 릴리스 게이트
 - **notes**: Completed 2026-07-22. `profiles.is_bot` 마이그레이션(`004_bot_flag.sql`)+기존봇 백필, 시더가 is_bot 세팅(식별 일원화), teardown 스크립트(`supabase/scripts/teardown_bots.sql`, 글·댓글 우선 삭제로 SET NULL 방치 방지), 릴리스 게이트 SOP(`00_briefs/standing/SOP_public-release-gate.md`). 실행(프로덕션 teardown+0건 검증)은 공개 배포 시 SOP대로. BOT-1 해소. [[ADR-0002]].
+
+### KEY-1
+- **title**: Supabase publishable/secret 키 마이그레이션 (ADR-0004) + 크론 인증 버그 수정(CRON-1)
+- **notes**: Completed 2026-07-23 (PR#16 머지). `lib/supabase/{client,server,admin}.ts`·`lib/utils/posts.ts` env var명 전환(anon/service_role→publishable/secret). `@supabase/server`는 조사 결과 Edge Functions(Deno) 전용 SDK로 확인돼 미도입([[ADR-0004]]). 사람 액션(Vercel 키 등록·`CRON_SECRET`·GTM Production 전용 체크) 전부 완료 확인. **파생 발견·해소**: `vercel.json` 크론 2건이 실제 Vercel Cron 호출 형식(GET+`Authorization: Bearer`)과 안 맞아 배포돼도 절대 실행 안 됐을 버그(CRON-1) 발견·수정 — 어드민 수동 트리거 경로는 하위호환 유지. 잔여(비차단): 로컬 `.env.local` 미생성, `SUPABASE_JWKS_URL`은 무용해 삭제 권고했으나 보류(무해).
 
 
