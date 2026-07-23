@@ -18,7 +18,7 @@ export default function BottomNav() {
   const { user } = useAuth()
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-card)]/95 glass border-t border-[var(--border)] safe-area-bottom">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-card-translucent)] glass border-t border-[var(--border)] safe-area-bottom">
       <div className="flex">
         {NAV_ITEMS.map(({ href, label, icon: Icon, isHot }) => {
           const resolvedHref = label === '내정보' && !user ? '/login' : href

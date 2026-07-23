@@ -44,9 +44,12 @@ _(없음)_
 - **acceptance criteria**:
   - [x] 정적(코드 레벨) 감사 — 5경로 × 4카테고리 (`40_dev/snapshots/lighthouse-audit-2026-07-22.md`)
   - [x] 안전 최적화 적용 — viewport/themeColor·리스트 이미지 lazy/async
-  - [ ] **[Blocked]** 배포 환경(Vercel preview + env)에서 5경로 모바일 Lighthouse ≥90 측정
-  - [ ] 미달 항목 조치·재측정
-- **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). next/image 전면 전환 완료(raw img 14→0, PR#13). 시각 정합은 배포 후 확인 권고. **블로커 해소 경로 확인(2026-07-22)**: GRM-013 작업 중, `NEXT_PUBLIC_SUPABASE_URL` + anon key만 빌드에 주입하면 로컬 `next start`로 페이지가 정상 렌더됨을 실증(service_role 불필요 — 공개 읽기는 RLS 허용). 즉 **Vercel 배포를 기다리지 않고 로컬 실측 가능**. 주의: `NEXT_PUBLIC_*`는 빌드 타임 인라인이라 build·start 양쪽에 넣어야 한다.
+  - [x] 배포 환경(production alias `grooman.vercel.app`)에서 Lighthouse 실측 — 3/5경로(`/`·`/hair`·`/search`), 나머지 2경로는 production에 게시글 0건이라 측정 불가 (`40_dev/snapshots/lighthouse-measurement-2026-07-24.md`)
+  - [x] Performance 원인 조치 — `next/font/local`로 Pretendard self-host, 렌더블로킹 `@import` 제거. 로컬 CLS 0.359→0.097 확인
+  - [x] Accessibility 조치 — color-contrast 95→100(로컬). 로그인 버튼 다크모드 대비 미달, 헤더·하단내비 배경 투명 렌더 버그(Tailwind var()+opacity 컴파일 실패)도 같이 발견·수정
+  - [ ] **[Blocked]** Performance 수치 production 재측정 — 로컬 측정은 동시 프로세스 경합으로 노이즈 커서 절대값 불신뢰, 이 PR 배포 후 측정 필요
+  - [ ] **[Blocked]** `/posts/[id]`·`/profile/[username]` 재측정 — 크롤/봇 콘텐츠 생성 후
+- **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). next/image 전면 전환 완료(raw img 14→0, PR#13). **블로커 해소 경로 확인(2026-07-22)**: `NEXT_PUBLIC_SUPABASE_URL` + anon key만 빌드에 주입하면 로컬 `next start`로 정상 렌더됨을 실증 — Vercel 배포 없이 로컬 실측 가능(`NEXT_PUBLIC_*`는 빌드 타임 인라인이라 build·start 양쪽에 필요). **2026-07-24 조치**: 사용자 승인("둘 다 진행해줘") 후 폰트 self-host + color-contrast 수정 완료. 부수 발견 2건은 SEC-2와 같은 패턴으로 백그라운드 작업 스폰(다크모드 전역 감사) — `40_dev/snapshots/lighthouse-measurement-2026-07-24.md` §조치 참조.
 
 ## Done
 
