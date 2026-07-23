@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-admin'
 import { BOT_PROFILES, CATEGORY_IMAGES } from '@/lib/bots/data'
 import { generateBotPost, generateBotComments } from '@/lib/bots/generator'
 import { generateSlug } from '@/lib/utils/slug'
@@ -7,12 +9,11 @@ import type { CategoryEnum } from '@/types/supabase'
 
 const POSTS_PER_BOT = 13 // 8 bots × 13 = 104 posts
 
-export async function POST(req: Request) {
-  // 시크릿 검증
-  const { secret } = await req.json().catch(() => ({ secret: '' }))
-  if (secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+// 어드민 대시보드의 수동 트리거 버튼 — 세션 기반 관리자 인증 (크론 없음, 사람 전용)
+export async function POST() {
+  const authClient = createClient()
+  const admin = await requireAdmin(authClient)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const supabase = createAdminClient()
   const results = { bots: 0, posts: 0, comments: 0, errors: [] as string[] }

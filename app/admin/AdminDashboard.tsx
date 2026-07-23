@@ -84,7 +84,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
     setCrawling(true)
     setCrawlResult(null)
     try {
-      const res = await fetch(`/api/crawl?secret=${process.env.NEXT_PUBLIC_CRON_SECRET_HINT ?? ''}`)
+      const res = await fetch('/api/crawl', { method: 'POST' })
       const data = await res.json()
       setCrawlResult(`처리: ${data.processed}, 건너뜀: ${data.skipped}, 실패: ${data.failed}`)
     } catch {
@@ -119,15 +119,10 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
     setBotLoading(action)
     setBotResult(null)
     try {
-      const secret = process.env.NEXT_PUBLIC_CRON_SECRET_HINT ?? ''
       const endpoint = action === 'seed' ? '/api/admin/seed-bots' :
                        action === 'activity' ? '/api/admin/bot-activity' :
                        '/api/admin/bot-likes'
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret }),
-      })
+      const res = await fetch(endpoint, { method: 'POST' })
       const data = await res.json()
       setBotResult(JSON.stringify(data, null, 2))
     } catch {
