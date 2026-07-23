@@ -20,10 +20,15 @@ function md5Hash(str: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const cronSecret = request.headers.get('x-cron-secret')
+  // Vercel Cron은 Authorization: Bearer $CRON_SECRET로 호출한다.
+  // x-cron-secret 헤더·쿼리 파라미터는 어드민 대시보드 수동 트리거(AdminDashboard.tsx) 경로.
+  const authHeader = request.headers.get('authorization')
+  const bearerSecret = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+  const cronSecret = bearerSecret
+    ?? request.headers.get('x-cron-secret')
     ?? request.nextUrl.searchParams.get('secret')
 
-  if (cronSecret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || cronSecret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: '인증 실패' }, { status: 401 })
   }
 
