@@ -13,7 +13,17 @@ _(없음)_
 
 ## Ready
 
-_(없음)_
+### GRM-016
+- **title**: talmo-com 교차조사 권고 5~8번 (미착수분)
+- **mode**: fullstack
+- **change-class**: A
+- **owner**: AI + Human
+- **acceptance criteria**:
+  - [ ] 폰트 static 4굵기 전환 검토 — 현재 variable 2.0MB, 실사용 weight 4종뿐이라 ~1MB 절감 여지(LCP 직결)
+  - [ ] `DESIGN.md` 신설 — 토큰 + 결정 근거 산문 + **규제 금칙을 디자인 문서에 박제**(UI 카피 생성 지점에서 걸리도록)
+  - [ ] 사용자 관점 UX 진단 1회 — 저니 기반·심각도 분류·"잘된 것" 균형 포함(Lighthouse가 못 잡는 신뢰·흐름 문제)
+  - [ ] clinic 신뢰 장치 검토 — 방문 인증 배지·'아쉬운 점' 구조화(강남언니 3종 패턴) / 민감 카테고리 익명 옵션
+- **notes**: 근거 = `40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md` §6 권고표 5~8번. 1~4번은 GRM-017로 완료. 역방향(grooman→talmo) 후보도 §5에 정리됨(테스트 인프라·PR 워크플로우·방법론 sync).
 
 ## InProgress
 
@@ -53,6 +63,10 @@ _(없음)_
 
 ## Done
 
+### GRM-017
+- **title**: talmo-com 교차조사 권고 1~4번 — 법적 노출 차단 + 표현 필터 + HOT 임계값
+- **notes**: Completed 2026-07-24. ① **clinic 재게시 차단**(Class C, 사용자 3지선다 결정): `getHotPosts`·`RelatedPosts` 태그 경로에서 clinic 제외 — 재게시는 광고로 전환되고(복지부 2021) 그 경우 의료법 §56①(광고 주체 의료인 한정)에 걸려 고지로 치유 불가. clinic 카테고리·검색·상세 노출은 유지(원래 자리는 재게시 아님). ② **검토메모 §4-2 보강**: 의료법 §27(환자 유인)·식약처 표시광고 축(화장품법·건기식법) 두 축이 통째로 빠져 있던 것 문서화 → LEGAL-3·LEGAL-4. ③ **카테고리 인지형 표현 경고**(`lib/community/expression.ts`): 블랭킷 차단은 과차단이라("탈모 증상 완화"는 합법) 카테고리별 규칙 + **차단 아닌 경고**(이용자 발화 vs 판매자 등록 구분). 작성 화면에 실시간 노출. ④ **HOT 최소 추천 임계값**: `hot_rank`의 시간항(Reddit식 epoch/45000)이 지배해 "HOT=최신"이 되던 것 해소. 부수: `extractText`/`extractThumbnail`을 server action에서 `lib/utils/tiptap.ts`로 추출(클라이언트 공유). 테스트 27→43종. 검증: PostgREST 필터 문법 실측(정상 200/오형식 400), 경고 UI 번들·CSS 컴파일 확인. Class B.
+
 ### SEC-2
 - **title**: 어드민 수동 트리거 시크릿 → 세션 기반 관리자 인증 전환
 - **notes**: Completed 2026-07-24. `AdminDashboard.tsx`의 `triggerCrawl`/`triggerBot`이 클라이언트 번들에 인라인되는 `NEXT_PUBLIC_CRON_SECRET_HINT`로 시크릿을 만들어 보내던 방식 제거(비활성 상태였지만 값이 채워지면 즉시 실취약점). `app/api/crawl`(POST 신설)·`app/api/admin/{bot-activity,bot-likes,seed-bots}`의 사람 트리거 경로를 세션 쿠키+`profiles.is_admin` 확인(`lib/supabase/require-admin.ts` 신설, `app/moderation/actions.ts`의 기존 `requireAdmin` 로직 통합)으로 교체. Vercel Cron이 부르는 GET 경로(Bearer `CRON_SECRET`)는 그대로 유지. tsc·vitest(21/21)·build 전부 통과. Class B(인증 변경). [PR#19](https://github.com/YunJuniverse/grooman/pull/19) 생성·리뷰 대기.
@@ -68,10 +82,6 @@ _(없음)_
 ### GRM-014
 - **title**: AI-001 가드 강화 — fail-closed + zod 스키마 검증 + temperature 0
 - **notes**: Completed 2026-07-22. `lib/ai/crawl-analysis.ts` 신설(zod 스키마 — clinic enum 구조 거부) + `claude.ts` fail-closed 재작성 + **테스트 인프라 도입**(vitest, 단위 테스트 11종 전부 통과) + tsc·build 클린. CRAWL-2 해소. AC④: fail-closed로 키 부재가 안전해져 릴리스 게이트 추가 불요 판정. [[AI-001_crawl-analysis]] v1.1.
-
-### GRM-010
-- **title**: 봇 teardown 수단 + 공개 배포 릴리스 게이트
-- **notes**: Completed 2026-07-22. `profiles.is_bot` 마이그레이션(`004_bot_flag.sql`)+기존봇 백필, 시더가 is_bot 세팅(식별 일원화), teardown 스크립트(`supabase/scripts/teardown_bots.sql`, 글·댓글 우선 삭제로 SET NULL 방치 방지), 릴리스 게이트 SOP(`00_briefs/standing/SOP_public-release-gate.md`). 실행(프로덕션 teardown+0건 검증)은 공개 배포 시 SOP대로. BOT-1 해소. [[ADR-0002]].
 
 ### KEY-1
 - **title**: Supabase publishable/secret 키 마이그레이션 (ADR-0004) + 크론 인증 버그 수정(CRON-1)
