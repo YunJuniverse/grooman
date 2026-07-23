@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { CategoryEnum, Post } from '@/types/supabase'
 
 function isSupabaseConfigured() {
-  return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
 }
 
 export async function getPostsByCategory(category: CategoryEnum, limit = 20): Promise<Post[]> {

@@ -33,6 +33,19 @@ _(없음)_
   - [ ] 마케팅기획서 §9 KPI 표의 지표가 실제 수집되는지 확인
 - **notes**: 마케팅기획서 작성 중 발견(G5). 계정·콘솔 작업은 사람(hayden), 코드 삽입은 AI. **env 게이트 의도**: 미설정 시 GTM 미렌더 → PR preview·로컬 트래픽이 프로덕션 컨테이너를 오염시키지 않음. Production 환경에만 설정할 것(Preview 체크 해제). 로컬 검증 완료: `google_tag_manager["GTM-WJVFXRBT"]` 로드·`gtm.start` 푸시·noscript iframe 확인.
 
+### KEY-1
+- **title**: Supabase publishable/secret 키 마이그레이션 (ADR-0004)
+- **mode**: fullstack
+- **change-class**: B
+- **owner**: AI + Human
+- **acceptance criteria**:
+  - [x] `lib/supabase/{client,server,admin}.ts`·`lib/utils/posts.ts` 환경변수명 전환(`NEXT_PUBLIC_SUPABASE_ANON_KEY`→`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`→`SUPABASE_SECRET_KEY`)
+  - [x] `.env.example` 신설(기존 부재)
+  - [x] ADR-0004 작성 — `@supabase/server`(Edge Functions 전용) 미도입 판단 근거 포함
+  - [ ] **[사람]** Supabase Dashboard → Settings → API Keys에서 publishable/secret 키 발급
+  - [ ] **[사람]** Vercel(Production+Preview) + 로컬 `.env.local`에 새 변수명으로 값 설정 — **배포 전 필수**(변수명이 바뀌어 기존 legacy 값은 인식되지 않음, 미설정 시 전체 Supabase 연동 끊김)
+- **notes**: 사용자가 Supabase 대시보드의 `@supabase/server` 설치 안내를 전달 → 확인 질문 후 "전체 마이그레이션" 승인. 조사 결과 `@supabase/server`는 Deno/Edge Functions 전용 SDK로 Vercel Node.js 런타임인 grooman과 안 맞아 **도입하지 않음** — 대신 키 값만 새 체계로 교체(코드 시그니처 변경 없음, `@supabase/ssr`이 새 포맷 그대로 받음). legacy 키는 2026년 말까지 병행 지원되나 조기 전환. 로컬 검증: 새 변수명으로 빌드+런타임 정상 렌더 확인(실제 새 키 값은 미보유 — legacy anon 값으로 배선만 검증, 실제 신규 키 호환은 사람이 키 발급 후 확인 필요).
+
 ## Blocked
 
 ### GRM-001
