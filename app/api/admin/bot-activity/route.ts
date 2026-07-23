@@ -1,17 +1,31 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { BOT_PROFILES } from '@/lib/bots/data'
 import { generateBotPost, generateBotComments } from '@/lib/bots/generator'
 import { generateSlug } from '@/lib/utils/slug'
 import type { CategoryEnum } from '@/types/supabase'
 
-// 하루 2~3개 새 게시글, 기존 게시글에 댓글 추가
-export async function POST(req: Request) {
-  const { secret } = await req.json().catch(() => ({ secret: '' }))
-  if (secret !== process.env.CRON_SECRET) {
+// Vercel Cron(vercel.json)이 스케줄에 따라 호출 — GET + Authorization: Bearer $CRON_SECRET
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  return runBotActivity()
+}
 
+// 어드민 대시보드의 수동 트리거 버튼 — POST + body.secret
+export async function POST(req: Request) {
+  const { secret } = await req.json().catch(() => ({ secret: '' }))
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return runBotActivity()
+}
+
+// 하루 2~3개 새 게시글, 기존 게시글에 댓글 추가
+async function runBotActivity() {
   const supabase = createAdminClient()
   const results = { posts: 0, comments: 0, errors: [] as string[] }
 

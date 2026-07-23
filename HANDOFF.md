@@ -7,9 +7,9 @@
 
 ## Current Focus
 
-- Working on: GRM-013(GTM) 머지됨(PR#15) · **Supabase publishable/secret 키 마이그레이션**(ADR-0004) 완료(리뷰 대기)
+- Working on: GRM-013(GTM) 머지됨(PR#15) · **Supabase 키 마이그레이션**(ADR-0004) + **크론 인증 버그 수정**(CRON-1) 완료(리뷰 대기, 같은 브랜치)
 - Current mode: fullstack
-- Next TODO: 이 PR 리뷰 → **사람**: Supabase Dashboard에서 새 키 발급 → Vercel(Production+Preview)·로컬 `.env.local`에 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY`로 값 설정 → **배포 전 필수**(변수명이 바뀌어 기존 값은 인식 안 됨) → `NEXT_PUBLIC_GTM_ID`(Production만) → GTM 콘솔 GA4 연결 → GRM-001 숫자측정
+- Next TODO: 이 PR 리뷰 → **사람**: Supabase Dashboard에서 새 키 발급 → Vercel(Production+Preview)·로컬 `.env.local`에 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY`·`CRON_SECRET` 설정 → **배포 전 필수**(변수명이 바뀌어 기존 값은 인식 안 됨) → `NEXT_PUBLIC_GTM_ID`(Production만) → GTM 콘솔 GA4 연결 → GRM-001 숫자측정
 - Blockers: 위 사람 액션 전부 선행 필요 — 완료 전엔 Supabase 연동 자체가 끊긴 상태로 배포됨
 
 ## Active Links
@@ -33,6 +33,7 @@
 | ~~G1+G4~~ | ~~신고 UI + 계정 정지 수단~~ → **Resolved 2026-07-22** (GRM-012): 신고 5종 UI·어드민 처리 큐·`suspended_until`+INSERT RLS·정지/해제. 부수: profiles_update_admin으로 기존 toggleAdmin RLS 잠재버그도 해소 | ~~High~~ | 마이그 005 프로덕션 적용은 배포 시 |
 | G5 | 측정 인프라 — **코드측 해소**(GTM `GTM-WJVFXRBT` 설치·env 게이트). 잔여: GA4 구성 태그 연결·Search Console 등록 = 콘솔 작업 | Med | GRM-013 잔여 체크박스 — 사람(hayden) 콘솔 작업 후 전환 이벤트 삽입 |
 | KEY-1 | Supabase 키 체계 전환(ADR-0004)으로 env 변수명 변경 — 새 값 설정 전까지 **모든 Supabase 연동 끊김** | High | 사람: Dashboard에서 publishable/secret 키 발급 → Vercel+로컬에 새 변수명으로 설정. 이 PR 머지·배포 전 필수 |
+| ~~CRON-1~~ | ~~`vercel.json` 크론 2건이 실제 Vercel Cron 호출 형식(GET+`Authorization: Bearer`)과 안 맞아 배포 후에도 절대 실행 안 됨~~ → **Resolved 2026-07-23**: `/api/crawl` Bearer 인식 추가(기존 쿼리파라미터 방식은 어드민 수동 트리거용으로 유지), `/api/admin/bot-activity`에 GET 핸들러 신설(기존 POST는 어드민 수동 트리거 유지, 로직 공유) | ~~High~~ | — |
 | SEC-1 | 새 테이블 RLS 정책 누락 시 조용한 취약점 (ADR-0003) | Med | 마이그레이션 추가 시 RLS 점검 + **Supabase advisor 정기 확인**(006로 11→1건 해소) |
 | LEGAL-1 | clinic "유인성" 회색지대·광고↔clinic 분리 원칙 미정 (검토메모 §5) | Med | 분쟁 발생·수익화 시 변호사 검토. P3 광고 도입 전 분리 원칙 결정 |
 | CRAWL-1 | 자동 크롤 글이 사람 검수 없이 즉시 published·색인 (ADR-0001) | Med | 자동수집 뱃지·출처는 이미 표기됨. 검수 게이트 도입은 선택 |
@@ -42,8 +43,8 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
+- 2026-07-23: **크론 인증 버그 수정**(CRON-1) — `/api/crawl`·`/api/admin/bot-activity`가 실제 Vercel Cron 호출(GET+Bearer)과 안 맞아 배포돼도 절대 실행 안 됐을 것을 발견·수정. 어드민 수동 트리거 경로는 유지 · Class A
 - 2026-07-22: **Supabase 키 마이그레이션**(ADR-0004) — anon/service_role → publishable/secret 키명 전환. `@supabase/server`(Edge Functions 전용)는 조사 후 미도입 판단 · Class B
 - 2026-07-22: GRM-013 머지(PR#15) — GTM `GTM-WJVFXRBT` 설치(`@next/third-parties`+noscript, env 게이트) · 개인정보처리방침 처리위탁·분석쿠키·정보주체권리 신설 · Class A
 - 2026-07-22: **Supabase 프로비저닝**(grooman/서울, 마이그 001·003·004·005 적용) + **006 보안 하드닝**(advisor 11→1건, SECURITY DEFINER RPC 노출 차단) · Class B
 - 2026-07-22: **법적 준수 조치** — 정보통신망법 §44-2 절차 약관 미비(법정의무 위반) 발견·해소(약관 제6조) + 의료법 §56 근거로 clinic 기준 정렬(제7조) · 검토메모 작성
-- 2026-07-22: GRM-001 머지(PR#13) — 정적 Lighthouse 감사 + **next/image 전환**(raw img 14→0). 숫자측정은 배포 env 필요로 Blocked · Class A
