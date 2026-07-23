@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "ccae1b201271f467696ce0154ba3ebb54bfcf009",
-  "last_validated_at": "2026-07-23T15:03:01Z",
+  "last_validated_commit": "3815387299da6214c7d16c48e3f4ea07885ad4fb",
+  "last_validated_at": "2026-07-23T15:30:12Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "c69deba4950558cf6884987fd620f5ad083395bbb4844aa92074cd4c96a726ab"
+      "sha256": "f6e3e4df61b84c617aef9121743e70fd8abd57839de34a1e2f692dee22defc28"
     },
     "TODO.md": {
-      "sha256": "61179afdf75e1e687e1ea0357737834b477c67a0ed51bb87f9f11f7e6d661ace"
+      "sha256": "17fc0900ee5533caaa30ab5d9e536d87d8ced1c67177cb0cc843e4b679e17152"
     },
     ".ai/checkpoint.md": {
-      "sha256": "f2302edc699fc23c8d144fa10755123e1732871f04a2ae92d2a1ccfd86606cdf"
+      "sha256": "b3ff502a30bb31aa1c9f18cd241478d23ad2cd500b247b57ec25253b1207552a"
     }
   },
   "observations": {
@@ -35,6 +35,7 @@
       "50_resources/ai_observations/2026-07-22_next-image-conversion.md",
       "50_resources/ai_observations/2026-07-22_supabase-provision-and-legal-review.md",
       "50_resources/ai_observations/2026-07-23_cron-auth-mismatch-fix.md",
+      "50_resources/ai_observations/2026-07-23_grm-001-font-selfhost-color-contrast.md",
       "50_resources/ai_observations/2026-07-23_grm-001-lighthouse-deployed-measurement.md",
       "50_resources/ai_observations/2026-07-23_pr16-merge-verification.md",
       "50_resources/ai_observations/2026-07-23_supabase-publishable-secret-key-migration.md"

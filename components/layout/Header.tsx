@@ -48,7 +48,7 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-[var(--bg-card)]/90 glass border-b border-[var(--border)]">
+    <header className="sticky top-0 z-50 bg-[var(--bg-card-translucent)] glass border-b border-[var(--border)]">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-2 sm:gap-3">
         {/* 로고 */}
         <Link href="/" className="flex-shrink-0 font-black text-lg tracking-tighter text-[var(--text-1)]">
@@ -112,7 +112,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="text-sm font-bold text-white bg-[var(--accent)] hover:opacity-90 px-4 py-1.5 rounded-full transition"
+              className="text-sm font-bold text-white bg-indigo-600 hover:opacity-90 px-4 py-1.5 rounded-full transition"
             >
               로그인
             </Link>

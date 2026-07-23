@@ -14,7 +14,7 @@ export default function Footer() {
             <Link href="/terms" className="hover:text-gray-700">이용약관</Link>
           </nav>
         </div>
-        <p className="mt-6 text-xs text-gray-400">
+        <p className="mt-6 text-xs text-gray-500">
           © {new Date().getFullYear()} Grooman. All rights reserved.<br />
           이 사이트의 게시글 중 일부는 외부에서 자동 수집된 콘텐츠를 포함하며, 해당 게시글에는 [자동수집] 표시가 있습니다.
         </p>

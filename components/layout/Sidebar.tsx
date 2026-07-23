@@ -40,7 +40,7 @@ export default function Sidebar({ hotPosts = [], className }: SidebarProps) {
                   className={cn(
                     'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
                     active
-                      ? 'bg-[var(--accent)] text-white'
+                      ? 'bg-indigo-600 text-white'
                       : 'text-[var(--text-2)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-1)]'
                   )}
                 >

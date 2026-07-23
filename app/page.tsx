@@ -75,7 +75,7 @@ export default async function HomePage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">최신 글</h2>
-            <span className="text-xs text-gray-400 dark:text-gray-600">실시간 업데이트</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">실시간 업데이트</span>
           </div>
           <PostList initialPosts={latestPosts} sort="latest" showCategory />
         </section>

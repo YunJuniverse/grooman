@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import type { Metadata, Viewport } from 'next'
 import { GoogleTagManager } from '@next/third-parties/google'
+import { pretendard } from './fonts'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -40,7 +41,7 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning className={pretendard.variable}>
       {GTM_ID && <GoogleTagManager gtmId={GTM_ID} />}
       <body className="bg-[var(--bg-base)] text-[var(--text-1)] min-h-screen flex flex-col transition-colors duration-200">
         {/* @next/third-parties는 noscript 폴백을 렌더하지 않아 직접 둔다 */}
