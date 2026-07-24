@@ -1,4 +1,6 @@
-# Checkpoint — GRM-016 다크모드·명암비 전역 감사
+# Checkpoint — GRM-019 다크모드·명암비 전역 감사 (+ main 충돌 해소)
+
+> **⚠️ ID 리넘버**: 이 작업은 처음 `GRM-016`으로 커밋됐으나, 병렬로 먼저 머지된 PR#20이 `GRM-016`(talmo 5~8)을 선점 → 충돌 해소하며 **`GRM-019`로 확정**. 커밋 메시지·`50_resources/ai_observations/2026-07-24_grm-016-dark-mode-contrast.md` 파일명엔 GRM-016 잔존(정본 ID는 GRM-019). 사용자가 커밋 메시지 정정 원하면 amend+force-push 가능.
 
 > **역할 = 이번 세션의 서사 바통** (콜드스타트 인계문). 매 세션 종료 시 *덮어씀*.
 > **누적 상태(오픈이슈·결정·링크·최근이력 표)는 `HANDOFF.md`가 정본**이므로 여기서 중복하지 말고 참조. (경계: CLAUDE.md §4)
@@ -31,7 +33,7 @@
 
 ## 다음 구체 행동
 
-1. **아직 커밋 안 함** — 사용자 승인 후 커밋(제안 메시지: `fix(a11y): GRM-016 다크모드·명암비 전역 감사 — var()+opacity 잔존 조치·폼 컨트롤 버그·컨테이너별 대비 교정`) → PR. Class A.
+1. **커밋·push·PR#21 완료** → 그 뒤 origin/main(talmo PR#20)이 먼저 머지돼 PR#21 충돌 발생 → **충돌 해소 완료**(이 커밋). 코드 3파일(globals.css·RelatedPosts 자동병합, WriteForm는 main의 controlled select `value`/`onChange` + 내 themed className 둘 다 살림). 라이브 파일은 main을 base로 내 GRM-019 내용 재적층. 다음: PR#21 리뷰·머지 대기.
 2. 병행: **사람**(hayden) production 배포 후 Lighthouse 재측정으로 Performance 최종 확인(GRM-001 잔여 블로커).
 3. GTM 콘솔 GA4 연결(별개 트랙, GRM-013 잔여).
 

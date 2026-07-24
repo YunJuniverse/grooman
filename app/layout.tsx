@@ -2,7 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import type { Metadata, Viewport } from 'next'
 import { GoogleTagManager } from '@next/third-parties/google'
-import { pretendard } from './fonts'
+// Pretendard dynamic-subset(92청크, unicode-range 분할) 자체 호스팅.
+// next/font/local은 unicode-range 분할을 표현하지 못해 부득이 수동 @font-face를 쓴다 —
+// variable 단일 파일(2.0MB)을 통째로 받는 대신 페이지에 실제 등장하는 글자의 청크만
+// 받는다(홈 실측 10청크·260KB). 근거: 40_dev/snapshots/font-strategy-2026-07-24.md
+import './pretendard.css'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -41,7 +45,7 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" suppressHydrationWarning className={pretendard.variable}>
+    <html lang="ko" suppressHydrationWarning>
       {GTM_ID && <GoogleTagManager gtmId={GTM_ID} />}
       <body className="bg-[var(--bg-base)] text-[var(--text-1)] min-h-screen flex flex-col transition-colors duration-200">
         {/* @next/third-parties는 noscript 폴백을 렌더하지 않아 직접 둔다 */}

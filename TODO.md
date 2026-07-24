@@ -13,7 +13,17 @@ _(없음)_
 
 ## Ready
 
-_(없음)_
+### GRM-018
+- **title**: UX 진단·clinic 설계 후속 조치 (문서→구현)
+- **mode**: fullstack
+- **change-class**: A
+- **owner**: AI + Human
+- **acceptance criteria**:
+  - [ ] 다크모드 제목 대비(§1, 13곳) — **PERF-2 백그라운드 작업이 처리 중**(중복 주의). 배경 맥락(bg-white 하드코딩 페이지 제외) 필요
+  - [ ] `/search` 본문에 검색 입력창(현재 헤더 아이콘으로만 열림 — 흐름 단절)
+  - [ ] 홈 한 줄 소개 히어로(비로그인 첫 방문자용 랜딩 맥락)
+  - [ ] clinic 신뢰 장치 B안(경량 스키마)+C안(익명 옵션) — clinic 활성화 시(Class B, `clinic-trust-design-2026-07-24.md`)
+- **notes**: `user-ux-diagnosis-2026-07-24.md`·`clinic-trust-design-2026-07-24.md`의 미착수 항목. clinic·콜드스타트 항목은 글이 쌓인 뒤가 적기.
 
 ## InProgress
 
@@ -53,22 +63,22 @@ _(없음)_
 
 ## Done
 
-### GRM-016
+### GRM-019
 - **title**: 다크모드·명암비 전역 감사 (PERF-2 해소)
-- **notes**: Completed 2026-07-24 (커밋 전, 승인 대기). **① var()+opacity 패턴**: `npx tailwindcss --content`로 직접 컴파일해 `hover:border-[var(--accent)]/40`(PostCard)·`group-hover:ring-[var(--accent)]/40`(Header)가 CSS를 *전혀 생성하지 않음*을 재확인 → 알파 baked-in `--accent-translucent` 토큰 신설로 교체. 저장소 내 잔존 0건. **② 명암비**: 원인이 "다크모드"가 아니라 *컨테이너별 실제 배경*임을 확인 — 테마 배경(`--bg-base`) 위 텍스트는 `dark:` variant 부재로 다크에서 파손(404 `text-gray-900`은 사실상 비가시), 하드코딩 흰 카드 안 텍스트는 `text-gray-400`(2.5:1)이라 **라이트모드에서도 위반**. 두 갈래로 나눠 조치. **③ 파생 버그**: Tailwind preflight가 폼 컨트롤에 `color: inherit`만 주고 배경은 UA 기본(흰 필드)으로 남겨, 다크모드에서 `--text-1`(거의 흰색) 글자가 흰 필드에 찍혀 **입력 내용이 안 보였음** → 필드를 각자의 컨테이너에 맞춰 명시 지정. **④ 자동 감사**로 추가 발견: BottomNav `HOT`(orange-500, 2.79:1)·HotBoard 활성탭(orange-600, 3.56:1)·홈 배지(gray-500 on `--bg-base`, 4.43:1 — 경계 미달). 검증: tsc 0 · vitest 21/21 · build 27라우트 · 브라우저 합성배경 명암비 자동감사 9경로×2테마 **0건**. 27파일. Class A. 잔여는 PERF-3(하드코딩 라이트 카드).
+- **notes**: Completed 2026-07-24 (PR#21). **⚠️ ID 주의**: 처음 커밋은 `GRM-016`으로 찍었으나, 병렬로 먼저 머지된 PR#20이 같은 `GRM-016`(talmo 5~8)을 선점 → 충돌 해소하며 `GRM-019`로 리넘버(커밋 메시지·초기 관찰로그 파일명엔 GRM-016 잔존, 정본 ID는 GRM-019). **① var()+opacity 패턴**: `npx tailwindcss --content`로 직접 컴파일해 `hover:border-[var(--accent)]/40`(PostCard)·`group-hover:ring-[var(--accent)]/40`(Header)가 CSS를 *전혀 생성하지 않음*을 재확인 → 알파 baked-in `--accent-translucent` 토큰으로 교체. 저장소 내 잔존 0건. **② 명암비**: 원인이 "다크모드"가 아니라 *컨테이너별 실제 배경*임을 확인 — 테마 배경 위 텍스트는 `dark:` 부재로 다크에서 파손(404 `text-gray-900` 사실상 비가시), 하드코딩 흰 카드 안 텍스트는 `text-gray-400`(2.5:1)이라 **라이트에서도 위반**. 두 갈래로 조치. privacy·terms 등 `bg-white` 페이지는 UX 진단 경고(역효과)대로 `dark:` 미적용 유지. **③ 파생 버그**: Tailwind preflight가 폼 컨트롤에 `color:inherit`만 주고 배경은 UA 기본(흰 필드) → 다크에서 흰글자/흰필드로 입력값 비가시. 필드별 컨테이너 맞춤 명시. **④ 자동 감사**로 추가 발견: BottomNav `HOT`(2.79:1)·HotBoard 활성탭(3.56:1)·홈 배지(4.43:1). 검증: tsc 0·vitest 21/21·build 27라우트·브라우저 합성배경 자동감사 9경로×2테마 **0건**. 27파일. Class A. 잔여는 PERF-3. main(PR#20) 충돌 해소 완료.
+
+### GRM-016
+- **title**: talmo-com 교차조사 권고 5~8번 — 폰트·DESIGN.md·UX 진단·clinic 설계
+- **notes**: Completed 2026-07-24. **⑤ 폰트**(권고는 static 4굵기였으나 더 나은 방식 발견): 내가 오전에 넣은 variable 2.0MB가 실은 회귀였음(CDN dynamic-subset은 홈 260KB만 받았는데 통짜 2.0MB로 8배 악화). **dynamic-subset 92청크 self-host**(`public/fonts/pretendard/`+`app/pretendard.css`)로 전환 → 홈 256KB·완전 커버리지·렌더블로킹 없음 실측. static subset은 UGC 글자 깨짐 위험이라 배제. `next/font/local`은 unicode-range 분할 API가 없어 수동 @font-face. (`font-strategy-2026-07-24.md`) **⑥ DESIGN.md 신설**: grooman 실제 토큰(globals.css에서 추출, 색·카테고리 6종 대조 일치)+결정 근거 산문+규제 금칙 박제+Tailwind var()+opacity 함정·accent 대비 함정 기록. **⑦ UX 진단**(`user-ux-diagnosis-2026-07-24.md`): 저니 관찰로 **다크모드 제목 13곳 안 보임(대비 1.05:1)** 발견 — Lighthouse가 못 잡은 것. 일괄 수정 시도했다 bg-white 페이지 white-on-white 위험 확인하고 되돌려 PERF-2로 이관(범위 규율). **⑧ clinic 신뢰장치**(`clinic-trust-design-2026-07-24.md`): 강남언니 3종+talmo 시드 교훈 설계, 스키마 변경이라 빌드 전 게이트로 GRM-018에 등록. 검증: tsc 0·vitest 43·build 27·폰트 브라우저 실측. Class A. 미착수 후속 → GRM-018.
+
+### GRM-017
+- **title**: talmo-com 교차조사 권고 1~4번 — 법적 노출 차단 + 표현 필터 + HOT 임계값
+- **notes**: Completed 2026-07-24. ① **clinic 재게시 차단**(Class C, 사용자 3지선다 결정): `getHotPosts`·`RelatedPosts` 태그 경로에서 clinic 제외 — 재게시는 광고로 전환되고(복지부 2021) 그 경우 의료법 §56①(광고 주체 의료인 한정)에 걸려 고지로 치유 불가. clinic 카테고리·검색·상세 노출은 유지(원래 자리는 재게시 아님). ② **검토메모 §4-2 보강**: 의료법 §27(환자 유인)·식약처 표시광고 축(화장품법·건기식법) 두 축이 통째로 빠져 있던 것 문서화 → LEGAL-3·LEGAL-4. ③ **카테고리 인지형 표현 경고**(`lib/community/expression.ts`): 블랭킷 차단은 과차단이라("탈모 증상 완화"는 합법) 카테고리별 규칙 + **차단 아닌 경고**(이용자 발화 vs 판매자 등록 구분). 작성 화면에 실시간 노출. ④ **HOT 최소 추천 임계값**: `hot_rank`의 시간항(Reddit식 epoch/45000)이 지배해 "HOT=최신"이 되던 것 해소. 부수: `extractText`/`extractThumbnail`을 server action에서 `lib/utils/tiptap.ts`로 추출(클라이언트 공유). 테스트 27→43종. 검증: PostgREST 필터 문법 실측(정상 200/오형식 400), 경고 UI 번들·CSS 컴파일 확인. Class B.
 
 ### SEC-2
 - **title**: 어드민 수동 트리거 시크릿 → 세션 기반 관리자 인증 전환
 - **notes**: Completed 2026-07-24. `AdminDashboard.tsx`의 `triggerCrawl`/`triggerBot`이 클라이언트 번들에 인라인되는 `NEXT_PUBLIC_CRON_SECRET_HINT`로 시크릿을 만들어 보내던 방식 제거(비활성 상태였지만 값이 채워지면 즉시 실취약점). `app/api/crawl`(POST 신설)·`app/api/admin/{bot-activity,bot-likes,seed-bots}`의 사람 트리거 경로를 세션 쿠키+`profiles.is_admin` 확인(`lib/supabase/require-admin.ts` 신설, `app/moderation/actions.ts`의 기존 `requireAdmin` 로직 통합)으로 교체. Vercel Cron이 부르는 GET 경로(Bearer `CRON_SECRET`)는 그대로 유지. tsc·vitest(21/21)·build 전부 통과. Class B(인증 변경). [PR#19](https://github.com/YunJuniverse/grooman/pull/19) 생성·리뷰 대기.
 
-### GRM-015
-- **title**: Supabase 프로비저닝 + 법적 준수 조치
-- **notes**: Completed 2026-07-22. Supabase 프로젝트 grooman 생성(서울, 월 $10 승인)·마이그 001/003/004/005 적용·11테이블 RLS 확인. **006 보안 하드닝**(advisor 11→1건, `handle_new_user` SECURITY DEFINER의 anon RPC 노출 차단). 법적 검토(변호사 부재, 조사 기반): 정보통신망법 §44-2 절차가 약관에 없어 **법정의무 위반 상태 발견→약관 제6조 신설**, 의료법 §56 근거로 clinic 기준 정렬(제7조)+운영기획서 §4.3. 검토메모 `40_dev/snapshots/legal-compliance-review-2026-07-22.md`(한계·잔여 4건 명시→LEGAL-1). Class B.
-
-### GRM-012
-- **title**: 신고 기능 + 계정 제재 수단 구현 (G1·G4 해소)
-- **notes**: Completed 2026-07-22. 신고 5종 UI(`ReportButton`)→reports(중복방지 unique)·어드민 신고관리 탭(목록·필터·처리/기각)·계정 정지(`005` 마이그: suspended_until+INSERT RLS·회원관리 7/30/영구·해제). 순수로직 `lib/moderation/reports.ts`+테스트 10종. 부수: `profiles_update_admin` RLS로 기존 toggleAdmin 잠재버그 해소. 테스트 21/21·build ✓. 정합: 12 v1.2·11 v1.3. Class B(스키마·RLS). [[12_운영기획서]] §4.1·§5.
-
-> 오래된 Done(2026-07-22-23 완료·머지)은 git 이력·PR로 이관: GRM-014(AI 가드 fail-closed, CRAWL-2), GRM-010(봇 teardown·릴리스 게이트, BOT-1), KEY-1(Supabase 키 전환 PR#16, CRON-1).
+> 오래된 Done(2026-07-22-23 완료·머지)은 git 이력·PR로 이관: GRM-015(Supabase 프로비저닝+법적준수, 006 하드닝), GRM-012(신고+제재 PR, G1·G4), KEY-1(Supabase 키 전환 PR#16, CRON-1), GRM-014(AI 가드 fail-closed), GRM-010(봇 teardown·릴리스 게이트).
 
 

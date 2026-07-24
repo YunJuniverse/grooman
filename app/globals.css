@@ -41,7 +41,7 @@
 body {
   background: var(--bg-base);
   color: var(--text-1);
-  font-family: var(--font-pretendard), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   word-break: keep-all;
   overflow-wrap: break-word;
   line-height: 1.6;
