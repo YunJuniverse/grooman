@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "0a84a7592e8488181dbfca8554b7333c794d4620",
-  "last_validated_at": "2026-07-23T15:58:57Z",
+  "last_validated_commit": "dd180160725a1d067e625b12e4b934bbc86f33b4",
+  "last_validated_at": "2026-07-24T10:31:13Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "016bc34fcf2cd06ead8cdf236ca2fdf2bfb158c892517b28d82fa5171c361f91"
+      "sha256": "b925c69d8243aa4ae9576eb1aa66232eb245a329284fd6ab3627f7c38c1276cd"
     },
     "TODO.md": {
-      "sha256": "b9309c2dda109f8aed971bf59ae066f2d54a0bc6ea02b187b04c41372e5c4099"
+      "sha256": "9827b6929a30cc463bbe0e17bfa65843301385682e4f24e16dc55ea04e0a1251"
     },
     ".ai/checkpoint.md": {
-      "sha256": "f7074a7f84dc4f18976e4b5785625d9a72cf8c90c041a411ad6eec7a5a51aeda"
+      "sha256": "aed38434d33044202df78a7b028c826b68dedfed5ba072000265222fc6df24ad"
     }
   },
   "observations": {
@@ -41,7 +41,8 @@
       "50_resources/ai_observations/2026-07-23_grm-001-lighthouse-deployed-measurement.md",
       "50_resources/ai_observations/2026-07-23_pr16-merge-verification.md",
       "50_resources/ai_observations/2026-07-23_supabase-publishable-secret-key-migration.md",
-      "50_resources/ai_observations/2026-07-23_talmo-cross-project-insights.md"
+      "50_resources/ai_observations/2026-07-23_talmo-cross-project-insights.md",
+      "50_resources/ai_observations/2026-07-24_talmo-recommendations-5-8-font-design.md"
     ]
   }
 }

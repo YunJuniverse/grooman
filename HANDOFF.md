@@ -7,14 +7,14 @@
 
 ## Current Focus
 
-- Working on: **talmo-com 교차조사 반영** — clinic 재게시 차단·법적 갭 문서화·표현 경계 필터·HOT 임계값(권고 1~4번) 구현 완료, 리뷰 대기
+- Working on: **talmo-com 권고 5~8번**(폰트 dynamic-subset self-host·DESIGN.md·UX 진단·clinic 설계) 완료, 리뷰 대기. 권고 1~4번은 PR#20
 - Current mode: fullstack
-- Next TODO: 이 PR 리뷰·머지 → talmo 권고 5~8번(폰트 static 전환·DESIGN.md·UX 진단·clinic 신뢰장치) 중 선택. 병행: **사람** GTM 콘솔 GA4 연결 → AI가 전환 이벤트 삽입 → Search Console 등록
+- Next TODO: 두 PR 리뷰·머지 → GRM-018 후속(검색창·홈 히어로·clinic 스키마). 병행: **사람** GTM 콘솔 GA4 연결 → AI가 전환 이벤트 삽입 → Search Console 등록
 - Blockers: 없음
 
 ## Active Links
 
-- Current PR: branch feat/talmo-insights-legal-hot(신규) · #18(GRM-001)·#19(SEC-2) 머지 완료
+- Current PR: [#20](https://github.com/YunJuniverse/grooman/pull/20)(talmo 권고 1~8 전체 — 1~4 정책·5~8 디자인/문서) · #18·#19 머지 완료
 - Current issue:
 - Relevant ADRs: [ADR-0001](40_dev/adr/0001-rss-auto-crawl-ai-pipeline.md)·[ADR-0002](40_dev/adr/0002-bot-seeding-cold-start.md)·[ADR-0003](40_dev/adr/0003-rls-security-model.md)·[ADR-0004](40_dev/adr/0004-supabase-publishable-secret-keys.md)
 - Relevant snapshots: [lighthouse-measurement-2026-07-24](40_dev/snapshots/lighthouse-measurement-2026-07-24.md)(실측)·[**talmo-com 교차조사**](40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md)(권고 8건, 5~8번 미착수)·[법적 검토](40_dev/snapshots/legal-compliance-review-2026-07-22.md)(§4-2 보강)
@@ -42,15 +42,15 @@
 | CRAWL-1 | 자동 크롤 글이 사람 검수 없이 즉시 published·색인 (ADR-0001) | Med | 자동수집 뱃지·출처는 이미 표기됨. 검수 게이트 도입은 선택 |
 | ~~PERF-1~~ | ~~Performance 미달(`/` 61·`/hair` 88) — 폰트 `@import` 렌더블로킹~~ → **Resolved 2026-07-24**: `next/font/local` self-host, 로컬 CLS 0.359→0.097 확인 | ~~Med~~ | production 재측정으로 최종 확인 |
 | ~~SEC-2~~ | ~~`AdminDashboard.tsx`의 수동 크롤/봇 트리거가 `NEXT_PUBLIC_CRON_SECRET_HINT`(클라이언트 노출 변수)를 시크릿으로 씀~~ → **Resolved 2026-07-24** (PR#19 머지): 세션+`is_admin`(`lib/supabase/require-admin.ts`)으로 교체, Cron GET 경로는 유지 | ~~Med~~ | — |
-| PERF-2 | 다크모드 색상 불일치 — 헤더·하단내비 배경이 `bg-[var(--x)]/NN` 패턴으로 인해 Tailwind가 CSS를 생성 못 해 완전 투명 렌더되고 있었음(2건 수정 완료). 동일 패턴이 PostCard·Header 호버 상태에 잔존 + `text-gray-400`류가 `dark:` variant 없이 전역 90여 곳 | Med | 스폰된 백그라운드 작업 카드로 전역 감사 대기 중 |
+| PERF-2 | 다크모드 색상 불일치 — 헤더·하단내비 `bg-[var]/NN` 투명 버그(2건 수정) + 호버 잔존 + **페이지 제목 13곳 `text-gray-900`이 `dark:` 없이 대비 1.05:1로 안 보임**(UX 진단이 정량 확인). ⚠️ privacy·terms는 `bg-white` 하드코딩이라 `dark:` 넣으면 역효과 | Med | 스폰된 백그라운드 작업(전역 감사)이 처리 중 — 배경 맥락 필수 |
 | ~~CRAWL-2~~ | ~~fail-open 가드~~ → **Resolved 2026-07-22** (GRM-014): fail-closed+zod 검증+테스트 11종 | ~~Med~~ | — |
 
 ## Recent Changes
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-24: **talmo-com 교차조사 반영**(권고 1~4) — clinic 재게시 차단(LEGAL-2, Class C 결정)·검토메모 §4-2 보강(§27·식약처 축)·카테고리 인지형 표현 경고(`expression.ts`, 테스트 16종)·HOT 최소 추천 임계값 · Class B
-- 2026-07-24: **talmo-com 전수조사** — 같은 방법론·같은 도메인 자매 프로젝트에서 법적 갭 4건·설계 인사이트 5건·디자인/QA 자산 5건 도출, 권고 8건 우선순위화 · [스냅샷](40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md)
-- 2026-07-24: **SEC-2 머지(PR#19)** — 어드민 수동 트리거 시크릿→세션+`is_admin` 인증 전환, `lib/supabase/require-admin.ts` 신설 · Class B
-- 2026-07-24: **GRM-001 Performance·Accessibility 조치**(PR#18) — `next/font/local` self-host, color-contrast 100/100(로컬). 부수: 헤더·하단내비 투명 렌더 버그 수정 → PERF-2 등록 · Class A
-- 2026-07-24: **GRM-001 배포환경 실측** — production alias에서 Lighthouse 3/5경로(나머지는 콘텐츠 0건으로 측정 불가) · Class A
+- 2026-07-24: **talmo 권고 5~8 반영**(PR#20 확장) — 폰트 dynamic-subset self-host(2.0MB→홈 256KB, 오전 회귀 되돌림)·**DESIGN.md 신설**·UX 진단(다크 제목 13곳 발견)·clinic 신뢰장치 설계 · Class A
+- 2026-07-24: **talmo 권고 1~4 반영**(PR#20) — clinic 재게시 차단(LEGAL-2, Class C 결정)·검토메모 §4-2 보강·표현 경고(`expression.ts`)·HOT 임계값 · Class B
+- 2026-07-24: **talmo-com 전수조사** — 자매 프로젝트에서 법적 갭 4·설계 5·디자인/QA 5 도출, 권고 8건 우선순위화 · [스냅샷](40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md)
+- 2026-07-24: **SEC-2 머지(PR#19)** — 어드민 수동 트리거 시크릿→세션+`is_admin` 인증 전환 · Class B
+- 2026-07-24: **GRM-001 조치·실측 머지(PR#18)** — 폰트 self-host·color-contrast 100·Lighthouse 3/5경로. 헤더/하단내비 투명 버그→PERF-2 · Class A

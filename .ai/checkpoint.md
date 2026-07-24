@@ -1,4 +1,4 @@
-# Checkpoint — talmo-com 교차조사 + 권고 1~4번 반영
+# Checkpoint — talmo 권고 5~8번 (폰트·DESIGN.md·UX 진단·clinic 설계)
 
 > **역할 = 이번 세션의 서사 바통** (콜드스타트 인계문). 매 세션 종료 시 *덮어씀*.
 > **누적 상태(오픈이슈·결정·링크·최근이력 표)는 `HANDOFF.md`가 정본**이므로 여기서 중복하지 말고 참조. (경계: CLAUDE.md §4)
@@ -6,45 +6,56 @@
 ## 작성자
 
 - Agent: Claude (Opus 4.8, Claude Code)
-- Branch: `feat/talmo-insights-legal-hot` (main에서 분기, #18·#19 머지 후)
+- Branch: `feat/talmo-insights-legal-hot` (PR#20 — 권고 1~4에 이어 5~8을 같은 브랜치에 얹음)
 
 ## 방금 한 것 (이번 세션)
 
-### 1) talmo-com 전수조사
+talmo-com 교차조사 권고 5~8을 처리. 5·6은 구현, 7·8은 진단·설계 문서(둘 다 코드로 뛰어들 게 아니라 결정 게이트라).
 
-사용자 요청으로 자매 프로젝트 `/Users/hayden/talmo-com`을 전수조사했다. **같은 방법론(v4.0)·같은 도메인(탈모/두피)·6일 앞선 출발**이라 grooman이 아직 안 겪은 문제를 이미 겪고 문서화해둔 상태였다. 산출물: `40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md`(권고 8건 우선순위표 포함).
+### ⑤ 폰트 (권고는 "static 4굵기"였으나 더 나은 방식 발견)
 
-핵심: talmo는 Next 16/React 19/Tailwind 4 + 기획서 6종 + **specs 5종 + ADR 5종 + DESIGN.md**(grooman에 없는 문서 유형)를 갖췄지만 **테스트가 0개**고 main 직접 커밋이 많다 → 역방향 주입 후보(테스트·PR 워크플로우·방법론 sync)도 §5에 정리.
+- **내가 오전 GRM-001에서 넣은 variable 2.0MB가 실은 회귀였다**: 변경 전 CDN dynamic-subset은 홈에서 청크 10개·260KB만 받았는데, variable 통짜는 2.0MB를 다 받는다(8배 악화). 이걸 실측으로 발견.
+- talmo가 말한 static subset(각 264KB)은 **UGC 글자 깨짐 위험**(subset은 자주 쓰는 글자만) → 커뮤니티엔 부적합.
+- 채택: **dynamic-subset 92청크를 self-host**. `pretendard` npm에서 `woff2-dynamic-subset/*.woff2` 92개를 `public/fonts/pretendard/`로 복사, CSS 상대경로를 `/fonts/pretendard/`로 치환해 `app/pretendard.css`. `next/font/local`은 unicode-range 분할 API가 없어 못 씀 → 수동 @font-face(self-host라 @import 렌더블로킹도 없음).
+- 검증: 브라우저 `performance` 실측 홈 **256KB·10청크**, `document.fonts.check` true, 스크린샷 육안. `app/fonts.ts`·variable 파일·npm 패키지 전부 제거.
+- 문서: `font-strategy-2026-07-24.md`.
 
-### 2) 권고 1~4번 구현 (사용자 "응 진행해")
+### ⑥ DESIGN.md 신설
 
-- **①(Class C) clinic 재게시 차단** — 사용자에게 3지선다로 물어 "HOT에서 clinic 제외" 선택받음. 근거를 내가 조사 중 도출: talmo는 고지 문구(`REPUBLISH_DISCLOSURE`)로 처리했지만 **그건 그쪽 재게시 면이 화장품·건기식(표시광고법)이라 통하는 것**이고, grooman clinic은 의료 시술이라 광고 전환 시 **의료법 §56①(광고 주체를 의료인·의료기관으로 한정)**에 걸려 고지로 치유되지 않는다. → `lib/community/policy.ts` 신설.
-  - 조사하다 **`RelatedPosts`의 태그 경로에도 카테고리 필터가 없다**는 걸 추가 발견(홈 HOT만이 아니었음) → 같이 차단.
-- **② 검토메모 §4-2 보강** — 의료법 **§27(환자 유인)**, **식약처 표시광고 축**(화장품법·건기식법)이 통째로 빠져 있었음. §5 남은 불확실성에 5·6·7번 추가, §6 조치 요약 갱신. 부수로 §5-4(개인정보처리방침)는 GRM-013으로 이미 해소됐으므로 취소선 처리.
-- **③ 카테고리 인지형 표현 경고** — `lib/community/expression.ts`. **차단이 아니라 경고**로 설계한 이유를 코드 주석에 박음: 블랭킷 차단은 합법 표현("탈모 증상 완화"는 기능성화장품 허용)까지 죽이고, 대상이 판매자 상품 등록이 아니라 **이용자 커뮤니티 발화**다. `WriteForm`에 실시간 노출(발행은 막지 않음).
-- **④ HOT 최소 추천 임계값** — `hot_rank = log(engagement) + epoch/45000`은 Reddit 공식인데, 임계값이 없으면 시간항이 지배해 **"HOT = 그냥 최신"**이 된다. talmo 실측(글 80개에 임계값 5 → 78%가 BEST) 근거로 `HOT_MIN_LIKES = 3` 도입.
-- 부수 리팩터: `extractText`/`extractThumbnail`이 `'use server'` 파일에 갇혀 클라이언트에서 못 쓰던 것 → `lib/utils/tiptap.ts`로 추출(중복도 제거).
+- talmo 형식(frontmatter 토큰 + 근거 산문 + 규제 금칙) 따르되 **grooman 실제값**으로. `globals.css`에서 토큰 추출(대조: bg/text/accent/카테고리 6종 전부 일치 확인).
+- grooman 고유 반영: **다크 우선 테마**, accent 인디고, 카테고리 6색, 4굵기. 이번 세션들에서 실제로 겪은 함정 2개를 박제: **Tailwind var()+opacity 컴파일 실패**, **다크 accent(#818cf8) 흰글자 대비 2.98:1 미달**.
+
+### ⑦ UX 진단 (`user-ux-diagnosis-2026-07-24.md`)
+
+- 로컬 prod를 375×812로 저니 관찰 + 대비 정량 측정.
+- **최대 발견: 다크모드에서 페이지 제목 13곳이 안 보인다**(`text-gray-900` 하드코딩, 대비 1.05:1). Lighthouse(오전 95~100)가 못 잡은 문제 — 사람 저니로만 잡힘.
+- **범위 규율**: 13곳 일괄 수정을 perl로 시도했다가, privacy·terms가 `bg-white` 하드코딩이라 `dark:text-gray-100` 넣으면 **흰 배경에 흰 글자**가 되는 걸 발견하고 **전부 되돌렸다.** 이건 이미 실행 중인 PERF-2 백그라운드 작업(전역 다크모드 감사) 영역이고 그쪽이 배경 맥락을 본다. UX 진단은 문서로 남기고 수정은 이관.
+- 그 외 발견: 콜드스타트 화면이 "죽은 사이트"로 보임(→봇 시딩 후 공개, ADR-0002), 검색 페이지에 검색창 없음, 홈 랜딩 소개 없음.
+
+### ⑧ clinic 신뢰장치 설계 (`clinic-trust-design-2026-07-24.md`)
+
+- 강남언니 3종(방문 인증·'아쉬운 점' 필터·완결 동선) 중 grooman 적용 가능성 매핑. 완결 동선(예약·유인)은 §27 위반이라 **의도적 배제**.
+- talmo 시드 교훈: 평점이 3~5점만 있으면 '아쉬운 점' 필터가 공허 → 봇 시딩 시 만족도 분포 넓게.
+- B안(경량 스키마)+C안(익명 옵션) 제안. 스키마 변경(Class B)이고 clinic 글 0건이라 **지금 만들면 검증 데이터 없음** → GRM-018 빌드 게이트로.
 
 ## 검증한 것
 
-- tsc 0 · vitest **43/43**(27→43, 신규 16종) · build 27 routes
-- **PostgREST 필터 실측**: `category=not.in.(clinic)` → HTTP 200 / 괄호 뺀 오형식 → HTTP 400. 즉 **조용히 무시되지 않는다**는 걸 대조군으로 확인.
-- **경고 UI 실재 확인**: 오늘 겪은 "타입은 통과하는데 CSS가 안 나오는" 함정(Tailwind var+opacity) 때문에, 빌드 산출물에서 경고 문구가 클라이언트 청크에 포함됐는지 + amber 클래스 4종이 실제 CSS로 컴파일됐는지 grep으로 확인.
-- **미검증(정직)**: production에 글이 0건이라 **clinic 제외의 행 단위 동작은 실데이터로 확인 못 했다.** 문법 검증 + 단위 테스트(리터럴 형식 고정)로 대체.
+- tsc 0 · vitest **43/43**(변화 없음 — 5~8은 폰트/문서라 로직 테스트 무관) · build 27 routes
+- 폰트: 브라우저 네트워크 실측(256KB) + 한글 렌더 확인
+- DESIGN.md: 토큰값 globals.css 대조 일치, 카테고리 6색 PostCard 대조 일치
 
 ## 다음 구체 행동
 
-1. **아직 커밋 안 함** — wrap → ship → PR 생성이 다음 스텝.
-2. 리뷰·머지 후: TODO **GRM-016**(권고 5~8: 폰트 static 전환·DESIGN.md·UX 진단·clinic 신뢰장치) 중 선택.
-3. 병행 대기: GTM 콘솔 GA4 연결(사람) → 전환 이벤트 삽입(AI).
+1. **아직 커밋 안 함** — wrap → ship(PR#20 브랜치에 추가) → PR#20 설명을 "권고 1~8 전체"로 갱신.
+2. PR#20 리뷰·머지 → GRM-018 후속(검색창·홈 히어로·clinic 스키마).
+3. 병행: GTM 콘솔 GA4 연결(사람).
 
 ## 막힌 것 / 주의
 
-- **HOT_MIN_LIKES=3은 공개 전 추정값이다.** talmo가 실제 데이터 보고 5→10으로 올린 것처럼, grooman도 글이 쌓이면 재보정해야 한다(정책 파일 주석에 명시).
-- clinic을 HOT에서 뺐으므로 **clinic 카테고리 유입이 홈에서 끊긴다.** 제품상 대가이며, 사용자가 선택지 설명을 읽고 결정했다.
-- 병렬 세션(PERF-2 다크모드 감사)이 돌고 있어 라이브 파일 충돌 가능성 있음 — 이번에도 머지 시 확인할 것(이번 세션에 이미 2회 겪음).
+- **PERF-2 백그라운드 작업과 다크모드 제목 영역이 겹친다.** UX 진단이 13곳을 정량화했으니 그 작업이 참고할 수 있게 HANDOFF PERF-2 노트에 반영했다. 내가 이 PR에서 제목을 안 고친 건 의도적(범위·white-on-white 위험).
+- 폰트 저장소 크기 3.0MB(92파일) 증가 — 사용자 전송량은 8배 줄었으니 트레이드오프 수용. `font-strategy` 문서에 기록.
 
 ## 환경
 
-- 브랜치 `feat/talmo-insights-legal-hot`, main은 #19까지 머지된 상태
-- talmo-com 참조 경로: `/Users/hayden/talmo-com`(private repo, Supabase `qnxaazbucggumshwbgfo`)
+- `public/fonts/pretendard/` 92 woff2(3.0MB, OFL) 커밋됨 · `app/pretendard.css`가 self-host @font-face
+- talmo 참조: `/Users/hayden/talmo-com`
