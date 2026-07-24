@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { HOT_MIN_LIKES, REDISPLAY_EXCLUDED_FILTER } from '@/lib/community/policy'
 import type { CategoryEnum, Post } from '@/types/supabase'
 
 function isSupabaseConfigured() {
@@ -20,6 +21,8 @@ export async function getPostsByCategory(category: CategoryEnum, limit = 20): Pr
   } catch { return [] }
 }
 
+// HOT 보드는 홈·전 카테고리 페이지에 공통으로 붙는 **카테고리 밖 재노출 표면**이다.
+// 임계값·제외 카테고리 근거는 lib/community/policy.ts 참조.
 export async function getHotPosts(limit = 5): Promise<Post[]> {
   if (!isSupabaseConfigured()) return []
   try {
@@ -30,6 +33,8 @@ export async function getHotPosts(limit = 5): Promise<Post[]> {
       .select('id, title, slug, category, hot_rank')
       .eq('status', 'published')
       .gte('created_at', since)
+      .gte('like_count', HOT_MIN_LIKES)
+      .not('category', 'in', REDISPLAY_EXCLUDED_FILTER)
       .order('hot_rank', { ascending: false })
       .limit(limit)
     return (data ?? []) as Post[]

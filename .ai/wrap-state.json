@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "7e61614dc63432d2d8a4f9309ed2a65c0bf15b1f",
-  "last_validated_at": "2026-07-23T15:16:37Z",
+  "last_validated_commit": "dd180160725a1d067e625b12e4b934bbc86f33b4",
+  "last_validated_at": "2026-07-24T10:31:13Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "ee8a6086ac30eb191d8bda69f09551e553e53e5f2d24ba83edf85cec4852b050"
+      "sha256": "b925c69d8243aa4ae9576eb1aa66232eb245a329284fd6ab3627f7c38c1276cd"
     },
     "TODO.md": {
-      "sha256": "9b647a77f6ba1212373d62415a63923895331a3e4e2519daa6e68cef46dda0dd"
+      "sha256": "9827b6929a30cc463bbe0e17bfa65843301385682e4f24e16dc55ea04e0a1251"
     },
     ".ai/checkpoint.md": {
-      "sha256": "ca266510dacda9f8a68f8754f15c419bd7fd051b82e7ccf88f42e63b718f099a"
+      "sha256": "aed38434d33044202df78a7b028c826b68dedfed5ba072000265222fc6df24ad"
     }
   },
   "observations": {
@@ -37,8 +37,12 @@
       "50_resources/ai_observations/2026-07-23_admin-trigger-session-auth-pr.md",
       "50_resources/ai_observations/2026-07-23_admin-trigger-session-auth.md",
       "50_resources/ai_observations/2026-07-23_cron-auth-mismatch-fix.md",
+      "50_resources/ai_observations/2026-07-23_grm-001-font-selfhost-color-contrast.md",
+      "50_resources/ai_observations/2026-07-23_grm-001-lighthouse-deployed-measurement.md",
       "50_resources/ai_observations/2026-07-23_pr16-merge-verification.md",
-      "50_resources/ai_observations/2026-07-23_supabase-publishable-secret-key-migration.md"
+      "50_resources/ai_observations/2026-07-23_supabase-publishable-secret-key-migration.md",
+      "50_resources/ai_observations/2026-07-23_talmo-cross-project-insights.md",
+      "50_resources/ai_observations/2026-07-24_talmo-recommendations-5-8-font-design.md"
     ]
   }
 }

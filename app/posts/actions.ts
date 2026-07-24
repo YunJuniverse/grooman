@@ -1,40 +1,10 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
 import { generateSlug } from '@/lib/utils/slug'
+import { extractText, extractThumbnail } from '@/lib/utils/tiptap'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { CategoryEnum } from '@/types/supabase'
-
-function extractText(content: Record<string, unknown>): string {
-  let text = ''
-  function walk(node: unknown) {
-    if (!node || typeof node !== 'object') return
-    const n = node as Record<string, unknown>
-    if (n.type === 'text' && typeof n.text === 'string') text += n.text + ' '
-    if (Array.isArray(n.content)) n.content.forEach(walk)
-  }
-  walk(content)
-  return text.trim()
-}
-
-function extractThumbnail(content: Record<string, unknown>): string | null {
-  function walk(node: unknown): string | null {
-    if (!node || typeof node !== 'object') return null
-    const n = node as Record<string, unknown>
-    if (n.type === 'image') {
-      const attrs = n.attrs as Record<string, unknown> | undefined
-      if (attrs?.src && typeof attrs.src === 'string') return attrs.src
-    }
-    if (Array.isArray(n.content)) {
-      for (const child of n.content) {
-        const result = walk(child)
-        if (result) return result
-      }
-    }
-    return null
-  }
-  return walk(content)
-}
 
 export async function createPost(formData: FormData) {
   const supabase = createClient()
