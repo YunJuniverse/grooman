@@ -86,7 +86,7 @@ export default function LoginForm() {
         <button
           onClick={() => { setTab('social'); setError(null) }}
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
-            tab === 'social' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+            tab === 'social' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'
           }`}
         >
           소셜 로그인
@@ -94,7 +94,7 @@ export default function LoginForm() {
         <button
           onClick={() => { setTab('email'); setError(null) }}
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
-            tab === 'email' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+            tab === 'email' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'
           }`}
         >
           이메일
@@ -135,7 +135,7 @@ export default function LoginForm() {
             <button
               onClick={() => { setMode('login'); setError(null); setSuccess(null) }}
               className={`pb-2 text-sm font-medium border-b-2 transition -mb-px ${
-                mode === 'login' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400'
+                mode === 'login' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500'
               }`}
             >
               로그인
@@ -143,7 +143,7 @@ export default function LoginForm() {
             <button
               onClick={() => { setMode('signup'); setError(null); setSuccess(null) }}
               className={`pb-2 text-sm font-medium border-b-2 transition -mb-px ${
-                mode === 'signup' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400'
+                mode === 'signup' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500'
               }`}
             >
               회원가입
@@ -156,7 +156,7 @@ export default function LoginForm() {
               <p className="text-sm font-medium text-gray-800">{success}</p>
               <button
                 onClick={() => { setSuccess(null); setMode('login') }}
-                className="mt-4 text-xs text-gray-400 underline"
+                className="mt-4 text-xs text-gray-500 underline"
               >
                 로그인으로 돌아가기
               </button>
@@ -172,7 +172,7 @@ export default function LoginForm() {
                     onChange={e => setUsername(e.target.value)}
                     placeholder="2~20자 닉네임"
                     required
-                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   />
                 </div>
               )}
@@ -185,7 +185,7 @@ export default function LoginForm() {
                   onChange={e => setEmail(e.target.value)}
                   placeholder="email@example.com"
                   required
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 />
               </div>
 
@@ -198,12 +198,12 @@ export default function LoginForm() {
                     onChange={e => setPassword(e.target.value)}
                     placeholder={mode === 'signup' ? '6자 이상' : '비밀번호 입력'}
                     required
-                    className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
                   >
                     {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
@@ -226,7 +226,7 @@ export default function LoginForm() {
         </div>
       )}
 
-      <p className="text-xs text-gray-400 text-center mt-6 leading-relaxed">
+      <p className="text-xs text-gray-500 text-center mt-6 leading-relaxed">
         로그인 시 그루맨의{' '}
         <a href="/terms" className="underline">이용약관</a>
         {' '}및{' '}

@@ -7,9 +7,9 @@
 
 ## Current Focus
 
-- Working on: GRM-001 Performance·Accessibility 조치 완료(폰트 self-host + color-contrast, PR#18) — 리뷰 대기. SEC-2(어드민 수동 트리거 세션 인증 전환)는 PR#19로 머지 완료
+- Working on: GRM-016 다크모드·명암비 전역 감사 완료(브랜치 `fix/dark-mode-contrast-audit`, 27파일) — **커밋 전, 사용자 승인 대기**
 - Current mode: fullstack
-- Next TODO: PR#18 리뷰·머지 → **사람**: production 배포 후 Lighthouse 재측정 확인. 병행: GTM 콘솔에서 GA4 구성 태그 연결+게시 → AI가 가입 전환 이벤트(`sendGTMEvent`) 삽입 → Search Console 등록·소유권 확인·sitemap 제출
+- Next TODO: GRM-016 커밋·PR → **사람**: production 배포 후 Lighthouse 재측정 확인. 병행: GTM 콘솔에서 GA4 구성 태그 연결+게시 → AI가 가입 전환 이벤트(`sendGTMEvent`) 삽입 → Search Console 등록·소유권 확인·sitemap 제출
 - Blockers: 없음
 
 ## Active Links
@@ -39,15 +39,16 @@
 | CRAWL-1 | 자동 크롤 글이 사람 검수 없이 즉시 published·색인 (ADR-0001) | Med | 자동수집 뱃지·출처는 이미 표기됨. 검수 게이트 도입은 선택 |
 | ~~PERF-1~~ | ~~Performance 미달(`/` 61·`/hair` 88) — 폰트 `@import` 렌더블로킹~~ → **Resolved 2026-07-24**: `next/font/local` self-host, 로컬 CLS 0.359→0.097 확인 | ~~Med~~ | production 재측정으로 최종 확인 |
 | ~~SEC-2~~ | ~~`AdminDashboard.tsx`의 수동 크롤/봇 트리거가 `NEXT_PUBLIC_CRON_SECRET_HINT`(클라이언트 노출 변수)를 시크릿으로 씀~~ → **Resolved 2026-07-24** (PR#19 머지): 세션+`is_admin`(`lib/supabase/require-admin.ts`)으로 교체, Cron GET 경로는 유지 | ~~Med~~ | — |
-| PERF-2 | 다크모드 색상 불일치 — 헤더·하단내비 배경이 `bg-[var(--x)]/NN` 패턴으로 인해 Tailwind가 CSS를 생성 못 해 완전 투명 렌더되고 있었음(2건 수정 완료). 동일 패턴이 PostCard·Header 호버 상태에 잔존 + `text-gray-400`류가 `dark:` variant 없이 전역 90여 곳 | Med | 스폰된 백그라운드 작업 카드로 전역 감사 대기 중 |
+| ~~PERF-2~~ | ~~`bg-[var(--x)]/NN` 잔존 2건 + `text-gray-400`류 `dark:` 미지정 전역~~ → **Resolved 2026-07-24** (GRM-016): var()+opacity 패턴 저장소 내 0건, `--accent-translucent` 토큰 신설. 명암비 위반은 라이트/다크 각각의 실제 합성 배경 기준으로 재계산해 조치 | ~~Med~~ | 커밋·PR 대기 |
+| PERF-3 | **하드코딩 라이트 카드** — `bg-white`/`bg-gray-50`가 `dark:` 없이 21개 파일에 산재(AdminDashboard·PostDetail·LoginForm·CommentItem·MyPage 등). 다크모드에서 어두운 페이지 위에 흰 카드가 그대로 떠 명암비는 통과하나 테마가 반쪽. 폼 필드도 이 카드에 맞춰 라이트로 고정해 둔 상태 | Med | 카드 배경을 `var(--bg-card)`로 전환 + 내부 `text-gray-*` 전량 토큰화 = 별도 리팩터(범위 큼, GRM-016에서 의도적 제외) |
 | ~~CRAWL-2~~ | ~~fail-open 가드~~ → **Resolved 2026-07-22** (GRM-014): fail-closed+zod 검증+테스트 11종 | ~~Med~~ | — |
 
 ## Recent Changes
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
+- 2026-07-24: **GRM-016 다크모드·명암비 전역 감사**(브랜치 `fix/dark-mode-contrast-audit`, 27파일, 커밋 전) — var()+opacity 잔존 2건 조치·`--accent-translucent` 토큰, 폼 필드 다크모드 흰글자/흰배경 버그, 라이트모드 `text-gray-400`(2.3~2.5:1) 전량 조치. 브라우저 자동 감사 9경로×2테마 0건 · Class A
 - 2026-07-24: **SEC-2 머지(PR#19)** — 어드민 수동 트리거(크롤/봇 3종) 시크릿→세션+`is_admin` 인증 전환, `lib/supabase/require-admin.ts` 신설. Cron GET 경로(Bearer)는 유지 · Class B
 - 2026-07-24: **GRM-001 Performance·Accessibility 조치**(PR#18 추가 커밋) — `next/font/local` self-host(렌더블로킹 `@import` 제거), color-contrast 100/100(로컬). 부수 발견: 헤더·하단내비 배경 완전 투명 렌더 버그(Tailwind var()+opacity 컴파일 실패) 수정 → PERF-2로 잔여 등록 · Class A
 - 2026-07-24: **GRM-001 배포환경 실측** — production alias(`grooman.vercel.app`)에서 Lighthouse 실행, 3/5경로(나머지는 콘텐츠 0건으로 측정 불가) · Class A
 - 2026-07-23: **KEY-1+CRON-1 머지(PR#16)** — Supabase publishable/secret 키 전환(ADR-0004) + 크론 인증 버그 수정. 사람 env 액션 전부 완료 확인 → 배포 차단 요인 해소 · Class B
-- 2026-07-22: GRM-013 머지(PR#15) — GTM `GTM-WJVFXRBT` 설치(`@next/third-parties`+noscript, env 게이트) · 개인정보처리방침 처리위탁·분석쿠키·정보주체권리 신설 · Class A

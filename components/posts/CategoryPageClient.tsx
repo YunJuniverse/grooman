@@ -36,8 +36,8 @@ export default function CategoryPageClient({
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{categoryLabel}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{categoryDesc}</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{categoryLabel}</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{categoryDesc}</p>
           </div>
           <Link
             href="/posts/write"
@@ -49,15 +49,15 @@ export default function CategoryPageClient({
         </div>
 
         {/* 정렬 탭 */}
-        <div className="flex gap-1 mb-4 border-b border-gray-200">
+        <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
           {SORT_TABS.map(tab => (
             <button
               key={tab.key}
               onClick={() => setSort(tab.key)}
               className={`px-4 py-2 text-sm font-medium transition border-b-2 -mb-px ${
                 sort === tab.key
-                  ? 'border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
               {tab.label}

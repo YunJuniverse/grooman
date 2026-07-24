@@ -53,6 +53,10 @@ _(없음)_
 
 ## Done
 
+### GRM-016
+- **title**: 다크모드·명암비 전역 감사 (PERF-2 해소)
+- **notes**: Completed 2026-07-24 (커밋 전, 승인 대기). **① var()+opacity 패턴**: `npx tailwindcss --content`로 직접 컴파일해 `hover:border-[var(--accent)]/40`(PostCard)·`group-hover:ring-[var(--accent)]/40`(Header)가 CSS를 *전혀 생성하지 않음*을 재확인 → 알파 baked-in `--accent-translucent` 토큰 신설로 교체. 저장소 내 잔존 0건. **② 명암비**: 원인이 "다크모드"가 아니라 *컨테이너별 실제 배경*임을 확인 — 테마 배경(`--bg-base`) 위 텍스트는 `dark:` variant 부재로 다크에서 파손(404 `text-gray-900`은 사실상 비가시), 하드코딩 흰 카드 안 텍스트는 `text-gray-400`(2.5:1)이라 **라이트모드에서도 위반**. 두 갈래로 나눠 조치. **③ 파생 버그**: Tailwind preflight가 폼 컨트롤에 `color: inherit`만 주고 배경은 UA 기본(흰 필드)으로 남겨, 다크모드에서 `--text-1`(거의 흰색) 글자가 흰 필드에 찍혀 **입력 내용이 안 보였음** → 필드를 각자의 컨테이너에 맞춰 명시 지정. **④ 자동 감사**로 추가 발견: BottomNav `HOT`(orange-500, 2.79:1)·HotBoard 활성탭(orange-600, 3.56:1)·홈 배지(gray-500 on `--bg-base`, 4.43:1 — 경계 미달). 검증: tsc 0 · vitest 21/21 · build 27라우트 · 브라우저 합성배경 명암비 자동감사 9경로×2테마 **0건**. 27파일. Class A. 잔여는 PERF-3(하드코딩 라이트 카드).
+
 ### SEC-2
 - **title**: 어드민 수동 트리거 시크릿 → 세션 기반 관리자 인증 전환
 - **notes**: Completed 2026-07-24. `AdminDashboard.tsx`의 `triggerCrawl`/`triggerBot`이 클라이언트 번들에 인라인되는 `NEXT_PUBLIC_CRON_SECRET_HINT`로 시크릿을 만들어 보내던 방식 제거(비활성 상태였지만 값이 채워지면 즉시 실취약점). `app/api/crawl`(POST 신설)·`app/api/admin/{bot-activity,bot-likes,seed-bots}`의 사람 트리거 경로를 세션 쿠키+`profiles.is_admin` 확인(`lib/supabase/require-admin.ts` 신설, `app/moderation/actions.ts`의 기존 `requireAdmin` 로직 통합)으로 교체. Vercel Cron이 부르는 GET 경로(Bearer `CRON_SECRET`)는 그대로 유지. tsc·vitest(21/21)·build 전부 통과. Class B(인증 변경). [PR#19](https://github.com/YunJuniverse/grooman/pull/19) 생성·리뷰 대기.
@@ -65,16 +69,6 @@ _(없음)_
 - **title**: 신고 기능 + 계정 제재 수단 구현 (G1·G4 해소)
 - **notes**: Completed 2026-07-22. 신고 5종 UI(`ReportButton`)→reports(중복방지 unique)·어드민 신고관리 탭(목록·필터·처리/기각)·계정 정지(`005` 마이그: suspended_until+INSERT RLS·회원관리 7/30/영구·해제). 순수로직 `lib/moderation/reports.ts`+테스트 10종. 부수: `profiles_update_admin` RLS로 기존 toggleAdmin 잠재버그 해소. 테스트 21/21·build ✓. 정합: 12 v1.2·11 v1.3. Class B(스키마·RLS). [[12_운영기획서]] §4.1·§5.
 
-### GRM-014
-- **title**: AI-001 가드 강화 — fail-closed + zod 스키마 검증 + temperature 0
-- **notes**: Completed 2026-07-22. `lib/ai/crawl-analysis.ts` 신설(zod 스키마 — clinic enum 구조 거부) + `claude.ts` fail-closed 재작성 + **테스트 인프라 도입**(vitest, 단위 테스트 11종 전부 통과) + tsc·build 클린. CRAWL-2 해소. AC④: fail-closed로 키 부재가 안전해져 릴리스 게이트 추가 불요 판정. [[AI-001_crawl-analysis]] v1.1.
-
-### GRM-010
-- **title**: 봇 teardown 수단 + 공개 배포 릴리스 게이트
-- **notes**: Completed 2026-07-22. `profiles.is_bot` 마이그레이션(`004_bot_flag.sql`)+기존봇 백필, 시더가 is_bot 세팅(식별 일원화), teardown 스크립트(`supabase/scripts/teardown_bots.sql`, 글·댓글 우선 삭제로 SET NULL 방치 방지), 릴리스 게이트 SOP(`00_briefs/standing/SOP_public-release-gate.md`). 실행(프로덕션 teardown+0건 검증)은 공개 배포 시 SOP대로. BOT-1 해소. [[ADR-0002]].
-
-### KEY-1
-- **title**: Supabase publishable/secret 키 마이그레이션 (ADR-0004) + 크론 인증 버그 수정(CRON-1)
-- **notes**: Completed 2026-07-23 (PR#16 머지). `lib/supabase/{client,server,admin}.ts`·`lib/utils/posts.ts` env var명 전환(anon/service_role→publishable/secret). `@supabase/server`는 조사 결과 Edge Functions(Deno) 전용 SDK로 확인돼 미도입([[ADR-0004]]). 사람 액션(Vercel 키 등록·`CRON_SECRET`·GTM Production 전용 체크) 전부 완료 확인. **파생 발견·해소**: `vercel.json` 크론 2건이 실제 Vercel Cron 호출 형식(GET+`Authorization: Bearer`)과 안 맞아 배포돼도 절대 실행 안 됐을 버그(CRON-1) 발견·수정 — 어드민 수동 트리거 경로는 하위호환 유지. 잔여(비차단): 로컬 `.env.local` 미생성, `SUPABASE_JWKS_URL`은 무용해 삭제 권고했으나 보류(무해).
+> 오래된 Done(2026-07-22-23 완료·머지)은 git 이력·PR로 이관: GRM-014(AI 가드 fail-closed, CRAWL-2), GRM-010(봇 teardown·릴리스 게이트, BOT-1), KEY-1(Supabase 키 전환 PR#16, CRON-1).
 
 

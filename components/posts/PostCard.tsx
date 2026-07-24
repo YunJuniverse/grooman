@@ -40,7 +40,7 @@ export default function PostCard({ post, showCategory = false, compact = false }
   return (
     <article className={cn(
       "bg-[var(--bg-card)] rounded-xl border border-[var(--border)] transition-all duration-200 overflow-hidden group",
-      "hover:border-[var(--accent)]/40 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/30"
+      "hover:border-[var(--accent-translucent)] hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/30"
     )}>
       <Link href={`/posts/${post.slug}`} className="block">
         <div className={cn("flex gap-3 p-4", compact && "p-3")}>

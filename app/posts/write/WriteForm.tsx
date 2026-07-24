@@ -41,11 +41,11 @@ export default function WriteForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* 카테고리 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">카테고리 *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">카테고리 *</label>
         <select
           name="category"
           required
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+          className="w-full px-3 py-2 border rounded-lg text-sm bg-[var(--bg-card)] text-[var(--text-1)] placeholder:text-[var(--text-3)] border-[var(--border)] focus:outline-none focus:border-[var(--accent)]"
         >
           <option value="">선택하세요</option>
           {CATEGORIES.map(c => (
@@ -56,7 +56,7 @@ export default function WriteForm() {
 
       {/* 제목 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">제목 *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">제목 *</label>
         <input
           name="title"
           type="text"
@@ -64,24 +64,24 @@ export default function WriteForm() {
           minLength={5}
           maxLength={200}
           placeholder="제목을 입력하세요 (5~200자)"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+          className="w-full px-3 py-2 border rounded-lg text-sm bg-[var(--bg-card)] text-[var(--text-1)] placeholder:text-[var(--text-3)] border-[var(--border)] focus:outline-none focus:border-[var(--accent)]"
         />
       </div>
 
       {/* 내용 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">내용 *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">내용 *</label>
         <TiptapEditor onChange={setContent} storageKey="grooman_write_draft" />
       </div>
 
       {/* 태그 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">태그 (쉼표로 구분, 최대 5개)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">태그 (쉼표로 구분, 최대 5개)</label>
         <input
           name="tags"
           type="text"
           placeholder="탈모, 샴푸, 모발이식"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+          className="w-full px-3 py-2 border rounded-lg text-sm bg-[var(--bg-card)] text-[var(--text-1)] placeholder:text-[var(--text-3)] border-[var(--border)] focus:outline-none focus:border-[var(--accent)]"
         />
       </div>
 
@@ -91,7 +91,7 @@ export default function WriteForm() {
         <button
           type="button"
           onClick={() => history.back()}
-          className="px-6 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+          className="px-6 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
         >
           취소
         </button>

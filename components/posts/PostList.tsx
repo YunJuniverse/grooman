@@ -74,7 +74,7 @@ export default function PostList({
 
   if (posts.length === 0 && !loading) {
     return (
-      <div className="text-center py-20 text-gray-400">
+      <div className="text-center py-20 text-gray-600 dark:text-gray-400">
         <p className="text-sm">아직 게시글이 없습니다.</p>
         <p className="text-xs mt-1">첫 번째 글을 작성해보세요!</p>
       </div>

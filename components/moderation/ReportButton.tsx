@@ -40,7 +40,7 @@ export default function ReportButton({ targetType, targetId, variant = 'button' 
   return (
     <>
       {variant === 'text' ? (
-        <button onClick={openModal} className="text-xs text-gray-400 hover:text-red-500 transition">
+        <button onClick={openModal} className="text-xs text-gray-500 hover:text-red-500 transition">
           신고
         </button>
       ) : (
@@ -62,7 +62,7 @@ export default function ReportButton({ targetType, targetId, variant = 'button' 
               <h2 className="text-base font-bold text-[var(--text-1)]">
                 {targetType === 'post' ? '게시글' : '댓글'} 신고
               </h2>
-              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setOpen(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                 <X size={18} />
               </button>
             </div>

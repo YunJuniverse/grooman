@@ -104,7 +104,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => { setOpen(v => !v); if (!open && unread > 0) markAllRead() }}
-        className="relative p-2 rounded-md text-gray-500 hover:bg-gray-100 transition"
+        className="relative p-2 rounded-md text-[var(--text-3)] hover:bg-[var(--border-sub)] hover:text-[var(--text-1)] transition"
         aria-label="알림"
       >
         <Bell size={20} />
@@ -120,7 +120,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <span className="text-sm font-semibold text-gray-900">알림</span>
             {notifications.some(n => !n.is_read) && (
-              <button onClick={markAllRead} className="text-xs text-gray-400 hover:text-gray-600">
+              <button onClick={markAllRead} className="text-xs text-gray-500 hover:text-gray-700">
                 모두 읽음
               </button>
             )}
@@ -128,7 +128,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="text-center py-10 text-sm text-gray-400">알림이 없습니다</div>
+              <div className="text-center py-10 text-sm text-gray-500">알림이 없습니다</div>
             ) : (
               notifications.map(n => (
                 <Link
@@ -140,7 +140,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
                   <span className="text-lg mt-0.5 flex-shrink-0">{getIcon(n.type)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-800 leading-snug">{getMessage(n)}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{timeAgo(n.created_at)}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{timeAgo(n.created_at)}</p>
                   </div>
                   {!n.is_read && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />}
                 </Link>

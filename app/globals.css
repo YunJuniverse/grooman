@@ -14,7 +14,11 @@
   --text-3:     #6b7280;
   --text-4:     #9ca3af;
   --accent:     #4f46e5;
+  /* 알파를 미리 합성해 둔 토큰 — Tailwind는 var() 기반 arbitrary color에
+     opacity modifier(`bg-[var(--x)]/90`)를 적용하지 못해 유틸리티 자체가
+     생성되지 않는다. 반투명이 필요하면 반드시 이 계열 토큰을 쓸 것. */
   --bg-card-translucent: rgba(255, 255, 255, 0.95);
+  --accent-translucent:  rgba(79, 70, 229, 0.4);
 }
 
 .dark {
@@ -29,6 +33,7 @@
   --text-4:     #64748b;
   --accent:     #818cf8;
   --bg-card-translucent: rgba(28, 32, 48, 0.95);
+  --accent-translucent:  rgba(129, 140, 248, 0.4);
 }
 
 * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; box-sizing: border-box; }

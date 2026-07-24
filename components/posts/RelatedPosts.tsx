@@ -51,8 +51,8 @@ export default async function RelatedPosts({
   }
 
   return (
-    <div className="mt-8 pt-6 border-t border-gray-200">
-      <h3 className="text-base font-bold text-gray-900 mb-4">관련 게시글</h3>
+    <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4">관련 게시글</h3>
       <div className="space-y-3">
         {posts.map(post => (
           <Link
@@ -66,8 +66,8 @@ export default async function RelatedPosts({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-xs text-gray-400">{CATEGORY_LABELS[post.category]}</span>
-              <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-gray-600 transition leading-snug mt-0.5">
+              <span className="text-xs text-gray-600 dark:text-gray-400">{CATEGORY_LABELS[post.category]}</span>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition leading-snug mt-0.5">
                 {post.title}
               </p>
             </div>
