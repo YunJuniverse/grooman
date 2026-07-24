@@ -79,9 +79,9 @@ export default async function ProfilePage({ params }: Props) {
       </div>
 
       {/* 게시글 목록 */}
-      <h2 className="text-base font-bold text-gray-900 mb-3">작성한 글</h2>
+      <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-3">작성한 글</h2>
       {userPosts.length === 0 ? (
-        <div className="text-center py-12 text-sm text-gray-400">아직 작성한 게시글이 없습니다.</div>
+        <div className="text-center py-12 text-sm text-gray-600 dark:text-gray-400">아직 작성한 게시글이 없습니다.</div>
       ) : (
         <div className="space-y-3">
           {userPosts.map(post => (

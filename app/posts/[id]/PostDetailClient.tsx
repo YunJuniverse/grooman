@@ -69,10 +69,10 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
   return (
     <div className="max-w-3xl mx-auto">
       {/* 브레드크럼 */}
-      <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <Link href="/" className="hover:text-gray-700">홈</Link>
+      <nav className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <Link href="/" className="hover:text-gray-900 dark:hover:text-gray-200">홈</Link>
         <span>/</span>
-        <Link href={`/${post.category}`} className="hover:text-gray-700">
+        <Link href={`/${post.category}`} className="hover:text-gray-900 dark:hover:text-gray-200">
           {CATEGORY_LABELS[post.category]}
         </Link>
       </nav>
@@ -85,7 +85,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
               {CATEGORY_LABELS[post.category]}
             </span>
             {post.is_auto_crawled && (
-              <span className="text-xs text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded">
                 자동수집
               </span>
             )}
@@ -119,8 +119,8 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                     </div>
                     <span className="text-sm font-medium text-gray-800">{post.profiles.username}</span>
                   </Link>
-                  <span className="text-xs text-gray-400">{relativeTime(post.created_at)}</span>
-                  <span className="text-xs text-gray-400">조회 {post.view_count.toLocaleString()}</span>
+                  <span className="text-xs text-gray-500">{relativeTime(post.created_at)}</span>
+                  <span className="text-xs text-gray-500">조회 {post.view_count.toLocaleString()}</span>
                 </>
               )}
             </div>
@@ -129,13 +129,13 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
               <div className="flex items-center gap-1">
                 <Link
                   href={`/posts/${post.slug}/edit`}
-                  className="p-1.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+                  className="p-1.5 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition"
                 >
                   <Pencil size={15} />
                 </Link>
                 <button
                   onClick={handleDelete}
-                  className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
+                  className="p-1.5 rounded text-gray-500 hover:text-red-500 hover:bg-red-50 transition"
                 >
                   <Trash2 size={15} />
                 </button>

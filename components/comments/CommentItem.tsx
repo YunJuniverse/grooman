@@ -80,7 +80,7 @@ export default function CommentItem({ comment, postId, onRefresh, depth = 0 }: C
       <div className="py-2 px-4">
         <button
           onClick={() => setCollapsed(false)}
-          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+          className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1"
         >
           <ChevronDown size={12} />
           [비추천이 많아 숨겨진 댓글입니다 - 클릭하여 보기]
@@ -108,19 +108,19 @@ export default function CommentItem({ comment, postId, onRefresh, depth = 0 }: C
                 <Link href={`/profile/${comment.profiles.username}`} className="text-sm font-medium text-gray-800 hover:underline">
                   {comment.profiles.username}
                 </Link>
-                <span className="text-xs text-gray-400">{relativeTime(comment.created_at)}</span>
+                <span className="text-xs text-gray-500">{relativeTime(comment.created_at)}</span>
               </>
             )}
           </div>
           {user?.id === comment.user_id && !comment.is_deleted && (
-            <button onClick={handleDelete} className="p-1 rounded text-gray-300 hover:text-red-400 transition">
+            <button onClick={handleDelete} className="p-1 rounded text-gray-500 hover:text-red-500 transition">
               <Trash2 size={13} />
             </button>
           )}
         </div>
 
         {/* 내용 */}
-        <p className={cn('text-sm text-gray-700 leading-relaxed', comment.is_deleted && 'text-gray-400 italic')}>
+        <p className={cn('text-sm text-gray-700 leading-relaxed', comment.is_deleted && 'text-gray-500 italic')}>
           {comment.content}
         </p>
 
@@ -129,19 +129,19 @@ export default function CommentItem({ comment, postId, onRefresh, depth = 0 }: C
           <div className="flex items-center gap-3 mt-2">
             <button
               onClick={handleLike}
-              className={cn('flex items-center gap-1 text-xs transition', liked ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600')}
+              className={cn('flex items-center gap-1 text-xs transition', liked ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700')}
             >
               <ThumbsUp size={12} />
               {likeCount > 0 && likeCount}
             </button>
             {depth === 0 && (
-              <button onClick={handleReply} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition">
+              <button onClick={handleReply} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition">
                 <CornerDownRight size={12} />
                 답글
               </button>
             )}
             {depth === 0 && replies.length === 0 && !showReplies && (
-              <button onClick={loadReplies} className="text-xs text-gray-400 hover:text-gray-600 transition">
+              <button onClick={loadReplies} className="text-xs text-gray-500 hover:text-gray-700 transition">
                 답글 보기
               </button>
             )}
@@ -157,7 +157,7 @@ export default function CommentItem({ comment, postId, onRefresh, depth = 0 }: C
               onChange={e => setReplyContent(e.target.value)}
               placeholder="답글을 입력하세요..."
               rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:border-gray-400"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-gray-400"
             />
             <div className="flex justify-end gap-2 mt-1.5">
               <button

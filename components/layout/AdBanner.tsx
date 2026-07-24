@@ -75,11 +75,11 @@ function SidebarAd({ ad }: { ad: Ad }) {
         )}
         <p className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2">{ad.title}</p>
         {ad.description && (
-          <p className="text-[10px] text-gray-400 mt-1 line-clamp-2 whitespace-pre-line leading-relaxed">
+          <p className="text-[10px] text-gray-500 mt-1 line-clamp-2 whitespace-pre-line leading-relaxed">
             {ad.description}
           </p>
         )}
-        <p className="text-[10px] text-gray-300 mt-2">광고</p>
+        <p className="text-[10px] text-gray-500 mt-2">광고</p>
       </div>
     </Link>
   )
@@ -110,11 +110,11 @@ function FeedAd({ ad }: { ad: Ad }) {
         )}
         <p className="text-sm font-medium text-gray-800 line-clamp-1">{ad.title}</p>
         {ad.description && (
-          <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">
+          <p className="text-xs text-gray-600 line-clamp-1 mt-0.5">
             {ad.description.split('\n')[0]}
           </p>
         )}
-        <p className="text-[10px] text-gray-400 mt-1">광고</p>
+        <p className="text-[10px] text-gray-600 mt-1">광고</p>
       </div>
     </Link>
   )
@@ -153,7 +153,7 @@ function BannerAd({ ad }: { ad: Ad }) {
           자세히 보기 →
         </span>
       </div>
-      <p className="absolute bottom-1.5 right-3 text-[10px] text-gray-400">광고</p>
+      <p className="absolute bottom-1.5 right-3 text-[10px] text-gray-300">광고</p>
     </Link>
   )
 }

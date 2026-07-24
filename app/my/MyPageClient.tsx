@@ -60,7 +60,7 @@ export default function MyPageClient({
             {/* 레벨 진행도 */}
             {nextLevel && (
               <div className="mt-3">
-                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
                   <span>Lv.{profile.level} → Lv.{nextLevel} {LEVEL_LABELS[nextLevel]}</span>
                   <span>{profile.post_count}/{LEVEL_THRESHOLDS[nextLevel]}개</span>
                 </div>
@@ -77,22 +77,26 @@ export default function MyPageClient({
       </div>
 
       {/* 탭 */}
-      <div className="flex border-b border-gray-200 mb-4">
+      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
         <button
           onClick={() => setTab('posts')}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px ${
-            tab === 'posts' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'
+            tab === 'posts'
+              ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
           }`}
         >
-          <FileText size={15} />내가 쓴 글 <span className="text-xs text-gray-400">({myPosts.length})</span>
+          <FileText size={15} />내가 쓴 글 <span className="text-xs text-gray-600 dark:text-gray-400">({myPosts.length})</span>
         </button>
         <button
           onClick={() => setTab('bookmarks')}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition -mb-px ${
-            tab === 'bookmarks' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'
+            tab === 'bookmarks'
+              ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
           }`}
         >
-          <BookMarked size={15} />북마크 <span className="text-xs text-gray-400">({bookmarkedPosts.length})</span>
+          <BookMarked size={15} />북마크 <span className="text-xs text-gray-600 dark:text-gray-400">({bookmarkedPosts.length})</span>
         </button>
       </div>
 
@@ -113,7 +117,7 @@ export default function MyPageClient({
 
 function Empty({ text }: { text: string }) {
   return (
-    <div className="text-center py-16 text-gray-400">
+    <div className="text-center py-16 text-gray-600 dark:text-gray-400">
       <TrendingUp size={32} className="mx-auto mb-3 opacity-30" />
       <p className="text-sm">{text}</p>
     </div>

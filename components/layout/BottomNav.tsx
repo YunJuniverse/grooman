@@ -33,9 +33,9 @@ export default function BottomNav() {
               className={cn(
                 'flex-1 flex flex-col items-center justify-center py-2.5 gap-1 text-[11px] font-medium transition-colors',
                 active
-                  ? isHot ? 'text-orange-500' : 'text-[var(--accent)]'
+                  ? isHot ? 'text-orange-700 dark:text-orange-400' : 'text-[var(--accent)]'
                   : isHot
-                    ? 'text-orange-400 dark:text-orange-500 hover:text-orange-500'
+                    ? 'text-orange-700 dark:text-orange-500 hover:text-orange-900 dark:hover:text-orange-400'
                     : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
               )}
             >

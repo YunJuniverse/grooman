@@ -31,8 +31,8 @@ export default async function PopularTags() {
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Hash size={13} className="text-gray-400 dark:text-gray-600" />
-        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-500 uppercase tracking-wider">인기 태그</h3>
+        <Hash size={13} className="text-gray-500 dark:text-gray-400" />
+        <h3 className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">인기 태그</h3>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {topTags.map(({ tag, count }) => (
@@ -42,7 +42,7 @@ export default async function PopularTags() {
             className="group flex items-center gap-1 text-xs px-2.5 py-1 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
           >
             <span>#{tag}</span>
-            <span className="text-[9px] text-gray-400 dark:text-gray-600 group-hover:text-indigo-400">{count}</span>
+            <span className="text-[9px] text-gray-500 dark:text-gray-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">{count}</span>
           </Link>
         ))}
       </div>

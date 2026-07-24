@@ -39,7 +39,7 @@ export default function ProfileEditClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">프로필 편집</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">프로필 편집</h1>
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
         {/* 아바타 미리보기 */}
         <div className="flex items-center gap-4">
@@ -51,7 +51,7 @@ export default function ProfileEditClient({ profile }: { profile: Profile }) {
                 </span>
             }
           </div>
-          <p className="text-xs text-gray-400">아바타는 로그인 시 자동 설정됩니다</p>
+          <p className="text-xs text-gray-500">아바타는 로그인 시 자동 설정됩니다</p>
         </div>
 
         {/* 닉네임 */}
@@ -64,7 +64,7 @@ export default function ProfileEditClient({ profile }: { profile: Profile }) {
             maxLength={20}
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 transition"
           />
-          <p className="text-xs text-gray-400 mt-1">{username.length}/20자</p>
+          <p className="text-xs text-gray-500 mt-1">{username.length}/20자</p>
         </div>
 
         {/* 소개 */}
@@ -78,7 +78,7 @@ export default function ProfileEditClient({ profile }: { profile: Profile }) {
             placeholder="자신을 소개해보세요 (최대 200자)"
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 transition resize-none"
           />
-          <p className="text-xs text-gray-400 mt-1">{bio.length}/200자</p>
+          <p className="text-xs text-gray-500 mt-1">{bio.length}/200자</p>
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}

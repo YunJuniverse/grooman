@@ -68,7 +68,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
 
   return (
     <section className="mt-6">
-      <h2 className="text-base font-bold text-gray-900 mb-4">
+      <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4">
         댓글 {rootComments.length}
       </h2>
 
@@ -80,7 +80,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
             onChange={e => setContent(e.target.value)}
             placeholder="댓글을 입력하세요..."
             rows={3}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-gray-400 transition"
+            className="w-full px-4 py-3 border rounded-xl text-sm resize-none bg-[var(--bg-card)] text-[var(--text-1)] placeholder:text-[var(--text-3)] border-[var(--border)] focus:outline-none focus:border-[var(--accent)] transition"
           />
           {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
           <div className="flex justify-end mt-2">
@@ -103,7 +103,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
       {/* 댓글 목록 */}
       {loading ? (
         <div className="flex justify-center py-8">
-          <Loader2 size={20} className="animate-spin text-gray-400" />
+          <Loader2 size={20} className="animate-spin text-gray-600 dark:text-gray-400" />
         </div>
       ) : (
         <div className="space-y-1">
@@ -116,7 +116,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
             />
           ))}
           {rootComments.length === 0 && (
-            <p className="text-center text-sm text-gray-400 py-8">첫 번째 댓글을 남겨보세요.</p>
+            <p className="text-center text-sm text-gray-600 dark:text-gray-400 py-8">첫 번째 댓글을 남겨보세요.</p>
           )}
         </div>
       )}

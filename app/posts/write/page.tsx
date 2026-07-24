@@ -15,7 +15,7 @@ export default async function WritePage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">새 글 작성</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">새 글 작성</h1>
       <WriteForm />
     </div>
   )

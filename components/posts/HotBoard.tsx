@@ -83,7 +83,7 @@ export default function HotBoard() {
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors',
                 period === p.key
-                  ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                  ? 'border-orange-500 text-orange-700 dark:text-orange-400'
                   : 'border-transparent text-[var(--text-3)] hover:text-[var(--text-2)]'
               )}
             >

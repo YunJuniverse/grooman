@@ -34,11 +34,11 @@ export default async function TagPage({ params }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold text-gray-900 mb-1">#{tag}</h1>
-      <p className="text-sm text-gray-500 mb-6">{posts.length}개의 게시글</p>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">#{tag}</h1>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{posts.length}개의 게시글</p>
 
       {posts.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 text-sm">
+        <div className="text-center py-20 text-gray-600 dark:text-gray-400 text-sm">
           아직 이 태그의 게시글이 없습니다.
         </div>
       ) : (

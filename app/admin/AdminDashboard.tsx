@@ -24,7 +24,7 @@ type Tab = 'dashboard' | 'reports' | 'users' | 'posts' | 'ads' | 'bots'
 const STATUS_ICONS = {
   done: <CheckCircle size={14} className="text-green-500" />,
   failed: <XCircle size={14} className="text-red-500" />,
-  pending: <Clock size={14} className="text-gray-400" />,
+  pending: <Clock size={14} className="text-gray-500" />,
   processing: <RefreshCw size={14} className="text-blue-500 animate-spin" />,
 }
 
@@ -142,7 +142,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">관리자 패널</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">관리자 패널</h1>
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -158,7 +158,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-lg transition ${
-              tab === t.id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+              tab === t.id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             {t.icon}
@@ -192,13 +192,13 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                 <div key={source.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                   <div>
                     <p className="text-sm font-medium text-gray-800">{source.source_name}</p>
-                    <p className="text-xs text-gray-400">{source.rss_url}</p>
+                    <p className="text-xs text-gray-500">{source.rss_url}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-500">
                       {source.last_crawled_at ? new Date(source.last_crawled_at).toLocaleString('ko-KR') : '미실행'}
                     </span>
-                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${source.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${source.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                       {source.is_active ? '활성' : '비활성'}
                     </span>
                   </div>
@@ -219,12 +219,12 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                     <p className="text-xs text-gray-600 truncate">{item.source_url}</p>
                     {item.error_msg && <p className="text-xs text-red-400">{item.error_msg}</p>}
                   </div>
-                  <span className="text-xs text-gray-400 flex-shrink-0">
+                  <span className="text-xs text-gray-500 flex-shrink-0">
                     {new Date(item.created_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               ))}
-              {recentQueue.length === 0 && <p className="text-sm text-gray-400 text-center py-4">크롤링 이력이 없습니다.</p>}
+              {recentQueue.length === 0 && <p className="text-sm text-gray-500 text-center py-4">크롤링 이력이 없습니다.</p>}
             </div>
           </section>
         </div>
@@ -248,7 +248,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                   key={f}
                   onClick={() => setReportFilter(f)}
                   className={`text-xs px-2.5 py-1 rounded-lg transition ${
-                    reportFilter === f ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    reportFilter === f ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   {f === 'pending' ? '대기' : f === 'resolved' ? '처리됨' : f === 'dismissed' ? '기각' : '전체'}
@@ -266,14 +266,14 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                   <p className="text-sm font-medium text-gray-800">
                     {isReportReason(report.reason) ? REPORT_REASONS[report.reason] : report.reason}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">
+                  <p className="text-xs text-gray-500 truncate">
                     {report.reporter?.username ?? '(탈퇴)'} 신고 · {new Date(report.created_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })} · 대상 {report.target_id.slice(0, 8)}
                   </p>
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex-shrink-0 ${
                   report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                   report.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                  'bg-gray-100 text-gray-500'
+                  'bg-gray-100 text-gray-600'
                 }`}>
                   {report.status === 'pending' ? '대기' : report.status === 'resolved' ? '처리됨' : '기각'}
                 </span>
@@ -287,7 +287,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                     </button>
                     <button
                       onClick={() => handleResolveReport(report.id, 'dismissed')}
-                      className="text-xs px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
                     >
                       기각
                     </button>
@@ -296,10 +296,10 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
               </div>
             ))}
             {visibleReports.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-8">해당 상태의 신고가 없습니다.</p>
+              <p className="text-sm text-gray-500 text-center py-8">해당 상태의 신고가 없습니다.</p>
             )}
           </div>
-          <p className="px-6 py-3 text-[11px] text-gray-400 border-t border-gray-50">
+          <p className="px-6 py-3 text-[11px] text-gray-500 border-t border-gray-50">
             콘텐츠 조치(숨김·삭제)는 게시글관리, 계정 제재는 회원관리 탭에서. 처리 기준: 12_운영기획서 §4.1·§5.
           </p>
         </section>
@@ -325,14 +325,14 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-gray-800">{user.username}</p>
                     {user.is_admin && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">관리자</span>}
-                    <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">Lv.{user.level}</span>
+                    <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">Lv.{user.level}</span>
                     {isSuspended(user.suspended_until, now) && (
                       <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold">
                         정지 ~{new Date(user.suspended_until!).toLocaleDateString('ko-KR')}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-500">
                     {new Date(user.created_at).toLocaleDateString('ko-KR')} 가입 · 게시글 {user.post_count}
                   </p>
                 </div>
@@ -386,27 +386,27 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
               <div key={post.id} className="flex items-center gap-3 px-6 py-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{post.title}</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-500">
                     {post.profiles?.username ?? '익명'} · {new Date(post.created_at).toLocaleDateString('ko-KR')} · 조회 {post.view_count}
                   </p>
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
                   post.status === 'published' ? 'bg-green-100 text-green-700' :
                   post.status === 'hidden' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-gray-100 text-gray-500'
+                  'bg-gray-100 text-gray-600'
                 }`}>
                   {post.status === 'published' ? '공개' : post.status === 'hidden' ? '숨김' : post.status}
                 </span>
                 <button
                   onClick={() => togglePostStatus(post.id, post.status)}
-                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition"
+                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition"
                   title={post.status === 'published' ? '숨기기' : '공개하기'}
                 >
                   {post.status === 'published' ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
                 <button
                   onClick={() => deletePost(post.id)}
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition"
+                  className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded transition"
                   title="삭제"
                 >
                   <Trash2 size={15} />
@@ -434,7 +434,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">{ad.placement}</span>
                     {ad.badge && <span className="text-[10px] text-gray-500">{ad.badge}</span>}
-                    <span className="text-[10px] text-gray-400">클릭 {ad.click_count}</span>
+                    <span className="text-[10px] text-gray-500">클릭 {ad.click_count}</span>
                   </div>
                 </div>
                 <button
@@ -442,7 +442,7 @@ export default function AdminDashboard({ stats, recentQueue, sources, users: ini
                   className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition ${
                     ad.is_active
                       ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   {ad.is_active ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
@@ -529,7 +529,7 @@ function BotButton({ label, desc, action, loading, onTrigger, danger }: {
           {isLoading ? '실행 중...' : label}
         </span>
       </div>
-      <p className="text-xs text-gray-400">{desc}</p>
+      <p className="text-xs text-gray-500">{desc}</p>
     </button>
   )
 }
