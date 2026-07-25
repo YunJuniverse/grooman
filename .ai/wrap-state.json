@@ -1,17 +1,17 @@
 {
   "version": 1,
   "bootstrapped_at": "2026-07-21T14:38:18Z",
-  "last_validated_commit": "dd180160725a1d067e625b12e4b934bbc86f33b4",
-  "last_validated_at": "2026-07-24T10:31:13Z",
+  "last_validated_commit": "7820c60f3215816aa11b00c4577324043b768976",
+  "last_validated_at": "2026-07-25T02:30:20Z",
   "files": {
     "HANDOFF.md": {
-      "sha256": "b925c69d8243aa4ae9576eb1aa66232eb245a329284fd6ab3627f7c38c1276cd"
+      "sha256": "e3b454c41364ef44eec1e73fbf56a7b0be4d07c22ff285f1c49d35a3f036acf6"
     },
     "TODO.md": {
-      "sha256": "9827b6929a30cc463bbe0e17bfa65843301385682e4f24e16dc55ea04e0a1251"
+      "sha256": "d836bb51a331b9738ecbd4dd0cf714163deac143b79eb6cccb10de7f908fbab3"
     },
     ".ai/checkpoint.md": {
-      "sha256": "aed38434d33044202df78a7b028c826b68dedfed5ba072000265222fc6df24ad"
+      "sha256": "c242f29da9dc47e01b3a64c7f22b71981d92f8749fea44071e8558ff4a5afb2e"
     }
   },
   "observations": {
@@ -42,7 +42,9 @@
       "50_resources/ai_observations/2026-07-23_pr16-merge-verification.md",
       "50_resources/ai_observations/2026-07-23_supabase-publishable-secret-key-migration.md",
       "50_resources/ai_observations/2026-07-23_talmo-cross-project-insights.md",
-      "50_resources/ai_observations/2026-07-24_talmo-recommendations-5-8-font-design.md"
+      "50_resources/ai_observations/2026-07-24_grm-016-dark-mode-contrast.md",
+      "50_resources/ai_observations/2026-07-24_talmo-recommendations-5-8-font-design.md",
+      "50_resources/ai_observations/2026-07-25_grm-018-search-hero.md"
     ]
   }
 }

@@ -7,17 +7,17 @@
 
 ## Current Focus
 
-- Working on: **GRM-019 다크모드·명암비 전역 감사**(PERF-2 해소) PR#21 리뷰 대기 — origin/main(talmo PR#20 머지본) 충돌 해소 완료. talmo 권고 1~8은 PR#20으로 머지됨
+- Working on: **GRM-018 UX 후속**(검색 페이지 검색창 + 홈 랜딩 히어로) 완료, 리뷰 대기. PR#20(talmo 1~8)·PR#21(GRM-019 다크모드) 머지됨
 - Current mode: fullstack
-- Next TODO: PR#21 리뷰·머지 → GRM-018 후속(검색창·홈 히어로·clinic 스키마). 병행: **사람** GTM 콘솔 GA4 연결 → AI가 전환 이벤트 삽입 → Search Console 등록
+- Next TODO: 이 PR 리뷰·머지 → 남은 축: PERF-3(하드코딩 흰 카드 토큰화)·GRM-020(clinic 신뢰장치, clinic 활성화 후). 병행: **사람** GTM 콘솔 GA4 연결 → AI가 전환 이벤트 삽입 → Search Console 등록
 - Blockers: 없음
 
 ## Active Links
 
-- Current PR: [#21](https://github.com/YunJuniverse/grooman/pull/21)(GRM-019 다크모드·명암비, main 충돌 해소, 리뷰 대기) · #20(talmo 1~8)·#18·#19 머지 완료
+- Current PR: branch feat/grm-018-search-hero(신규) · #18·#19·#20·#21 머지 완료
 - Current issue:
 - Relevant ADRs: [ADR-0001](40_dev/adr/0001-rss-auto-crawl-ai-pipeline.md)·[ADR-0002](40_dev/adr/0002-bot-seeding-cold-start.md)·[ADR-0003](40_dev/adr/0003-rls-security-model.md)·[ADR-0004](40_dev/adr/0004-supabase-publishable-secret-keys.md)
-- Relevant snapshots: [lighthouse-measurement-2026-07-24](40_dev/snapshots/lighthouse-measurement-2026-07-24.md)(실측)·[**talmo-com 교차조사**](40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md)(권고 8건, 5~8번 미착수)·[법적 검토](40_dev/snapshots/legal-compliance-review-2026-07-22.md)(§4-2 보강)
+- Relevant snapshots: [talmo-com 교차조사](40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md)·[UX 진단](40_dev/snapshots/user-ux-diagnosis-2026-07-24.md)·[clinic 신뢰장치 설계](40_dev/snapshots/clinic-trust-design-2026-07-24.md)·[법적 검토](40_dev/snapshots/legal-compliance-review-2026-07-22.md)(§4-2)
 
 ## Open Decisions
 
@@ -50,8 +50,8 @@
 
 > 최근 ~5건, **1줄 terse board 항목**(무엇을·PR/클래스). 상세 서사는 checkpoint·git — 여기 복제 금지.
 
-- 2026-07-24: **GRM-019 다크모드·명암비 전역 감사**(PR#21, PERF-2 해소) — var()+opacity 잔존 2건→`--accent-translucent` 토큰, 폼 컨트롤 흰글자/흰필드 버그, 컨테이너별 대비 교정. 브라우저 자동감사 9경로×2테마 0건. main(PR#20) 충돌 해소 · Class A
-- 2026-07-24: **talmo 권고 5~8 반영**(PR#20 확장) — 폰트 dynamic-subset self-host(2.0MB→홈 256KB, 오전 회귀 되돌림)·**DESIGN.md 신설**·UX 진단(다크 제목 13곳 발견)·clinic 신뢰장치 설계 · Class A
-- 2026-07-24: **talmo 권고 1~4 반영**(PR#20) — clinic 재게시 차단(LEGAL-2, Class C 결정)·검토메모 §4-2 보강·표현 경고(`expression.ts`)·HOT 임계값 · Class B
+- 2026-07-24: **GRM-018 UX 후속** — 검색 페이지 본문 검색창(`SearchBox`, 흐름 단절 해소)·홈 랜딩 히어로(비로그인 첫 방문자용). 다크 제목(§1)은 GRM-019가 이미 해소 확인, clinic(§8)은 GRM-020으로 분리 · Class A
+- 2026-07-24: **GRM-019 다크모드·명암비 전역 감사**(PR#21, PERF-2 해소) — var()+opacity 잔존→`--accent-translucent`, 폼 컨트롤 버그, 컨테이너별 대비 교정. 자동감사 9경로×2테마 0건 · Class A
+- 2026-07-24: **talmo 권고 1~8 반영**(PR#20) — clinic 재게시 차단(LEGAL-2)·검토메모 §4-2·표현 경고·HOT 임계값(1~4) + 폰트 self-host·DESIGN.md·UX 진단·clinic 설계(5~8) · Class B/A
 - 2026-07-24: **talmo-com 전수조사** — 자매 프로젝트에서 법적 갭 4·설계 5·디자인/QA 5 도출, 권고 8건 우선순위화 · [스냅샷](40_dev/snapshots/talmo-com-cross-project-research-2026-07-24.md)
 - 2026-07-24: **SEC-2 머지(PR#19)** — 어드민 수동 트리거 시크릿→세션+`is_admin` 인증 전환 · Class B
