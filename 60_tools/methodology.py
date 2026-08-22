@@ -37,6 +37,28 @@ Commands
 
   methodology thinktank
       L1 관찰 로그 기반 주간 인사이트 리포트를 생성한다.
+      (_inbox 수거 캡슐이 있으면 target별 교차-repo 집계 섹션 추가)
+
+  methodology capsule --slug <s> --target <t> --summary <text> [options]
+      상류행 제안 캡슐을 outbox에 생성한다 — 1제안=1캡슐=1파일 (METH-117).
+      사용자 명시 요청("방법론에 반영해줘")=의무, AI 자발=근거 있을 때만.
+
+  methodology collect [--apply] [--root <dir>] [--no-fetch]
+      (상류 전용) 다운스트림 outbox 캡슐을 일괄 수거해 _inbox에 적재한다.
+      수동 트리거·다운스트림 무변경·수거 상태는 상류 원장(_ledger.json).
+
+  methodology maincheck [<sha> ...]
+      커밋이 origin main에 실제 도달했는지 검증한다 (기본 HEAD).
+      TODO Done 전이·배포 판정 전 필수 — 스택-PR 미도달 사고 방지 (METH-120).
+
+  methodology rotate [--apply] [--checkpoint]
+      비대해진 라이브 파일을 기계 회전한다 — TODO Done(4건 유지)·HANDOFF
+      Recent Changes(5건 유지) 초과분을 40_dev/snapshots/live-archive/ 로 이관.
+      wrap --strict 는 규정 2배 초과를 fail 시키며, rotate 가 탈출구다 (METH-122).
+
+  methodology prompt-report
+      프롬프팅 코칭 리포트를 재생성한다 (METH-118). wrap 이 자동 호출하므로
+      보통은 직접 부를 일이 없다 — 산출: 50_resources/prompting-report.md.
 
 Classification
 --------------
@@ -85,16 +107,21 @@ MANIFEST = {
     "shared_paths": [
         "00_briefs/_README.md",
         "00_briefs/standing/SOP_template.md",
+        "00_briefs/standing/SOP_scraping-pace.md",  # METH-125: 전 repo 공통 수집 페이스 SOP
         "20_guides",
         "50_resources/templates",
         "50_resources/prompts",
         "50_resources/catalog/_README.md",
         "50_resources/skeletons/_README.md",
         "50_resources/ai_observations/_README.md",
+        # METH-117: outbox 는 _README 만 shared — 캡슐 본체는 다운스트림 소유(절대 미러/prune 안 됨).
+        # _inbox(상류 수거함)는 상류 전용 — shared/init 어디에도 넣지 않는다.
+        "50_resources/meth_outbox/_README.md",
         "60_tools/methodology-graph.json",
         "60_tools/generate-dashboard.py",
         "60_tools/methodology.py",
         "60_tools/stack.json",
+        "60_tools/build-guard.sh",
         "10_foundation/WHITEPAPER.md",
         "10_foundation/HOW_TO_APPLY.md",
         "10_foundation/KICKOFF_PROMPT.md",
@@ -123,6 +150,7 @@ MANIFEST = {
         "50_resources/catalog/archived",
         "50_resources/skeletons",
         "50_resources/ai_observations",
+        "50_resources/meth_outbox",
     ],
     # init_paths 복사에서 제외할 패턴 (repo-relative path, re.match)
     # — 본 저장소가 자기 자신에 방법론을 적용해 쌓은 *실 운영 기록*
@@ -136,6 +164,7 @@ MANIFEST = {
         r"^50_resources/ai_observations/(?!_README\.md$)",  # _README 제외 모든 실 관찰 로그
         r"^50_resources/skeletons/meta/",                    # 방법론 자신의 meta 도메인 스켈레톤
         r"^50_resources/catalog/_pending/P-\d{3}_",          # 방법론 자신의 pending lesson
+        r"^50_resources/meth_outbox/(?!_README\.md$)",      # 캡슐 본체는 각 repo 소유 — 새 프로젝트로 안 샘
     ],
     # init이 src→dst 매핑으로 복사하는 단일 파일들 (PROJECT_NAME 치환 가능)
     "init_files": [
@@ -179,6 +208,17 @@ INSIGHTS_DIR = Path("40_dev/snapshots/insights")
 OBSERVATION_TASK_TYPES = {"bootstrap", "feature", "bugfix", "refactor", "research", "docs"}
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 OBSERVATION_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
+
+# METH-118 프롬프팅 코칭 루프 — 상시 기록(wrap)·자동 갱신 리포트
+PROMPTING_VAGUE_MAX = 200  # 발췌 상한 — 원문 전체 저장 금지(볼륨·sensitive 반경)
+PROMPT_REPORT_PATH = Path("50_resources/prompting-report.md")
+
+# METH-117 역방향 루프 — 캡슐 outbox(다운스트림 발신) / _inbox(상류 수거함)
+OUTBOX_DIR = Path("50_resources/meth_outbox")
+INBOX_DIR = Path("50_resources/meth_inbox")
+CAPSULE_TYPES = {"guide-update", "friction-escalation", "pattern", "tool-change"}
+CAPSULE_FILE_RE = OBSERVATION_FILE_RE  # 동일 명명: YYYY-MM-DD_<slug>.md
+CAPSULE_BODY_MAX_LINES = 120  # 포인터+요약 원칙 — 원문 덤프 차단
 
 
 # ─── 유틸 ───────────────────────────────────────────────────────────────────
@@ -334,6 +374,59 @@ def yaml_scalar(value: str | None) -> str:
     return f'"{escaped}"'
 
 
+# repeat_of 허용 형식: null | 관찰 session_id(YYYY-MM-DD_slug) | 마찰 앵커 슬러그 | C-NNN
+# (METH-121 — 자유 텍스트·"repeat_of:" 접두 오염을 차단해야 thinktank ≥2 집계가 기계적으로 가능)
+REPEAT_OF_RE = re.compile(r"^(?:\d{4}-\d{2}-\d{2}_)?[a-z0-9]+(?:-[a-z0-9]+)*$|^C-\d{3}$")
+
+
+def normalize_repeat_of(raw: str) -> str | None:
+    """repeat_of 값 정규화 — 접두 오염 제거 후 형식 검증. 위반 시 ValueError."""
+    value = raw.strip().strip('"')
+    while value.startswith("repeat_of:"):
+        value = value[len("repeat_of:"):].strip()
+    if value in {"", "null", "none", "no", "-"}:
+        return None
+    if value in {"yes", "repeat", "true"}:
+        raise ValueError(
+            "repeat_of에는 '반복이다'가 아니라 *무엇의* 반복인지를 적습니다 — "
+            "이전 관찰 session_id(YYYY-MM-DD_slug) 또는 마찰 앵커 슬러그(kebab-case)")
+    if not REPEAT_OF_RE.match(value):
+        raise ValueError(
+            f"repeat_of 형식 위반: '{value}' — null 또는 session_id/kebab-슬러그/C-NNN만 허용"
+            " (자유 서술은 resolution에)")
+    return value
+
+
+def parse_prompting_item(raw: str) -> dict:
+    """--prompting 'intent|rounds|모호발췌|교정안|용어(콤마)|상황태그' 파싱 (METH-118).
+
+    모호발췌·교정안·용어·상황태그는 빈칸 허용. 발췌는 200자 상한(원문 덤프 금지).
+    """
+    parts = raw.split("|")
+    if len(parts) != 6:
+        raise ValueError("--prompting 형식은 'intent|rounds|모호발췌|교정안|용어(콤마)|상황태그' 입니다")
+    intent, rounds, vague, correction, terms, situation = [p.strip() for p in parts]
+    if not intent:
+        raise ValueError("prompting intent는 비울 수 없습니다")
+    try:
+        rounds_n = int(rounds)
+    except ValueError as exc:
+        raise ValueError("prompting rounds는 정수여야 합니다") from exc
+    if len(vague) > PROMPTING_VAGUE_MAX:
+        raise ValueError(
+            f"모호 지시 발췌가 {len(vague)}자 — {PROMPTING_VAGUE_MAX}자 상한(원문 전체 저장 금지, 핵심 구절만)")
+    if situation and not SLUG_RE.match(situation):
+        raise ValueError("상황태그는 kebab-case (예: webpage-design-choice)")
+    return {
+        "intent": intent,
+        "rounds": rounds_n,
+        "vague": vague or None,
+        "correction": correction or None,
+        "terms": [t.strip() for t in terms.split(",") if t.strip()],
+        "situation": situation or None,
+    }
+
+
 def parse_friction_item(raw: str, index: int) -> dict:
     parts = raw.split("|")
     if len(parts) != 4:
@@ -343,13 +436,12 @@ def parse_friction_item(raw: str, index: int) -> dict:
         cost_minutes = int(cost)
     except ValueError as exc:
         raise ValueError("friction cost_minutes는 정수여야 합니다") from exc
-    repeat_value = None if repeat_of in {"", "null", "none", "-"} else repeat_of
     return {
         "id": f"F-{index:03d}",
         "where": where,
         "cost_minutes": cost_minutes,
         "resolution": resolution,
-        "repeat_of": repeat_value,
+        "repeat_of": normalize_repeat_of(repeat_of),
     }
 
 
@@ -394,6 +486,28 @@ def render_observation(payload: dict) -> str:
             ])
     else:
         lines.append("prompt_patterns: []")
+
+    # METH-118 프롬프팅 코칭 블록 — 판단(교정안·용어·상황)은 wrap 시 그 세션 AI가 생성
+    prompting = payload.get("prompting") or {}
+    if prompting.get("rounds_total") is not None or prompting.get("exchanges"):
+        lines.append("prompting:")
+        if prompting.get("rounds_total") is not None:
+            lines.append(f"  rounds_total: {prompting['rounds_total']}")
+        exchanges = prompting.get("exchanges") or []
+        if exchanges:
+            lines.append("  exchanges:")
+            for ex in exchanges:
+                lines.append(f"    - intent: {yaml_scalar(ex['intent'])}")
+                lines.append(f"      rounds: {ex['rounds']}")
+                if ex.get("vague"):
+                    lines.append(f"      vague: {yaml_scalar(ex['vague'])}")
+                if ex.get("correction"):
+                    lines.append(f"      correction: {yaml_scalar(ex['correction'])}")
+                if ex.get("terms"):
+                    lines.append("      terms:")
+                    lines.extend(f"        - {yaml_scalar(t)}" for t in ex["terms"])
+                if ex.get("situation"):
+                    lines.append(f"      situation: {ex['situation']}")
 
     lines.extend([
         "---",
@@ -445,6 +559,12 @@ def validate_observation_file(path: Path) -> list[str]:
     task_match = re.search(r"^task_type:\s*([^\s]+)\s*$", frontmatter, flags=re.MULTILINE)
     if task_match and task_match.group(1) not in OBSERVATION_TASK_TYPES:
         errors.append(f"task_type은 {', '.join(sorted(OBSERVATION_TASK_TYPES))} 중 하나여야 합니다")
+    # METH-121: repeat_of 형식 강제 — 오염되면 thinktank 반복 집계가 기계적으로 불가
+    for m in re.finditer(r"^\s+repeat_of:\s*(.+?)\s*$", frontmatter, flags=re.MULTILINE):
+        try:
+            normalize_repeat_of(m.group(1))
+        except ValueError as exc:
+            errors.append(str(exc))
     if re.search(r"^\s*-\s*\[?None\]?\s*$", frontmatter, flags=re.MULTILINE):
         errors.append("빈 배열은 [None] 대신 []로 기록해야 합니다")
     # 본문(body) 검증:
@@ -457,6 +577,22 @@ def validate_observation_file(path: Path) -> list[str]:
     return errors
 
 
+def observation_quality_warnings(path: Path) -> list[str]:
+    """미기입·상용구 경고 (METH-121) — 차단하지 않되 신호 부재를 드러낸다."""
+    warnings: list[str] = []
+    text = read_text(path)
+    if re.search(r'^\s+(agent|tool):\s*"?unknown"?\s*$', text, flags=re.MULTILINE):
+        warnings.append("authored_by가 unknown — --agent/--tool 로 명시하면 L3 귀속 분석 가능")
+    if re.search(r'^domain:\s*meta\s*$', text, flags=re.MULTILINE):
+        warnings.append("domain=meta — 방법론 repo 자신이 아니면 실제 도메인(fullstack 등)을 지정")
+    if 'intent: "l1 observation capture"' in text:
+        warnings.append("prompt_patterns가 상용구 — 실측 아니면 비워두는 편이 정직(METH-118 예정)")
+    if "\nprompting:" not in text:
+        warnings.append("prompting 미기록 — 세션 라운드 수(--rounds-total)는 상시 기록 의무(METH-118), "
+                        "교정 가치 있으면 --prompting 'intent|rounds|모호발췌|교정안|용어|상황태그'")
+    return warnings
+
+
 def parse_observation_frontmatter(path: Path) -> dict[str, Any]:
     text = read_text(path)
     if not text.startswith("---\n"):
@@ -465,7 +601,11 @@ def parse_observation_frontmatter(path: Path) -> dict[str, Any]:
         _, frontmatter, _body = text.split("---", 2)
     except ValueError:
         return {}
-    out: dict[str, Any] = {"path": str(path.relative_to(METHODOLOGY_ROOT))}
+    try:
+        rel = str(path.relative_to(METHODOLOGY_ROOT))
+    except ValueError:
+        rel = path.name
+    out: dict[str, Any] = {"path": rel}
     current = None
     for raw in frontmatter.splitlines():
         line = raw.rstrip()
@@ -494,6 +634,8 @@ def cmd_observe(args: argparse.Namespace) -> int:
                 err(item)
             return 1
         ok(f"observation valid: {path}")
+        for w in observation_quality_warnings(path):
+            warn(w)
         return 0
 
     if not args.slug or not args.summary:
@@ -507,12 +649,31 @@ def cmd_observe(args: argparse.Namespace) -> int:
         return 2
 
     ctx = load_ai_context(METHODOLOGY_ROOT)
-    agent = args.agent or ctx.get("last_session", {}).get("agent", {}).get("model") or "unknown"
-    tool = args.tool or ctx.get("last_session", {}).get("agent", {}).get("tool") or "unknown"
-    host_os = args.host_os or ctx.get("last_session", {}).get("host_os") or host_os_label()
-    domain = args.domain or ctx.get("project", {}).get("domain") or "meta"
+
+    def _ctx_value(*keys: str) -> str | None:
+        node: Any = ctx
+        for key in keys:
+            node = node.get(key, {}) if isinstance(node, dict) else {}
+        return None if not isinstance(node, str) or node in {"", "unknown"} else node
+
+    # METH-121: 메타 자동 채움 — "unknown" 상수가 900+건 쌓인 결함의 근본 수정.
+    # ctx의 "unknown"은 미기입으로 취급하고, 환경에서 실측·추정한다.
+    agent = args.agent or _ctx_value("last_session", "agent", "model") \
+        or os.environ.get("ANTHROPIC_MODEL") or os.environ.get("CLAUDE_MODEL") or "unknown"
+    tool = args.tool or _ctx_value("last_session", "agent", "tool") \
+        or ("claude-code" if os.environ.get("CLAUDECODE") else None) \
+        or ("codex" if os.environ.get("CODEX_SANDBOX") else None) or "unknown"
+    host_os = args.host_os or _ctx_value("last_session", "host_os") or host_os_label()
+    # METH-121: domain 기본값 "meta" 금지 — 전 repo 로그가 meta 상수로 분류 무력화됐던 결함.
+    domain = args.domain or _ctx_value("project", "domain")
+    if not domain:
+        err("--domain 이 필요합니다 (.ai/context.json project.domain 미설정) — "
+            "예: fullstack, webapp, planning, meta(방법론 repo 자신일 때만)")
+        return 2
     stack_used = args.stack or ["python3", f"methodology@{METHODOLOGY_VERSION}"]
-    intents = args.intent or ["l1 observation capture"]
+    # METH-121: prompt_patterns 상용구 자동 주입 제거 — 실측 없으면 빈 배열이 정직하다.
+    # (프롬프팅 실측 블록은 METH-118에서 설계)
+    intents = args.intent or []
     rounds = args.rounds or [1 for _ in intents]
     if len(rounds) != len(intents):
         err("--rounds 개수는 --intent 개수와 같아야 합니다")
@@ -523,6 +684,13 @@ def cmd_observe(args: argparse.Namespace) -> int:
     except ValueError as exc:
         err(str(exc))
         return 2
+
+    try:
+        exchanges = [parse_prompting_item(raw) for raw in (args.prompting or [])]
+    except ValueError as exc:
+        err(str(exc))
+        return 2
+    prompting = {"rounds_total": args.rounds_total, "exchanges": exchanges}
 
     date_part = args.date or utc_date()
     session_id = f"{date_part}_{args.slug}"
@@ -543,6 +711,7 @@ def cmd_observe(args: argparse.Namespace) -> int:
         "friction": friction,
         "prompt_patterns": intents,
         "rounds": rounds,
+        "prompting": prompting,
         "summary": args.summary,
         "created_at": utc_stamp(),
     }
@@ -557,6 +726,8 @@ def cmd_observe(args: argparse.Namespace) -> int:
             err(item)
         return 1
     ok(f"observation created: {output.relative_to(METHODOLOGY_ROOT)}")
+    for w in observation_quality_warnings(output):
+        warn(w)
     return 0
 
 
@@ -841,9 +1012,840 @@ def cmd_thinktank(args: argparse.Namespace) -> int:
     for obs in observations:
         lines.append(f"- `{obs.get('session_id', 'unknown')}` — domain `{obs.get('domain', '?')}`, task `{obs.get('task_type', '?')}`")
     write_text(out, "\n".join(lines) + "\n")
+
+    capsule_lines = _thinktank_capsule_section()
+    if capsule_lines:
+        with out.open("a", encoding="utf-8") as fh:
+            fh.write("\n".join(capsule_lines) + "\n")
+
     ok(f"thinktank report: {out.relative_to(METHODOLOGY_ROOT)}")
     info("수동 승급이 정식 — 승급 후보(≥2회)는 사람이 검토·PR로 승급(백서 §8-2).")
     return 0
+
+
+def _thinktank_capsule_section() -> list[str]:
+    """_inbox 수거 캡슐의 target별 집계 — 교차-repo 중복 제안 마킹(METH-117).
+
+    마킹까지만 한다. 분배·승급은 사람(백서 §8-2).
+    """
+    inbox = METHODOLOGY_ROOT / INBOX_DIR
+    if not inbox.is_dir():
+        return []
+    capsules = sorted(p for p in inbox.glob("*.md") if not p.name.startswith("_"))
+    if not capsules:
+        return []
+    by_target: dict[str, list[dict]] = {}
+    for p in capsules:
+        meta = parse_capsule_frontmatter(read_text(p))
+        target = str(meta.get("target") or "?")
+        by_target.setdefault(target, []).append(
+            {"repo": str(meta.get("origin_repo") or "?"), "file": p.name})
+    lines = ["", "## Collected Capsules (_inbox)", ""]
+    for target, items in sorted(by_target.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        repos = sorted({i["repo"] for i in items})
+        marker = "CROSS-REPO" if len(repos) >= 2 else ("DUP-TARGET" if len(items) >= 2 else "single")
+        lines.append(f"- `{marker}` x{len(items)}: target `{target}` — repo {', '.join(repos)}")
+    lines.append("")
+    lines.append("> 트리아지 판정(유효/이미 반영/만료)·분배는 사람 — `50_resources/meth_inbox/_README.md`.")
+    return lines
+
+
+# ─── METH-118 프롬프팅 코칭 — 집계·리포트 ───────────────────────────────────
+# 판단 시점 정의: 질적 판단(모호 발췌·교정안·용어·상황 태그)은 wrap 시 *그 세션의 AI*가
+# 생성한다 — 대화 맥락이 있는 유일한 시점이기 때문. 뒷단 배치가 아니다.
+# 이 모듈은 그 기록의 *결정적 집계*만 담당한다. 리포트는 wrap 이 자동 재생성한다.
+
+
+def parse_prompting_block(text: str) -> dict | None:
+    """관찰 파일에서 prompting 블록 파싱 — render_observation 이 쓰는 형식 전제."""
+    m = re.search(r"^prompting:\s*$\n(.*?)(?=^[a-z_]+:|^---)", text, re.MULTILINE | re.DOTALL)
+    if not m:
+        return None
+    block = m.group(1)
+    out: dict = {"rounds_total": None, "exchanges": []}
+    rt = re.search(r"^\s{2}rounds_total:\s*(\d+)", block, re.MULTILINE)
+    if rt:
+        out["rounds_total"] = int(rt.group(1))
+    for ex_raw in re.split(r"(?=^\s{4}- intent:)", block, flags=re.MULTILINE):
+        im = re.search(r"^\s{4}- intent:\s*\"?(.*?)\"?\s*$", ex_raw, re.MULTILINE)
+        if not im:
+            continue
+        ex = {"intent": im.group(1), "rounds": 1, "vague": None, "correction": None,
+              "terms": [], "situation": None}
+        for key in ("rounds", "vague", "correction", "situation"):
+            km = re.search(rf"^\s{{6}}{key}:\s*\"?(.*?)\"?\s*$", ex_raw, re.MULTILINE)
+            if km:
+                ex[key] = int(km.group(1)) if key == "rounds" else km.group(1)
+        ex["terms"] = re.findall(r"^\s{8}-\s*\"?(.*?)\"?\s*$", ex_raw, re.MULTILINE)
+        out["exchanges"].append(ex)
+    return out
+
+
+def collect_prompting_entries(target: Path) -> list[dict]:
+    entries: list[dict] = []
+    for rel in list_observation_files(target):
+        p = target / rel
+        text = read_text(p)
+        block = parse_prompting_block(text)
+        if not block:
+            continue
+        dm = re.match(r"(\d{4}-\d{2}-\d{2})_", p.name)
+        entries.append({"session_id": p.stem, "date": dm.group(1) if dm else "?", **block})
+    return sorted(entries, key=lambda e: e["date"])
+
+
+def build_prompt_report(entries: list[dict], generated_at: str) -> str:
+    """프롬프팅 코칭 리포트 생성 — 살아있는 파일(wrap 이 재생성). 결정적 집계만."""
+    sessions = len(entries)
+    totals = [e["rounds_total"] for e in entries if e.get("rounds_total") is not None]
+    exchanges = [ex for e in entries for ex in e["exchanges"]]
+    corrections = [ex for ex in exchanges if ex.get("vague") or ex.get("correction")]
+    terms: dict[str, int] = {}
+    for ex in exchanges:
+        for t in ex.get("terms") or []:
+            terms[t] = terms.get(t, 0) + 1
+    situations: dict[str, list[dict]] = {}
+    for ex in exchanges:
+        if ex.get("situation"):
+            situations.setdefault(ex["situation"], []).append(ex)
+    redo = [ex for ex in exchanges if (ex.get("rounds") or 1) >= 3]
+    avg = f"{sum(totals) / len(totals):.1f}" if totals else "-"
+
+    lines = [
+        "# 프롬프팅 코칭 리포트",
+        "",
+        f"> 생성: {generated_at} — **wrap 이 자동 재생성하는 살아있는 파일**(직접 편집 금지).",
+        "> 판단(발췌·교정안·용어·상황)은 각 세션 AI가 wrap 시 기록, 여기서는 결정적 집계만.",
+        "> v1 스코프: 토큰은 프록시(라운드·재지시 수), 교차-repo 통합 제외(repo 로컬).",
+        "",
+        f"> 요지: 기록 세션 {sessions}건 · 평균 라운드 {avg} · 교정 사례 {len(corrections)}건 · 용어 {len(terms)}개 · 재지시(3라운드+) {len(redo)}건",
+        "",
+        "## 라운드 추이 (세션별)",
+        "",
+    ]
+    by_date: dict[str, list[int]] = {}
+    for e in entries:
+        if e.get("rounds_total") is not None:
+            by_date.setdefault(e["date"], []).append(e["rounds_total"])
+    if by_date:
+        lines.append("| 날짜 | 세션 | 평균 라운드 |")
+        lines.append("|---|---:|---:|")
+        for d in sorted(by_date)[-14:]:
+            vals = by_date[d]
+            lines.append(f"| {d} | {len(vals)} | {sum(vals) / len(vals):.1f} |")
+    else:
+        lines.append("(rounds_total 기록 없음 — wrap 시 `--rounds-total` 로 기록)")
+    lines += ["", "## 모호 지시 → 교정안 (최근순)", ""]
+    if corrections:
+        for ex in corrections[-20:][::-1]:
+            lines.append(f"- **{ex['intent']}** ({ex.get('rounds', '?')}라운드"
+                         + (f", `{ex['situation']}`" if ex.get("situation") else "") + ")")
+            if ex.get("vague"):
+                lines.append(f"  - 모호: “{ex['vague']}”")
+            if ex.get("correction"):
+                lines.append(f"  - 교정: {ex['correction']}")
+    else:
+        lines.append("(아직 없음)")
+    lines += ["", "## 배우면 좋은 용어 사전", ""]
+    if terms:
+        for t, c in sorted(terms.items(), key=lambda kv: (-kv[1], kv[0])):
+            lines.append(f"- **{t}** — {c}회 등장")
+    else:
+        lines.append("(아직 없음)")
+    lines += ["", "## 상황별 플레이북", ""]
+    if situations:
+        for tag, exs in sorted(situations.items(), key=lambda kv: -len(kv[1])):
+            lines.append(f"### `{tag}` ({len(exs)}회)")
+            for ex in exs[-5:]:
+                if ex.get("correction"):
+                    lines.append(f"- {ex['correction']}")
+            lines.append("")
+    else:
+        lines.append("(아직 없음)")
+    lines += [
+        "## 토큰 적정성 (v1 프록시)",
+        "",
+        f"- 총 라운드 {sum(totals) if totals else 0} · 세션 평균 {avg} · 재지시(3라운드+) {len(redo)}건",
+        "- 프록시 한계: 세션 내 AI는 토큰 실측 불가 — 라운드·재지시 수가 대리 지표.",
+        "- 확장 포인트: PostHog LLM Analytics(`llma-cc-setup`) 연동 시 이 섹션이 실측 토큰을 읽도록 교체(METH-118 AC ④).",
+        "",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _regenerate_prompt_report(target: Path) -> bool:
+    """prompting 기록이 있으면 리포트 재생성. 갱신 여부 반환 — wrap 파이프라인용."""
+    entries = collect_prompting_entries(target)
+    if not entries:
+        return False
+    content = build_prompt_report(entries, utc_stamp())
+    out = target / PROMPT_REPORT_PATH
+    if out.exists() and read_text(out) == content:
+        return False
+    write_text(out, content)
+    return True
+
+
+def cmd_prompt_report(args: argparse.Namespace) -> int:
+    target = Path(args.path or ".").resolve()
+    entries = collect_prompting_entries(target)
+    if not entries:
+        warn("prompting 기록이 없음 — wrap 시 observe --rounds-total/--prompting 으로 기록하면 쌓인다.")
+        return 0
+    content = build_prompt_report(entries, utc_stamp())
+    write_text(target / PROMPT_REPORT_PATH, content)
+    ok(f"prompting report: {PROMPT_REPORT_PATH} (세션 {len(entries)}건 집계)")
+    return 0
+
+
+# ─── METH-117 역방향 루프 — 캡슐 outbox / collect ───────────────────────────
+# 다운스트림이 방법론 업데이트 *제안*을 1제안=1캡슐=1파일로 outbox에 적재하고,
+# 상류가 수동 트리거 `collect`로 일괄 수거한다. 수거 상태는 상류 원장(_ledger.json)
+# 으로만 관리 — 다운스트림 캡슐은 절대 변경하지 않는다(읽기 전용).
+# 자동화는 적재·수거·집계·마킹까지. 분배·PR 머지는 사람(백서 §8-2).
+
+
+def _repo_name(target: Path) -> str:
+    return target.resolve().name
+
+
+def _capsule_policy(target: Path) -> str:
+    """캡슐 발신 정책 — .methodology-version 의 capsule_policy 키.
+
+    "restricted": 민감 도메인 repo(예: Class C 확장 repo) — 캡슐 발신 차단.
+    기본 "open".
+    """
+    vinfo = load_version_file(target) or {}
+    return str(vinfo.get("capsule_policy") or "open")
+
+
+def capsule_files(base: Path) -> list[Path]:
+    d = base / OUTBOX_DIR
+    if not d.is_dir():
+        return []
+    return sorted(p for p in d.glob("*.md")
+                  if not p.name.startswith("_") and CAPSULE_FILE_RE.match(p.name))
+
+
+def parse_capsule_frontmatter(text: str) -> dict[str, Any]:
+    """캡슐 frontmatter 파싱 — 관찰 로그와 동일한 단순 YAML 서브셋."""
+    if not text.startswith("---\n"):
+        return {}
+    try:
+        _, frontmatter, _body = text.split("---", 2)
+    except ValueError:
+        return {}
+    out: dict[str, Any] = {}
+    current = None
+    for raw in frontmatter.splitlines():
+        line = raw.rstrip()
+        if not line.strip():
+            continue
+        top = re.match(r"^([a-z_]+):\s*(.*)$", line)
+        if top:
+            current = top.group(1)
+            value = top.group(2).strip()
+            out[current] = value.strip('"') if value else []
+            continue
+        item = re.match(r"^\s+-\s+(.+)$", line)
+        if item and current and isinstance(out.get(current), list):
+            out[current].append(item.group(1).strip().strip('"'))
+    return out
+
+
+def render_capsule(payload: dict) -> str:
+    lines = [
+        "---",
+        f"id: {payload['id']}",
+        f"origin_repo: {payload['origin_repo']}",
+        f"type: {payload['type']}",
+        f"target: {yaml_scalar(payload['target'])}",
+        "refs:",
+    ]
+    if payload["refs"]:
+        for ref in payload["refs"]:
+            lines.append(f"  - {yaml_scalar(ref)}")
+    else:
+        lines[-1] = "refs: []"
+    lines.extend([
+        f"friction_ref: {payload.get('friction_ref') or 'null'}",
+        f"created: {payload['created']}",
+        "---",
+        "",
+        "## 제안",
+        payload["summary"],
+        "",
+        "## 근거",
+    ])
+    evidence = payload.get("evidence") or []
+    if evidence:
+        lines.extend(f"- {e}" for e in evidence)
+    else:
+        lines.append("- (refs 참조 — 원문 정본은 이 repo)")
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def validate_capsule_text(text: str, filename: str, repo: str) -> list[str]:
+    """캡슐 형식 검증. filename 은 'YYYY-MM-DD_<slug>.md'."""
+    errors: list[str] = []
+    meta = parse_capsule_frontmatter(text)
+    if not meta:
+        return ["frontmatter 없음 — capsule CLI로 생성해야 합니다"]
+    for field in ("id", "origin_repo", "type", "target", "created"):
+        if not meta.get(field):
+            errors.append(f"필수 필드 누락: {field}")
+    if meta.get("type") and meta["type"] not in CAPSULE_TYPES:
+        errors.append(f"type은 {', '.join(sorted(CAPSULE_TYPES))} 중 하나여야 합니다")
+    stem = filename[:-3] if filename.endswith(".md") else filename
+    expected_id = f"{repo}__{stem}"
+    if meta.get("id") and repo and meta["id"] != expected_id:
+        errors.append(f"id는 '<origin_repo>__<파일명 stem>' ({expected_id}) 이어야 합니다")
+    try:
+        body = text.split("---", 2)[2]
+    except IndexError:
+        body = ""
+    if not body.strip():
+        errors.append("본문이 비어있습니다 — 제안 요지 필요")
+    if len(body.splitlines()) > CAPSULE_BODY_MAX_LINES:
+        errors.append(
+            f"본문 {len(body.splitlines())}줄 > {CAPSULE_BODY_MAX_LINES}줄 — "
+            "포인터+요약 원칙 위반(원문 덤프 금지). refs로 가리키고 요지만 남기세요")
+    return errors
+
+
+def cmd_capsule(args: argparse.Namespace) -> int:
+    """상류행 제안 캡슐 생성 — 1 제안 = 1 캡슐 = 1 파일.
+
+    트리거 규칙(outbox _README): 사용자 명시 요청("방법론에 반영해줘")=의무,
+    AI 자발=근거 있을 때만 권장. friction=막힌 사실 / 캡슐=변경 제안.
+    """
+    repo = _repo_name(METHODOLOGY_ROOT)
+
+    if args.validate:
+        path = Path(args.validate)
+        errors = validate_capsule_text(read_text(path), path.name, repo)
+        if errors:
+            for item in errors:
+                err(item)
+            return 1
+        ok(f"capsule valid: {path}")
+        return 0
+
+    if not args.slug or not args.summary or not args.target:
+        err("capsule 생성에는 --slug, --target, --summary 가 필요합니다")
+        return 2
+    if not SLUG_RE.match(args.slug):
+        err("--slug 는 영문 소문자/숫자/kebab-case 여야 합니다")
+        return 2
+    if args.type not in CAPSULE_TYPES:
+        err(f"--type 은 {', '.join(sorted(CAPSULE_TYPES))} 중 하나여야 합니다")
+        return 2
+
+    policy = _capsule_policy(METHODOLOGY_ROOT)
+    if policy == "restricted" and not args.allow_restricted:
+        err("이 repo는 캡슐 발신 제한(capsule_policy: restricted) — 민감 도메인.")
+        err("사람 승인 후 --allow-restricted 로 재호출하되, 민감 내용은 refs로만 가리킬 것.")
+        return 1
+
+    date_part = args.date or utc_date()
+    stem = f"{date_part}_{args.slug}"
+    output = METHODOLOGY_ROOT / OUTBOX_DIR / f"{stem}.md"
+    if output.exists() and not args.force:
+        err(f"이미 존재합니다: {output.relative_to(METHODOLOGY_ROOT)} (--force 로 덮어쓰기)")
+        return 1
+
+    payload = {
+        "id": f"{repo}__{stem}",
+        "origin_repo": repo,
+        "type": args.type,
+        "target": args.target,
+        "refs": args.ref or [],
+        "friction_ref": args.friction_ref,
+        "created": utc_stamp(),
+        "summary": args.summary,
+        "evidence": args.evidence or [],
+    }
+    content = render_capsule(payload)
+    errors = validate_capsule_text(content, output.name, repo)
+    if errors:
+        for item in errors:
+            err(item)
+        return 1
+    if args.dry_run:
+        print(content)
+        return 0
+    write_text(output, content)
+    ok(f"capsule created: {output.relative_to(METHODOLOGY_ROOT)}")
+    info("수거는 상류에서 `methodology collect` — 이 파일은 커밋·push까지 해야 origin 경유 수거가 됩니다.")
+    return 0
+
+
+def _ledger_path() -> Path:
+    return METHODOLOGY_ROOT / INBOX_DIR / "_ledger.json"
+
+
+def load_ledger() -> dict:
+    p = _ledger_path()
+    if not p.exists():
+        return {"collected": {}}
+    try:
+        data = json.loads(read_text(p))
+        if isinstance(data, dict) and isinstance(data.get("collected"), dict):
+            return data
+    except json.JSONDecodeError:
+        pass
+    return {"collected": {}}
+
+
+def save_ledger(ledger: dict) -> None:
+    p = _ledger_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    write_text(p, json.dumps(ledger, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+
+
+def _git_remote_default_ref(path: Path) -> str | None:
+    """origin/main 또는 origin/master — 없으면 None."""
+    for branch in ("main", "master"):
+        try:
+            subprocess.check_output(
+                ["git", "-C", str(path), "rev-parse", "--verify", "--quiet", f"origin/{branch}"],
+                stderr=subprocess.DEVNULL,
+            )
+            return f"origin/{branch}"
+        except subprocess.CalledProcessError:
+            continue
+        except Exception:
+            return None
+    return None
+
+
+def _origin_capsules(path: Path, fetch: bool) -> tuple[dict[str, str], str | None]:
+    """origin 기본 브랜치 트리의 outbox 캡슐 {파일명: 내용}. 실패 시 사유 반환."""
+    try:
+        remotes = subprocess.check_output(
+            ["git", "-C", str(path), "remote"], text=True, stderr=subprocess.DEVNULL
+        ).split()
+    except Exception:
+        return {}, "git repo 아님"
+    if not remotes:
+        return {}, "원격 없음 — 로컬 스캔만"
+    if fetch:
+        try:
+            subprocess.run(
+                ["git", "-C", str(path), "fetch", "-q", "origin"],
+                check=True, capture_output=True, timeout=60,
+            )
+        except Exception:
+            return {}, "origin fetch 실패 — 로컬 스캔만"
+    ref = _git_remote_default_ref(path)
+    if ref is None:
+        return {}, "origin main/master 없음 — 로컬 스캔만"
+    try:
+        listed = subprocess.check_output(
+            ["git", "-C", str(path), "ls-tree", "-r", "--name-only", ref, "--", str(OUTBOX_DIR)],
+            text=True, stderr=subprocess.DEVNULL,
+        ).splitlines()
+    except subprocess.CalledProcessError:
+        return {}, None
+    out: dict[str, str] = {}
+    for rel in listed:
+        name = rel.rsplit("/", 1)[-1]
+        if name.startswith("_") or not CAPSULE_FILE_RE.match(name):
+            continue
+        try:
+            out[name] = subprocess.check_output(
+                ["git", "-C", str(path), "show", f"{ref}:{rel}"],
+                text=True, stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError:
+            continue
+    return out, None
+
+
+def _collect_plan(capsules: dict[str, str], repo: str, ledger: dict) -> tuple[list[tuple[str, str, str]], int]:
+    """수거 계획 — (파일명, id, 내용) 신규 목록과 중복 skip 수.
+
+    id 는 frontmatter 우선, 없으면 repo__stem 폴백. 원장에 있으면 skip.
+    """
+    new_items: list[tuple[str, str, str]] = []
+    dup = 0
+    for name in sorted(capsules):
+        text = capsules[name]
+        meta = parse_capsule_frontmatter(text)
+        cid = str(meta.get("id") or f"{repo}__{name[:-3]}")
+        if cid in ledger.get("collected", {}):
+            dup += 1
+            continue
+        new_items.append((name, cid, text))
+    return new_items, dup
+
+
+def cmd_collect(args: argparse.Namespace) -> int:
+    """다운스트림 outbox 캡슐 일괄 수거 — 수동 트리거(상류 전용).
+
+    다운스트림 무변경(읽기 전용). 수거 상태는 상류 원장(_ledger.json)으로만.
+    기본 dry-run — --apply 로 실제 적재.
+    """
+    root = Path(args.root).resolve() if args.root else METHODOLOGY_ROOT.parent
+    projects = _discover_downstreams(root)
+    if not projects:
+        warn(f"다운스트림 없음 — {root} 아래 {VERSION_FILE_NAME} 보유 폴더가 없습니다.")
+        return 0
+    apply = args.apply
+    fetch = not args.no_fetch
+    ledger = load_ledger()
+    inbox = METHODOLOGY_ROOT / INBOX_DIR
+
+    info(f"collect — root: {root}  ({len(projects)}개)  "
+         f"{'APPLY' if apply else 'DRY-RUN'}  {'fetch' if fetch else 'no-fetch(로컬만)'}")
+    print()
+    print(f"  {'project':22s} {'capsules':>8s} {'new':>4s} {'dup':>4s}  note")
+    print(f"  {'-'*22} {'-'*8} {'-'*4} {'-'*4}  {'-'*24}")
+
+    total_new = 0
+    coverage_out: list[str] = []
+    for p in projects:
+        name = p.name
+        if _capsule_policy(p) == "restricted":
+            print(f"  {name:22.22s} {'-':>8s} {'-':>4s} {'-':>4s}  발신 제한(restricted) — skip")
+            continue
+        local = {f.name: read_text(f) for f in capsule_files(p)}
+        origin, note = _origin_capsules(p, fetch)
+        merged = dict(origin)
+        merged.update(local)  # 작업트리 우선
+        new_items, dup = _collect_plan(merged, name, ledger)
+        if note:
+            coverage_out.append(f"{name}: {note}")
+        print(f"  {name:22.22s} {len(merged):>8d} {len(new_items):>4d} {dup:>4d}  {note or ''}")
+        if not apply:
+            total_new += len(new_items)
+            continue
+        for fname, cid, text in new_items:
+            dest = inbox / f"{name}__{fname}"
+            errors = validate_capsule_text(text, fname, name)
+            if errors:
+                warn(f"  형식 오류 — 적재하되 트리아지에서 확인: {name}/{fname} ({errors[0]})")
+            inbox.mkdir(parents=True, exist_ok=True)
+            write_text(dest, text)
+            ledger["collected"][cid] = {
+                "repo": name, "file": fname, "collected_at": utc_stamp(),
+            }
+            total_new += 1
+
+    print()
+    if apply and total_new:
+        save_ledger(ledger)
+    if coverage_out:
+        for line in coverage_out:
+            warn(f"커버리지: {line}")
+    ok(f"collect 완료 — 신규 {total_new}건" + ("" if apply else " (dry-run — --apply 로 적재)"))
+    if apply and total_new:
+        info(f"적재: {INBOX_DIR}/ — 트리아지(유효/이미 반영/만료)·분배는 사람. "
+             "커밋은 ship 으로.")
+    return 0
+
+
+def cmd_maincheck(args: argparse.Namespace) -> int:
+    """커밋의 기본 브랜치(main) 도달 검증 — METH-120 (전수조사 P1).
+
+    스택-PR이 중간 브랜치로 머지되면 "PR 머지됨"이어도 main에는 코드가 없다
+    (6개 repo 실사고: insta-toon 13일 미도달·구버전 배포 등). TODO Done 전이·배포
+    판정 전에 이 명령으로 실제 도달을 확인한다. exit 0=전부 도달, 1=미도달 존재.
+    """
+    target = Path(args.path or ".").resolve()
+    if not args.no_fetch:
+        try:
+            subprocess.run(["git", "-C", str(target), "fetch", "-q", "origin"],
+                           check=True, capture_output=True, timeout=60)
+        except Exception:
+            warn("origin fetch 실패 — 로컬에 캐시된 원격 참조 기준으로 검사(신선도 주의)")
+    ref = _git_remote_default_ref(target)
+    if ref is None:
+        err("origin main/master 참조를 찾을 수 없음 — 원격 미설정이거나 fetch 필요")
+        return 1
+    shas = args.sha or ["HEAD"]
+    failed = 0
+    for s in shas:
+        try:
+            resolved = subprocess.check_output(
+                ["git", "-C", str(target), "rev-parse", "--verify", "--quiet", s],
+                text=True, stderr=subprocess.DEVNULL).strip()
+        except subprocess.CalledProcessError:
+            err(f"  {s}: 해석 불가한 커밋/참조")
+            failed += 1
+            continue
+        reached = subprocess.run(
+            ["git", "-C", str(target), "merge-base", "--is-ancestor", resolved, ref],
+            capture_output=True).returncode == 0
+        if reached:
+            ok(f"  {s} ({resolved[:8]}) → {ref} 도달 ✓")
+        else:
+            err(f"  {s} ({resolved[:8]}) → {ref} 미도달 ✗")
+            failed += 1
+    if failed:
+        err(f"maincheck 실패 — {failed}건 미도달. PR이 main으로 머지됐는지 `gh pr view`로 확인.")
+        err("스택-PR 금지 — 앞 PR 머지 후 main에서 새로 분기(CLAUDE.md §2). "
+            "미도달 상태로 TODO Done 처리 금지.")
+        return 1
+    ok(f"maincheck 통과 — {len(shas)}건 전부 {ref} 도달.")
+    return 0
+
+
+# ─── land — 머지 착지 (METH-133) ────────────────────────────────────────────
+
+# Class B/C 자동 트리거 경로·패턴 (CLAUDE.md §3). fail-closed:
+# 하나라도 걸리면 자동 머지를 *거부*하고 사람을 부른다.
+# 오탐(사람 호출)은 싸고, 미탐(무검토 머지)은 비싸다 — 비대칭을 그대로 반영.
+CLASS_BC_PATTERNS: list[tuple[str, str]] = [
+    # (설명, 정규식 — repo 상대경로에 대해 검사)
+    ("DB 마이그레이션·스키마", r"(^|/)(migrations?|prisma)/|\.sql$|schema\.(prisma|sql)$"),
+    ("인증·인가", r"(^|/)(auth|authz|authentication|authorization|session|middleware|permissions?|rbac|roles?)[./_-]"),
+    ("과금·결제·가격", r"(^|/)(billing|payment|pricing|checkout|invoice|subscription|plan)s?[./_-]"),
+    ("외부 API 계약", r"(^|/)(openapi|swagger)|\.proto$|(^|/)api[-_]?contract"),
+    ("백그라운드 작업·스케줄러·큐", r"(^|/)(cron|scheduler|queue|worker|job)s?[./_-]"),
+    ("CI·배포 파이프라인", r"^\.github/workflows/|(^|/)(Dockerfile|docker-compose|vercel\.json|fly\.toml)$"),
+    ("법무·정책·공개 메시지", r"(^|/)(legal|policy|privacy|terms|compliance)[./_-]"),
+]
+
+
+def _classify_change(target: Path, base_ref: str, head_ref: str = "HEAD") -> list[tuple[str, str]]:
+    """base..head 변경 경로에서 Class B/C 트리거를 찾는다.
+
+    반환: [(트리거 설명, 걸린 경로), ...] — 비어 있으면 Class A로 간주.
+    """
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(target), "diff", "--name-only", f"{base_ref}...{head_ref}"],
+            text=True, stderr=subprocess.DEVNULL,
+        )
+    except subprocess.CalledProcessError:
+        return [("변경 경로 조회 실패 — 자동 판정 불가", "(unknown)")]
+    hits: list[tuple[str, str]] = []
+    for path in (p.strip() for p in out.splitlines() if p.strip()):
+        for label, pattern in CLASS_BC_PATTERNS:
+            if re.search(pattern, path, re.IGNORECASE):
+                hits.append((label, path))
+                break
+    return hits
+
+
+def _pr_for_branch(target: Path, branch: str) -> dict | None:
+    """현재 브랜치의 열린 PR 정보 — gh 없거나 PR 없으면 None."""
+    try:
+        out = subprocess.check_output(
+            ["gh", "pr", "view", branch, "--json",
+             "number,state,mergeable,baseRefName,title,url"],
+            cwd=str(target), text=True, stderr=subprocess.DEVNULL,
+        )
+        return json.loads(out)
+    except Exception:  # noqa: BLE001 — gh 미설치·PR 없음 모두 "판정 불가"
+        return None
+
+
+def _pr_checks_failing(target: Path, pr_number: int) -> list[str] | None:
+    """실패한 CI 체크 이름 목록. None = 체크 정보 조회 불가(판정 불가)."""
+    try:
+        out = subprocess.check_output(
+            ["gh", "pr", "checks", str(pr_number), "--json", "name,state"],
+            cwd=str(target), text=True, stderr=subprocess.DEVNULL,
+        )
+        rows = json.loads(out)
+    except Exception:  # noqa: BLE001
+        return None
+    bad = {"FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED"}
+    return [r.get("name", "?") for r in rows if str(r.get("state", "")).upper() in bad]
+
+
+def _pr_checks_pending(target: Path, pr_number: int) -> list[str]:
+    """아직 끝나지 않은 체크 이름 목록."""
+    try:
+        out = subprocess.check_output(
+            ["gh", "pr", "checks", str(pr_number), "--json", "name,state"],
+            cwd=str(target), text=True, stderr=subprocess.DEVNULL,
+        )
+        rows = json.loads(out)
+    except Exception:  # noqa: BLE001
+        return []
+    pend = {"PENDING", "QUEUED", "IN_PROGRESS", "WAITING", "REQUESTED"}
+    return [r.get("name", "?") for r in rows if str(r.get("state", "")).upper() in pend]
+
+
+def _pr_merge_info(target: Path, pr_num: int | str) -> tuple[str | None, str | None]:
+    """PR 의 (state, merge commit SHA) — gh 조회 실패 시 (None, None).
+
+    squash 머지는 새 SHA 를 만들므로 브랜치 원본 SHA 로는 maincheck 가 영원히
+    미도달이다. 머지 판정·도달 확인은 이 API 값으로 한다(METH-137).
+    """
+    try:
+        out = subprocess.check_output(
+            ["gh", "pr", "view", str(pr_num), "--json", "state,mergeCommit"],
+            cwd=str(target), text=True, stderr=subprocess.DEVNULL,
+        )
+        data = json.loads(out)
+        commit = data.get("mergeCommit") or {}
+        state = str(data.get("state") or "").upper() or None
+        return state, (commit.get("oid") or None)
+    except Exception:  # noqa: BLE001 — gh 미설치·네트워크 모두 "판정 불가"
+        return None, None
+
+
+def cmd_land(args: argparse.Namespace) -> int:
+    """PR 머지 → main 도달 확인 → 브랜치 정리까지의 '착지' — METH-133.
+
+    ship 이 *떠나보냄*(commit·push)이라면 land 는 *착지*다. 수거 캡슐
+    invest-ops__2026-07-31_land-command-post-merge 의 설계를 채택했다.
+
+    단계:
+      1) 현재 브랜치의 PR 식별
+      2) Class 판정 — Class B/C 트리거 경로면 자동 머지 거부(사람 호출)
+      3) CI green 기계 확인 — 실패 0건, 진행 중 0건
+      4) gh pr merge --squash --delete-branch
+      5) 기본 브랜치 체크아웃 + pull
+      6) maincheck — main 도달 기계 확인
+    어느 단계든 판정 불가면 *진행하지 않는다*(fail-closed).
+    """
+    target = Path(args.path or ".").resolve()
+
+    branch = subprocess.check_output(
+        ["git", "-C", str(target), "branch", "--show-current"], text=True
+    ).strip()
+    if not branch:
+        err("DETACHED HEAD — land 불가.")
+        return 1
+
+    base_ref = _git_remote_default_ref(target)
+    if base_ref is None:
+        err("origin main/master 참조를 찾을 수 없음.")
+        return 1
+    default_branch = base_ref.rsplit("/", 1)[-1]
+    if branch == default_branch:
+        err(f"현재 브랜치가 기본 브랜치({default_branch}) — land 는 작업 브랜치에서 실행한다.")
+        return 1
+
+    # 1) PR 식별
+    info("land: 1/6 — PR 식별")
+    pr = _pr_for_branch(target, branch)
+    if pr is None:
+        err(f"브랜치 {branch} 의 PR 을 찾을 수 없음(gh 미설치이거나 PR 미생성).")
+        err("`gh pr create` 로 PR 을 먼저 연 뒤 재실행.")
+        return 1
+    pr_num = pr.get("number")
+    if str(pr.get("state", "")).upper() == "MERGED":
+        ok(f"  PR #{pr_num} 이미 머지됨 — 머지 단계 skip, 도달 확인만 진행")
+    else:
+        print(f"  PR #{pr_num} · base={pr.get('baseRefName')} · {pr.get('url')}")
+    if pr.get("baseRefName") and pr["baseRefName"] != default_branch:
+        err(f"PR base 가 {pr['baseRefName']} — 기본 브랜치({default_branch})가 아니다. "
+            "스택-PR 금지(METH-120): 중간 브랜치로 머지되면 main 미도달이 된다.")
+        return 1
+
+    # 2) Class 판정 — fail-closed
+    info("land: 2/6 — Class 판정 (Class B/C 자동 머지 금지)")
+    hits = _classify_change(target, base_ref)
+    if hits:
+        err(f"Class B/C 트리거 {len(hits)}건 — 자동 머지 거부. 사람 검토가 필요하다.")
+        seen: set[str] = set()
+        for label, path in hits:
+            if label not in seen:
+                err(f"  - {label}")
+                seen.add(label)
+            err(f"      {path}")
+        err("CLAUDE.md §3: 근거·영향 범위·롤백 계획·리스크를 PR 에 남기고 사람이 머지한다.")
+        return 2
+    print("  ✓ Class B/C 트리거 없음 — Class A")
+
+    if str(pr.get("state", "")).upper() != "MERGED":
+        # 3) CI green
+        info("land: 3/6 — CI green 확인")
+        if not args.no_ci_check:
+            pending = _pr_checks_pending(target, pr_num)
+            if pending:
+                err(f"진행 중인 체크 {len(pending)}건 — 완료 후 재실행: {', '.join(pending[:5])}")
+                return 1
+            failing = _pr_checks_failing(target, pr_num)
+            if failing is None:
+                err("CI 체크 정보를 읽을 수 없음 — 판정 불가라 머지하지 않는다. "
+                    "`gh pr checks` 로 수동 확인 후 --no-ci-check 로 재실행.")
+                return 1
+            if failing:
+                err(f"실패한 체크 {len(failing)}건 — 머지 거부: {', '.join(failing)}")
+                err("가드의 '통과'는 약해도 '거부'는 강하다 — 고치고 재실행.")
+                return 1
+            print("  ✓ 실패 체크 0건")
+        else:
+            warn("  --no-ci-check — CI 검증 생략(무검증 머지)")
+
+        # 4) 머지
+        info("land: 4/6 — merge")
+        if args.dry_run:
+            ok(f"  DRY-RUN — 여기서 `gh pr merge {pr_num} --squash --delete-branch` 를 실행한다.")
+            return 0
+        rc = subprocess.call(
+            ["gh", "pr", "merge", str(pr_num), "--squash", "--delete-branch"],
+            cwd=str(target),
+        )
+        if rc != 0:
+            # gh 종료코드만으로는 '머지 실패'와 '머지 성공 + 로컬 정리 실패'를 구분할
+            # 수 없다 — --delete-branch 의 로컬 checkout 이 worktree 점유 등으로
+            # 죽어도 rc≠0 이다. 오진 상태로 재시도하면 이중 머지를 부른다.
+            # (캡슐 gamblescan__2026-08-18_land-merge-error-misreport)
+            state, _sha = _pr_merge_info(target, pr_num)
+            if state != "MERGED":
+                err(f"머지 실패 — 충돌·권한·보호 규칙을 확인. (PR 상태: {state or '조회 불가'})")
+                return 1
+            warn("  머지는 성공 — 로컬 정리(브랜치 삭제·체크아웃)만 실패. 재머지 금지, 동기화로 진행.")
+    else:
+        info("land: 3/6 — CI green 확인 — skip (이미 머지됨)")
+        info("land: 4/6 — merge — skip (이미 머지됨)")
+
+    # 5) 기본 브랜치 동기화 — checkout 실패(worktree 점유 등)를 침묵시키지 않는다
+    if getattr(args, "no_sync", False):
+        info(f"land: 5/6 — {default_branch} 동기화 skip (--no-sync)")
+    else:
+        info(f"land: 5/6 — {default_branch} 동기화")
+        rc = subprocess.call(["git", "-C", str(target), "checkout", "-q", default_branch])
+        if rc != 0:
+            warn(f"{default_branch} 체크아웃 실패 — 다른 worktree 가 점유 중일 수 있다.")
+            warn(f"  점유 worktree 에서 `git pull --ff-only` 로 동기화하거나 land --no-sync 로 재실행.")
+        else:
+            rc = subprocess.call(["git", "-C", str(target), "pull", "--ff-only", "-q"])
+            if rc != 0:
+                warn("pull --ff-only 실패 — 로컬 기본 브랜치가 갈라져 있을 수 있음. 수동 확인.")
+
+    # 6) main 도달 기계 확인 — squash 머지는 새 SHA 를 만들므로 원본 브랜치 SHA 가
+    # 아니라 merge commit SHA 로 판정한다 (maincheck 의 fetch 가 해당 오브젝트를 가져온다)
+    info("land: 6/6 — maincheck (main 도달)")
+    _state, merge_sha = _pr_merge_info(target, pr_num)
+    check_sha = merge_sha or subprocess.check_output(
+        ["git", "-C", str(target), "rev-parse", "HEAD"], text=True
+    ).strip()
+    if merge_sha is None:
+        warn("merge commit SHA 조회 불가 — HEAD 로 대체 판정(동기화 실패 상태면 미도달로 나올 수 있음).")
+    rc = subprocess.call([sys.executable, str(Path(__file__).resolve()),
+                          "maincheck", check_sha, "--path", str(target)])
+    if rc != 0:
+        err("main 도달 미확인 — TODO Done 전이 금지.")
+        return 1
+
+    ok(f"land 완료 — PR #{pr_num} 이 {default_branch} 에 도달(squash {check_sha[:8]}). "
+       "이제 TODO Done 전이가 기계적으로 정당하다.")
+    print("  다음: TODO Done 이동 → HANDOFF/checkpoint 갱신 → ship")
+    return 0
+
+
+def _pending_capsule_counts(root: Path) -> tuple[int, int]:
+    """다운스트림 outbox의 미수거(원장 기준) 캡슐 총계 — (건수, repo 수). 로컬 스캔만."""
+    ledger = load_ledger()
+    total = 0
+    repos = 0
+    for p in _discover_downstreams(root):
+        merged = {f.name: read_text(f) for f in capsule_files(p)}
+        new_items, _dup = _collect_plan(merged, p.name, ledger)
+        if new_items:
+            total += len(new_items)
+            repos += 1
+    return total, repos
 
 
 # ─── 마이그레이션 ───────────────────────────────────────────────────────────
@@ -1448,6 +2450,7 @@ def _downstream_state(path: Path) -> dict:
         "applied_commit": vinfo.get("upstream_commit") or "unknown",
         "branch": _git_current_branch(path),
         "dirty": _git_dirty_count(path),
+        "outbox": len(capsule_files(path)),
     }
 
 
@@ -1477,14 +2480,17 @@ def _sync_all_skip_reason(state: dict, args: argparse.Namespace) -> str | None:
 
 
 def _print_downstream_table(states: list[dict], up_commit: str) -> None:
-    """사전 스캔 표 — 버전·브랜치·dirty·업스트림 대비."""
+    """사전 스캔 표 — 버전·브랜치·dirty·outbox 캡슐·업스트림 대비."""
     print()
-    print(f"  {'project':22s} {'version':7s} {'branch':26s} {'dirty':>5s}  vs-upstream")
-    print(f"  {'-'*22} {'-'*7} {'-'*26} {'-'*5}  {'-'*11}")
+    print(f"  {'project':22s} {'version':7s} {'branch':26s} {'dirty':>5s} {'outbox':>6s}  vs-upstream")
+    print(f"  {'-'*22} {'-'*7} {'-'*26} {'-'*5} {'-'*6}  {'-'*11}")
     for s in states:
         state = "behind" if _is_behind(s, up_commit) else "최신 ✓"
         print(f"  {s['path'].name:22.22s} {s['version']:7s} "
-              f"{(s['branch'] or '?'):26.26s} {s['dirty']:>5d}  {state}")
+              f"{(s['branch'] or '?'):26.26s} {s['dirty']:>5d} {s.get('outbox', 0):>6d}  {state}")
+    total_outbox = sum(s.get("outbox", 0) for s in states)
+    if total_outbox:
+        warn(f"outbox 캡슐 {total_outbox}건 발견 — 수거는 `methodology collect` (METH-117)")
     print()
 
 
@@ -1614,8 +2620,27 @@ def cmd_version(args: argparse.Namespace) -> int:
 _SENSITIVE_PATTERNS = [".env", "credential", "secret", ".pem", ".key", ".p12", ".pfx"]
 
 
+_CAPSULE_SECRET_RES = [
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY"),
+    re.compile(r"(?i)\b(api[_-]?key|secret|token|passwd|password)\b\s*[:=]\s*['\"]?[A-Za-z0-9_\-/+]{16,}"),
+    re.compile(r"(?i)\baws_(access_key_id|secret_access_key)\b"),
+]
+
+
+def _capsule_content_hits(target: Path, path: str) -> bool:
+    """outbox 캡슐 *내용*의 시크릿 의심 패턴 검사 (METH-117 — 캡슐은 원격으로 이동하므로)."""
+    f = target / path
+    if not f.is_file():
+        return False
+    try:
+        text = read_text(f)
+    except (OSError, UnicodeDecodeError):
+        return False
+    return any(r.search(text) for r in _CAPSULE_SECRET_RES)
+
+
 def _detect_sensitive(target: Path) -> list[str]:
-    """git status에서 sensitive 파일 패턴 탐지."""
+    """git status에서 sensitive 파일 패턴 탐지 (+ outbox 캡슐은 내용까지)."""
     try:
         out = subprocess.check_output(
             ["git", "-C", str(target), "status", "--porcelain"], text=True
@@ -1632,7 +2657,60 @@ def _detect_sensitive(target: Path) -> list[str]:
             if pat in low and not low.endswith(".sample") and not low.endswith(".example"):
                 hits.append(path)
                 break
+        else:
+            content_scanned = (
+                low.startswith(str(OUTBOX_DIR).lower() + "/")
+                or low.startswith(str(OBSERVATION_DIR).lower() + "/")  # METH-118: 발췌 포함 가능
+            )
+            if content_scanned and low.endswith(".md") and _capsule_content_hits(target, path):
+                hits.append(f"{path} (내용에 시크릿 의심 패턴)")
     return hits
+
+
+def _todo_done_ids(text: str) -> set[str]:
+    """TODO.md 본문에서 `## Done` 섹션에 있는 항목 ID 집합."""
+    ids: set[str] = set()
+    in_done = False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            in_done = line.strip() == "## Done"
+            continue
+        if in_done and line.startswith("### "):
+            m = re.match(r"###\s+([A-Z][A-Z0-9]*-\d+)", line)
+            if m:
+                ids.add(m.group(1))
+    return ids
+
+
+def _warn_premature_done(target: Path) -> None:
+    """작업 브랜치에서 Done 신규 진입을 감지하면 경고 — 차단하지 않는다."""
+    todo = target / "TODO.md"
+    if not todo.exists():
+        return
+    try:
+        branch = subprocess.check_output(
+            ["git", "-C", str(target), "branch", "--show-current"], text=True).strip()
+        default_ref = _git_remote_default_ref(target)
+    except Exception:  # noqa: BLE001
+        return
+    if not branch or default_ref is None:
+        return
+    default_branch = default_ref.rsplit("/", 1)[-1]
+    if branch == default_branch:
+        return  # 기본 브랜치면 이미 도달한 상태
+    try:
+        before = subprocess.check_output(
+            ["git", "-C", str(target), "show", f"{default_ref}:TODO.md"],
+            text=True, stderr=subprocess.DEVNULL)
+    except Exception:  # noqa: BLE001
+        return
+    new_done = _todo_done_ids(read_text(todo)) - _todo_done_ids(before)
+    if not new_done:
+        return
+    warn(f"Done 신규 진입 {len(new_done)}건 — 아직 {default_branch} 미도달: "
+         f"{', '.join(sorted(new_done))}")
+    warn("  머지 전 Done 표기는 허위 기록이다(METH-120). push 후 "
+         "`methodology.py land` 로 착지시켜 maincheck 를 통과시킬 것.")
 
 
 def cmd_ship(args: argparse.Namespace) -> int:
@@ -1721,20 +2799,52 @@ def cmd_ship(args: argparse.Namespace) -> int:
         except Exception:
             scripts = {}
         if "build" in scripts:
+            dev = _dev_server_running(target)
+            if dev:
+                err(f"dev 서버 실행 중 감지 (이 프로젝트): {dev}")
+                err("dev 중 build 는 .next 를 파괴한다(전수조사 P6 — 7회 재발). "
+                    "dev 를 중지(preview_stop)하고 재시도하거나 --no-build 로 건너뛸 것.")
+                return 1
             rc = subprocess.call([manager, "run", "build"], cwd=str(target))
             if rc != 0:
                 err("빌드 실패 — push 중단.")
                 return 1
         else:
             print("  (package.json scripts.build 없음 — skip)")
+    elif pkg.exists() and args.no_build:
+        # --no-build 우회 시 최소한의 타입 검증은 남긴다
+        # (캡슐 ship-no-build-bypass-masked-break: 우회가 상습화되면 빌드 파손이
+        #  로컬에서 전혀 안 잡히고 배포에서만 드러난다. playwright 미선언 타입에러
+        #  → Vercel 전 배포 Error 실사례.)
+        info("ship: 5/7 — build (--no-build) — skip")
+        warn("빌드 미검증 상태로 push 한다 — 파손이 배포에서만 드러날 수 있다.")
+        if (target / "tsconfig.json").exists():
+            info("  최소 검증: tsc --noEmit")
+            rc = subprocess.call([manager, "exec", "tsc", "--noEmit"], cwd=str(target))
+            if rc != 0:
+                err("타입 검사 실패 — push 중단. (--no-build 여도 타입은 본다)")
+                err("정말 건너뛰려면 원인을 고치거나 tsconfig 를 조정할 것.")
+                return 1
+            print("  ✓ 타입 검사 통과")
+        else:
+            warn("  tsconfig.json 없음 — 타입 검증도 불가. 배포 전 수동 확인 권장.")
     else:
-        info("ship: 5/7 — build (package.json 없음 또는 --no-build) — skip")
+        info("ship: 5/7 — build (package.json 없음) — skip")
 
     # 6) commit
     if args.no_commit:
         ok("ship: 6/7 — commit (--no-commit) — skip")
         ok("ship: 7/7 — push — skip (--no-commit)")
         return 0
+
+    # Done 주장 감지 — 캡슐 invest-ops__2026-07-31_done-claim-guard-ship-boot
+    # 트리거를 'push'가 아니라 'Done 주장'에 둔다. maincheck 를 push 게이트로 넣는
+    # 안은 반대 — branch-first repo 에서 push 시점 커밋은 정의상 main 미도달이라
+    # 100% fail 하고 상시 우회를 학습시킨다(캡슐이 직접 지적).
+    # 차단이 아니라 *경고* 인 이유도 같다: 머지 후 Done 만 별도 커밋하게 강제하면
+    # 그 마찰로 우회한다. METH-133 land 도입으로 정상 경로(ship→land→Done)는 이미
+    # 닫혔고, 여기서 잡는 것은 '머지 전에 Done 부터 찍는' 이탈 경로다.
+    _warn_premature_done(target)
 
     info("ship: 6/7 — commit")
     # commit 직전에 wrap-state.json 을 *현재 라이브 파일 상태* 로 재생성.
@@ -1784,9 +2894,44 @@ def cmd_ship(args: argparse.Namespace) -> int:
         ["git", "-C", str(target), "push", "origin", branch], env=env
     )
     if rc != 0:
-        err(f"push 실패 (branch: {branch})")
+        err(f"push 실패 (branch: {branch}) — 원격이 앞서 있으면 "
+            f"`git pull --rebase origin {branch}` 후 재-ship.")
         return 1
-    ok(f"ship 완료. branch: {branch}")
+    # push 반영 검증 — rc 0 이어도 실제 origin 반영을 대조한다.
+    # (비-패스트포워드 거부·pre-push hook 차단·부분 push 를 git exit code 만으로
+    #  놓칠 수 있어, 원격 HEAD 를 직접 조회해 로컬 HEAD 와 일치하는지 확인.
+    #  2026-07-24 ai-icons push 유실 사고(ICONS-365) 재발 방지 — 다운스트림 ICONS-366 패치 이식.)
+    try:
+        local_head = subprocess.check_output(
+            ["git", "-C", str(target), "rev-parse", "HEAD"], text=True
+        ).strip()
+        ls = subprocess.check_output(
+            ["git", "-C", str(target), "ls-remote", "origin", branch],
+            text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+        remote_head = ls.split()[0] if ls else None
+    except Exception as e:  # noqa: BLE001 — 원격 조회 실패는 검증 불가로 경고
+        warn(f"push 반영 검증 생략(원격 조회 오류: {e}) — `git rev-parse origin/{branch}` 로 수동 확인.")
+        ok(f"ship 완료. branch: {branch} (반영 미검증)")
+        return 0
+    if remote_head is None:
+        err(f"push 미반영 — origin 에 {branch} 가 없습니다. 수동 확인 필요.")
+        return 1
+    if remote_head != local_head:
+        err(f"push 미반영 — origin/{branch}({remote_head[:8]}) ≠ 로컬 HEAD({local_head[:8]}). "
+            f"원격이 앞서 있을 수 있음 → `git pull --rebase origin {branch}` 후 재-ship.")
+        return 1
+    ok(f"ship 완료. branch: {branch} (origin 반영 확인: {remote_head[:8]})")
+
+    # 8) (선택) land — 머지 착지까지 이어서
+    if getattr(args, "land", False):
+        info("ship: 8/8 — land (머지 착지)")
+        land_args = argparse.Namespace(
+            path=str(target), dry_run=False,
+            no_ci_check=getattr(args, "no_ci_check", False),
+            no_sync=False,
+        )
+        return cmd_land(land_args)
     return 0
 
 
@@ -1813,7 +2958,7 @@ def cmd_hooks(args: argparse.Namespace) -> int:
     hook_body = """#!/bin/sh
 # methodology pre-push hook — installed by `methodology hooks install`
 # push 직전 4 라이브 파일 갱신 + 격리 안전망 검증.
-# 우회: git push --no-verify
+# 우회: git push --no-verify (사람 승인 + 사유를 관찰로그 --friction 으로 기록)
 
 set -e
 METH=""
@@ -1827,7 +2972,63 @@ if [ -z "$METH" ]; then
   exit 0
 fi
 
-python3 "$METH" manifest-check
+# 검증은 결정적으로 끝난다 — 행이면 타임아웃으로 fail-closed 차단(무한 대기 금지).
+# macOS 에 GNU timeout 이 없어 1초 폴링 감시자로 구현: 대상이 먼저 끝나면 감시자는
+# 1초 내 자기소멸(무관 프로세스 오살 방지 — 지침 07 부작용 범위 봉쇄).
+# (캡슐 gamblescan__2026-08-13_observe-timeout-approved-fallback)
+run_guarded() {
+  GUARD_LABEL=$1; GUARD_SECS=$2; shift 2
+  "$@" &
+  GUARD_PID=$!
+  ( GUARD_T=0
+    while [ "$GUARD_T" -lt "$GUARD_SECS" ]; do
+      sleep 1
+      kill -0 "$GUARD_PID" 2>/dev/null || exit 0
+      GUARD_T=$((GUARD_T+1))
+    done
+    kill -TERM "$GUARD_PID" 2>/dev/null ) >/dev/null 2>&1 </dev/null &
+  GUARD_RC=0
+  wait "$GUARD_PID" || GUARD_RC=$?
+  if [ "$GUARD_RC" -ge 128 ]; then
+    echo "[methodology hook] $GUARD_LABEL — ${GUARD_SECS}s 타임아웃, fail-closed 차단." >&2
+    echo "  검증이 끝나지 않는 상태다. 원인(권한 프롬프트·행)을 해소해 재시도하라." >&2
+    echo "  사람 승인 우회 시: git push --no-verify 후 사유를 관찰로그 --friction 으로 기록." >&2
+    exit 1
+  fi
+  if [ "$GUARD_RC" -ne 0 ]; then
+    exit "$GUARD_RC"
+  fi
+}
+
+run_guarded "manifest-check" 120 python3 "$METH" manifest-check
+
+# 참조만 바꾸는 push 면제 (캡슐 invest-ops__2026-07-31_prepush-hook-blocks-ref-delete):
+# 브랜치 삭제(local sha = zero)와 tag push 는 *콘텐츠를 올리지 않는다*. 그런데도
+# wrap --strict 가 '4/4 라이브 파일 미갱신'으로 막아, 무관한 참조 정리에조차
+# --no-verify 를 쓰게 만든다 → 우회 습관화로 가드 자체가 무력해진다.
+# stdin 형식: <local ref> <local sha> <remote ref> <remote sha>
+# 푸시되는 ref 가 *전부* 삭제이거나 tag 이면 wrap skip (하나라도 콘텐츠 push 면 검증).
+REFS=$(cat)
+if [ -n "$REFS" ]; then
+  CONTENT_PUSH=0
+  while read -r LREF LSHA RREF RSHA; do
+    [ -z "$LREF" ] && continue
+    case "$LSHA" in
+      # zero-sha = 삭제 push
+      0000000000000000000000000000000000000000) continue ;;
+    esac
+    case "$LREF" in
+      refs/tags/*) continue ;;
+    esac
+    CONTENT_PUSH=1
+  done <<EOF_REFS
+$REFS
+EOF_REFS
+  if [ "$CONTENT_PUSH" = "0" ]; then
+    echo "[methodology hook] 참조 전용 push(브랜치 삭제·tag) 감지 — wrap skip"
+    exit 0
+  fi
+fi
 
 # ship 이 호출한 push 인 경우 wrap 재실행 skip
 # (ship step 1 에서 이미 wrap --strict 통과 + step 6 직전 wrap-state 동기화 →
@@ -1851,7 +3052,7 @@ case "$HEAD_MSG" in
     ;;
 esac
 
-python3 "$METH" wrap --strict
+run_guarded "wrap --strict" 300 python3 "$METH" wrap --strict
 """
 
     if args.action == "install":
@@ -1861,7 +3062,7 @@ python3 "$METH" wrap --strict
         pre_push.write_text(hook_body, encoding="utf-8")
         pre_push.chmod(0o755)
         ok(f"pre-push hook 설치: {pre_push}")
-        print("  검증 우회 (예외 상황): git push --no-verify")
+        print("  검증 우회 (예외 상황): git push --no-verify — 사람 승인 + 사유를 관찰로그 --friction 으로 기록")
         return 0
     elif args.action == "uninstall":
         if pre_push.exists():
@@ -2430,6 +3631,230 @@ LIVE_FILE_LINE_LIMITS = {
     ".ai/checkpoint.md": 200,   # 백서 §2-2: ≤200줄
 }
 TODO_DONE_SOFT_CAP = 6          # 템플릿 규정: 최근 완료 ~4건만 유지
+# METH-122 (전수조사 P3): 경고만으로는 안 지켜졌다 — cafe24 checkpoint 345줄/342KB·
+# gamblescan TODO 761줄 실증. 규정의 2배(경성 한도) 초과 시 wrap --strict 가 fail —
+# `methodology rotate` 로 기계 회전하면 즉시 해소되므로 fail-closed 의 탈출구가 있다.
+LIVE_FILE_HARD_MULTIPLIER = 2
+TODO_DONE_HARD_CAP = 20
+ROTATE_KEEP_DONE = 4            # rotate 후 Done 유지 건수
+ROTATE_KEEP_RECENT = 5          # rotate 후 HANDOFF Recent Changes 유지 건수
+LIVE_ARCHIVE_DIR = Path("40_dev/snapshots/live-archive")
+STALE_DAYS = 7                  # 신선도 경고 임계 (HANDOFF 날짜·wrap 미실행 vs 최근 커밋)
+
+
+def _todo_done_count(text: str) -> int:
+    section = re.search(r"^##\s+Done\s*$(.*?)(?=^##\s|\Z)", text, re.MULTILINE | re.DOTALL)
+    return len(re.findall(r"^###\s+", section.group(1), re.MULTILINE)) if section else 0
+
+
+def live_file_hard_violations(target: Path) -> list[str]:
+    """경성 한도(규정 2배·Done 20건) 위반 — wrap --strict 를 fail 시키는 수준 (METH-122)."""
+    violations: list[str] = []
+    for rel, limit in LIVE_FILE_LINE_LIMITS.items():
+        p = target / rel
+        if p.exists():
+            n = len(read_text(p).splitlines())
+            if n > limit * LIVE_FILE_HARD_MULTIPLIER:
+                violations.append(f"{rel}: {n}줄 — 경성 한도(≤{limit * LIVE_FILE_HARD_MULTIPLIER}줄) 초과")
+    todo_p = target / "TODO.md"
+    if todo_p.exists():
+        done = _todo_done_count(read_text(todo_p))
+        if done > TODO_DONE_HARD_CAP:
+            violations.append(f"TODO.md Done {done}건 — 경성 한도(≤{TODO_DONE_HARD_CAP}건) 초과")
+    return violations
+
+
+def _rotate_todo_done(text: str, keep: int = ROTATE_KEEP_DONE) -> tuple[str, str, int]:
+    """TODO Done 섹션에서 최신 keep건만 남기고 나머지를 아카이브 블록으로 분리.
+
+    반환: (새 TODO 텍스트, 아카이브 md, 이관 건수). Done 항목 순서는 최신-우선 관례를 따른다.
+    """
+    m = re.search(r"^##\s+Done\s*$\n(.*?)(?=^##\s|\Z)", text, re.MULTILINE | re.DOTALL)
+    if not m:
+        return text, "", 0
+    body = m.group(1)
+    parts = re.split(r"(?=^###\s+)", body, flags=re.MULTILINE)
+    head = parts[0] if parts and not parts[0].startswith("### ") else ""
+    items = [p for p in parts if p.startswith("### ")]
+    if len(items) <= keep:
+        return text, "", 0
+    kept, moved = items[:keep], items[keep:]
+    # 항목 이후의 꼬리 주석(> ...)은 head/kept 에 안 섞이도록 마지막 항목에서 분리하지 않고 그대로 둔다
+    new_body = head + "".join(kept)
+    new_text = text[:m.start(1)] + new_body + text[m.end(1):]
+    archive = "".join(moved).rstrip() + "\n"
+    return new_text, archive, len(moved)
+
+
+def _rotate_recent_changes(text: str, keep: int = ROTATE_KEEP_RECENT) -> tuple[str, str, int]:
+    """HANDOFF Recent Changes 불릿을 최신 keep건만 유지, 초과분 아카이브 분리."""
+    m = re.search(r"^##\s+Recent Changes\s*$\n(.*?)(?=^##\s|\Z)", text, re.MULTILINE | re.DOTALL)
+    if not m:
+        return text, "", 0
+    body = m.group(1)
+    lines = body.splitlines(keepends=True)
+    bullets: list[int] = [i for i, ln in enumerate(lines) if ln.startswith("- ")]
+    if len(bullets) <= keep:
+        return text, "", 0
+    cut = bullets[keep]
+    kept_lines, moved_lines = lines[:cut], lines[cut:]
+    new_text = text[:m.start(1)] + "".join(kept_lines) + text[m.end(1):]
+    archive = "".join(moved_lines).rstrip() + "\n"
+    return new_text, archive, len(bullets) - keep
+
+
+def cmd_rotate(args: argparse.Namespace) -> int:
+    """라이브 파일 기계 회전 — 초과분을 40_dev/snapshots/live-archive/ 로 이관 (METH-122).
+
+    삭제하지 않는다 — 아카이브로 옮기고 라이브에는 요지만 남긴다.
+    TODO Done(최신 4건 유지)·HANDOFF Recent Changes(5건 유지)·checkpoint(--checkpoint 시
+    전체 사본 아카이브 후 상단 요지만 유지). 기본 dry-run, --apply 로 실행.
+    """
+    target = Path(args.path or ".").resolve()
+    today = utc_date()
+    arch_dir = target / LIVE_ARCHIVE_DIR
+    actions: list[tuple[Path, str, Path, str]] = []  # (라이브 파일, 새 내용, 아카이브 파일, 아카이브 내용)
+
+    todo_p = target / "TODO.md"
+    if todo_p.exists():
+        new_text, archive, moved = _rotate_todo_done(read_text(todo_p))
+        if moved:
+            header = f"# TODO Done 아카이브 — {today} rotate ({moved}건)\n\n> 정본 이력은 git log·PR. 이 파일은 열람용 사본.\n\n"
+            actions.append((todo_p, new_text, arch_dir / f"{today}_todo-done.md", header + archive))
+            info(f"TODO.md: Done {moved}건 이관 예정 (최신 {ROTATE_KEEP_DONE}건 유지)")
+
+    ho_p = target / "HANDOFF.md"
+    if ho_p.exists():
+        new_text, archive, moved = _rotate_recent_changes(read_text(ho_p))
+        if moved:
+            header = f"# HANDOFF Recent Changes 아카이브 — {today} rotate ({moved}건)\n\n"
+            actions.append((ho_p, new_text, arch_dir / f"{today}_handoff-recent.md", header + archive))
+            info(f"HANDOFF.md: Recent Changes {moved}건 이관 예정 (최신 {ROTATE_KEEP_RECENT}건 유지)")
+
+    cp_p = target / ".ai" / "checkpoint.md"
+    if args.checkpoint and cp_p.exists():
+        cp_text = read_text(cp_p)
+        cp_lines = cp_text.splitlines(keepends=True)
+        limit = LIVE_FILE_LINE_LIMITS[".ai/checkpoint.md"]
+        if len(cp_lines) > limit:
+            keep_n = 40
+            stub = "".join(cp_lines[:keep_n]) + (
+                f"\n> (이하 {len(cp_lines) - keep_n}줄은 {LIVE_ARCHIVE_DIR}/{today}_checkpoint.md 로 "
+                "rotate 아카이브 — 다음 세션은 이 파일을 새로 덮어쓴다)\n")
+            actions.append((cp_p, stub, arch_dir / f"{today}_checkpoint.md", cp_text))
+            info(f"checkpoint: {len(cp_lines)}줄 → 상단 {keep_n}줄 + 전체 사본 아카이브 예정")
+
+    if not actions:
+        ok("회전 대상 없음 — 라이브 파일이 규정 이내이거나 초과분 없음.")
+        return 0
+    if not args.apply:
+        info("dry-run — 실제 이관은 --apply")
+        return 0
+    arch_dir.mkdir(parents=True, exist_ok=True)
+    for live, new_text, arch, arch_text in actions:
+        if arch.exists():
+            arch_text = read_text(arch).rstrip() + "\n\n---\n\n" + arch_text
+        write_text(arch, arch_text)
+        write_text(live, new_text)
+        ok(f"{live.relative_to(target)} → {arch.relative_to(target)}")
+    info("커밋은 ship 으로. wrap 은 회전된 콘텐츠 변경을 갱신으로 인정한다.")
+    return 0
+
+
+def _latest_commit_date(target: Path) -> str | None:
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(target), "log", "-1", "--format=%cs"],
+            text=True, stderr=subprocess.DEVNULL).strip()
+        return out or None
+    except Exception:
+        return None
+
+
+def staleness_warnings(target: Path) -> list[str]:
+    """HANDOFF 날짜·wrap 미실행이 최근 커밋 대비 STALE_DAYS 이상 뒤처졌는지 (METH-122).
+
+    전수조사 실증: insta-toon HANDOFF 13일 stale·invest-ops wrap 5일 미실행 — 무경고였다.
+    """
+    warnings: list[str] = []
+    commit_date = _latest_commit_date(target)
+    if not commit_date:
+        return warnings
+    try:
+        commit_d = date.fromisoformat(commit_date)
+    except ValueError:
+        return warnings
+
+    ho = target / "HANDOFF.md"
+    if ho.exists():
+        m = re.search(r"Working on.*?\((\d{4}-\d{2}-\d{2})\)", read_text(ho))
+        if m:
+            try:
+                gap = (commit_d - date.fromisoformat(m.group(1))).days
+                if gap > STALE_DAYS:
+                    warnings.append(
+                        f"HANDOFF 신선도: Working on 날짜({m.group(1)})가 최근 커밋({commit_date})보다 "
+                        f"{gap}일 뒤처짐 — 실태와 어긋난 부팅 프라이머는 오독을 만든다")
+            except ValueError:
+                pass
+
+    state = load_wrap_state(target)
+    last = (state or {}).get("last_validated_at") or ""
+    if last:
+        try:
+            last_d = date.fromisoformat(last[:10])
+            gap = (commit_d - last_d).days
+            if gap > STALE_DAYS:
+                warnings.append(
+                    f"wrap 미실행 감지: 마지막 검증({last[:10]}) 이후 커밋({commit_date})까지 {gap}일 — "
+                    "세션 종료 규율이 끊겼다(라이브 파일 갱신 없이 커밋 진행 중)")
+        except ValueError:
+            pass
+    return warnings
+
+
+def _dev_server_running(target: Path | None = None) -> str | None:
+    """실행 중인 next dev 서버 감지 — build 충돌 가드 (METH-122, P6 7회 재발).
+
+    target 이 주어지면 **그 프로젝트에서 뜬 dev 서버만** 본다.
+    (캡슐 gamblescan__2026-07-31_ship-no-build-bypass-masked-break: 전역 pgrep 이
+     타 프로젝트 dev 서버를 오탐 → 매번 --no-build 우회 → 빌드 파손이 은폐돼
+     Vercel 전 배포가 Error. 오탐이 우회를 학습시키면 가드는 사라진 것과 같다.)
+    """
+    try:
+        out = subprocess.run(["pgrep", "-fl", "next dev"], capture_output=True, text=True, timeout=10)
+    except Exception:
+        return None
+    if out.returncode != 0 or not out.stdout.strip():
+        return None
+    lines = [l for l in out.stdout.strip().splitlines() if l.strip()]
+    if target is None:
+        return lines[0]
+    target = target.resolve()
+    for line in lines:
+        pid = line.split(None, 1)[0]
+        cwd = _process_cwd(pid)
+        if cwd is None:
+            # cwd 판정 불가 → 안전하게 '이 프로젝트일 수 있다'로 본다(가드 유지)
+            return f"{line}  (cwd 판정 불가 — 안전측 차단)"
+        if cwd == target or target in cwd.parents or cwd in target.parents:
+            return line
+    return None
+
+
+def _process_cwd(pid: str) -> Path | None:
+    """PID 의 작업 디렉터리 — macOS/Linux 공통(lsof). 실패 시 None."""
+    try:
+        out = subprocess.run(["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
+                             capture_output=True, text=True, timeout=10)
+    except Exception:
+        return None
+    if out.returncode != 0:
+        return None
+    for line in out.stdout.splitlines():
+        if line.startswith("n/"):
+            return Path(line[1:]).resolve()
+    return None
 
 
 def live_file_size_warnings(target: Path) -> list[str]:
@@ -2598,6 +4023,20 @@ def cmd_wrap(args: argparse.Namespace) -> int:
     for w in size_warns:
         warn(f"사이즈: {w}")
 
+    # ── 프롬프팅 리포트 자동 갱신 (METH-118) — 기록이 있으면 wrap 마다 최신화 ──
+    try:
+        if _regenerate_prompt_report(target):
+            info(f"prompting report 갱신: {PROMPT_REPORT_PATH}")
+    except Exception as exc:  # 리포트 실패가 wrap 을 막으면 안 됨
+        warn(f"prompting report 갱신 실패(무시): {exc}")
+
+    # ── 경성 한도 (METH-122) — 규정 2배 초과는 --strict fail (탈출구: rotate) ──
+    hard = live_file_hard_violations(target)
+    for v in hard:
+        err(f"사이즈(경성): {v} — `methodology rotate --apply` 로 회전 후 재시도")
+    if hard and args.strict:
+        missing += len(hard)
+
     print()
     if missing == 0:
         ok(
@@ -2611,6 +4050,18 @@ def cmd_wrap(args: argparse.Namespace) -> int:
             "(mtime 만 갱신해서는 통과 안 됨)"
         )
         return 1 if args.strict else 0
+
+
+def _handoff_working_on(txt: str) -> str | None:
+    """HANDOFF.md 에서 'Working on' 값 추출.
+
+    본 저장소 관례는 `- **Working on**:` (볼드)이지만, init 스캐폴드 이력상
+    `- Working on:` (비볼드)로 시작한 다운스트림이 있어 양쪽 다 허용한다.
+    """
+    m = re.search(r"^-\s+(?:\*\*)?Working on(?:\*\*)?[ \t]*:[ \t]*(.+)$", txt, re.MULTILINE)
+    if not m:
+        return None
+    return m.group(1).strip() or None
 
 
 def cmd_boot(args: argparse.Namespace) -> int:
@@ -2668,8 +4119,8 @@ def cmd_boot(args: argparse.Namespace) -> int:
     hp = target / "HANDOFF.md"
     if hp.exists():
         txt = read_text(hp)
-        m = re.search(r"^-\s+\*\*Working on\*\*:\s*(.+)$", txt, re.MULTILINE)
-        print(f"    Working on: {_clip(m.group(1), 500) if m else '(미기재)'}")
+        working = _handoff_working_on(txt)
+        print(f"    Working on: {_clip(working, 500) if working else '(미기재)'}")
         rc = re.search(r"^##\s+Recent Changes.*?\n(.*?)(?=^##\s|\Z)", txt, re.MULTILINE | re.DOTALL)
         first = re.search(r"^-\s+(.+)$", rc.group(1), re.MULTILINE) if rc else None
         if first:
@@ -2702,6 +4153,26 @@ def cmd_boot(args: argparse.Namespace) -> int:
     else:
         print("    ✓ 규정 이내 (HANDOFF ≤150 · checkpoint ≤200 · TODO Done ~4)")
     print()
+
+    # [4a] 신선도 (METH-122 — HANDOFF 날짜·wrap 미실행 vs 최근 커밋)
+    for w in staleness_warnings(target):
+        warn(w)
+
+    # [4a-2] 프롬프팅 코칭 헤드라인 (METH-118)
+    pr = target / PROMPT_REPORT_PATH
+    if pr.exists():
+        hm = re.search(r"^> 요지: (.+)$", read_text(pr), re.MULTILINE)
+        if hm:
+            print(f"    프롬프팅: {hm.group(1)} → {PROMPT_REPORT_PATH}")
+
+    # [4b] 캡슐 outbox 가시성 (METH-117 — 수거 잊음 방지)
+    own_capsules = capsule_files(target)
+    if own_capsules:
+        warn(f"outbox: 상류행 캡슐 {len(own_capsules)}건 — 커밋·push 필요, 수거는 상류 collect")
+    if (target / META_ROOT).is_dir():  # 상류(방법론 원본)에서만 다운스트림 스캔
+        pending, repos = _pending_capsule_counts(METHODOLOGY_ROOT.parent)
+        if pending:
+            warn(f"미수거 캡슐 {pending}건 / {repos}개 repo — `methodology collect` 실행 고려")
 
     # [5] dashboard
     print("\033[1m[5] 대시보드\033[0m")
@@ -3062,6 +4533,10 @@ def main(argv: list[str] | None = None) -> int:
     psh.add_argument("--no-commit", action="store_true", help="commit 단계 skip (검증만)")
     psh.add_argument("--no-push", action="store_true", help="push 단계 skip (commit까지만)")
     psh.add_argument("--allow-sensitive", action="store_true", help="sensitive 파일 의심 패턴 차단 우회")
+    psh.add_argument("--land", action="store_true",
+                     help="push 후 land 까지 이어서 — PR 머지+main 도달 확인 (Class A·CI green 일 때만)")
+    psh.add_argument("--no-ci-check", dest="no_ci_check", action="store_true",
+                     help="--land 시 CI green 검증 생략 (무검증 머지 — 기본 금지)")
     psh.set_defaults(func=cmd_ship)
 
     phk = sub.add_parser("hooks", help="git hook 자동 설치 (pre-push 검증)")
@@ -3099,6 +4574,10 @@ def main(argv: list[str] | None = None) -> int:
     po.add_argument("--intent", action="append", help="프롬프트 intent. 여러 번 지정 가능")
     po.add_argument("--rounds", action="append", type=int, help="각 intent의 turn 수. --intent와 같은 개수")
     po.add_argument("--friction", action="append", help="'where|cost_minutes|resolution|repeat_of' 형식. 여러 번 지정 가능")
+    po.add_argument("--rounds-total", dest="rounds_total", type=int,
+                    help="세션 총 핑퐁 라운드 수 — 상시 기록 의무 (METH-118)")
+    po.add_argument("--prompting", action="append",
+                    help="'intent|rounds|모호발췌|교정안|용어(콤마)|상황태그' — 교정 가치 있는 교환별 기록, 여러 번 가능")
     po.add_argument("--date", help="UTC 날짜 YYYY-MM-DD (기본: 오늘 UTC)")
     po.add_argument("--force", action="store_true", help="동일 파일이 있으면 덮어쓰기")
     po.add_argument("--dry-run", action="store_true", help="파일을 쓰지 않고 출력")
@@ -3131,6 +4610,77 @@ def main(argv: list[str] | None = None) -> int:
 
     pt = sub.add_parser("thinktank", help="L3 관찰 집계 — §7 지표 + 승급 후보 마킹 (수동 승급 정식, 회고 소스)")
     pt.set_defaults(func=cmd_thinktank)
+
+    pc = sub.add_parser(
+        "capsule",
+        help="상류행 제안 캡슐 생성 — 1제안=1캡슐=1파일, outbox 적재 (METH-117 역방향 루프)",
+    )
+    pc.add_argument("--slug", help="kebab-case 슬러그 (파일명·id에 사용)")
+    pc.add_argument("--type", default="guide-update",
+                    help=f"캡슐 유형: {', '.join(sorted(CAPSULE_TYPES))} (기본 guide-update)")
+    pc.add_argument("--target", help="반영 목표 (예: guide-22, catalog, skeleton/<도메인>)")
+    pc.add_argument("--summary", help="제안 요지 (50~300자 권장)")
+    pc.add_argument("--ref", action="append",
+                    help="근거 포인터 — 커밋 SHA·PR URL·repo 상대경로 (반복 가능). 원문 덤프 금지")
+    pc.add_argument("--evidence", action="append", help="근거 발췌 한 줄 (반복 가능, 선택)")
+    pc.add_argument("--friction-ref", dest="friction_ref",
+                    help="마찰 파생 캡슐이면 해당 관찰로그 session_id")
+    pc.add_argument("--date", help="날짜 강제 (기본: 오늘 UTC)")
+    pc.add_argument("--force", action="store_true", help="동일 파일 덮어쓰기")
+    pc.add_argument("--dry-run", dest="dry_run", action="store_true", help="파일 생성 없이 출력만")
+    pc.add_argument("--validate", help="기존 캡슐 파일 형식 검증")
+    pc.add_argument("--allow-restricted", dest="allow_restricted", action="store_true",
+                    help="발신 제한(restricted) repo에서 사람 승인 하에 강제 발신")
+    pc.set_defaults(func=cmd_capsule)
+
+    pcl = sub.add_parser(
+        "collect",
+        help="다운스트림 outbox 캡슐 일괄 수거 → _inbox 적재 (수동 트리거·상류 전용·다운스트림 무변경)",
+    )
+    pcl.add_argument("--root", help=f"탐색 루트 (기본: 방법론 상위 = {METHODOLOGY_ROOT.parent})")
+    pcl.add_argument("--apply", action="store_true", help="실제 적재 (없으면 dry-run)")
+    pcl.add_argument("--no-fetch", dest="no_fetch", action="store_true",
+                     help="origin fetch 생략 — 로컬 작업트리만 스캔")
+    pcl.set_defaults(func=cmd_collect)
+
+    pmk = sub.add_parser(
+        "maincheck",
+        help="커밋의 main 도달 검증 — Done 전이·배포 판정 전 필수 (스택-PR 미도달 사고 방지, METH-120)",
+    )
+    pmk.add_argument("sha", nargs="*", help="검사할 커밋/참조 (기본: HEAD, 여러 개 가능)")
+    pmk.add_argument("--path", help="대상 repo (기본: 현재 디렉터리)")
+    pmk.add_argument("--no-fetch", dest="no_fetch", action="store_true", help="origin fetch 생략")
+    pmk.set_defaults(func=cmd_maincheck)
+
+    pld = sub.add_parser(
+        "land",
+        help="머지 착지 — PR 머지+main 도달 확인+브랜치 정리 (Class A·CI green 일 때만, METH-133)",
+    )
+    pld.add_argument("--path", help="대상 repo (기본: 현재 디렉터리)")
+    pld.add_argument("--dry-run", dest="dry_run", action="store_true",
+                     help="머지 직전까지만 — Class 판정·CI 확인 결과만 보고")
+    pld.add_argument("--no-ci-check", dest="no_ci_check", action="store_true",
+                     help="CI green 검증 생략 (무검증 머지 — 기본 금지)")
+    pld.add_argument("--no-sync", dest="no_sync", action="store_true",
+                     help="기본 브랜치 로컬 동기화 생략 — main 이 다른 worktree 에 점유된 경우")
+    pld.set_defaults(func=cmd_land)
+
+    prt = sub.add_parser(
+        "rotate",
+        help="라이브 파일 기계 회전 — TODO Done·HANDOFF Recent 초과분을 snapshots/live-archive 로 이관 (METH-122)",
+    )
+    prt.add_argument("--path", help="대상 폴더 (기본: 현재)")
+    prt.add_argument("--apply", action="store_true", help="실제 이관 (없으면 dry-run)")
+    prt.add_argument("--checkpoint", action="store_true",
+                     help="checkpoint 도 회전(전체 사본 아카이브 + 상단 요지 유지)")
+    prt.set_defaults(func=cmd_rotate)
+
+    ppr = sub.add_parser(
+        "prompt-report",
+        help="프롬프팅 코칭 리포트 재생성 (METH-118) — wrap 이 자동 호출, 수동 재생성용",
+    )
+    ppr.add_argument("--path", help="대상 폴더 (기본: 현재)")
+    ppr.set_defaults(func=cmd_prompt_report)
 
     args = p.parse_args(argv)
     return args.func(args)

@@ -7,10 +7,10 @@
 
 ## Current Focus
 
-- Working on:
-- Current mode: [PROJECT_MODE]
-- Next TODO:
-- Blockers:
+- **Working on**:
+- **Current mode**: [PROJECT_MODE]
+- **Next TODO**:
+- **Blockers**:
 
 ## Active Links
 

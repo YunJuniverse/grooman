@@ -74,6 +74,10 @@ last_hit: 2026-03-22
 - 흐름: `observe --friction`(원료) → `thinktank`(반복 ≥2회 후보 마킹) → `_pending/`(사람 작성) → 승급 머지 → active `C-NNN` → skeleton bake.
 - **마찰을 안 남기면 루프가 굶는다** — thinktank가 집계할 게 없어 승급 후보가 안 나오고 catalog가 비어 있게 된다. `where:` 는 재발 판정의 키이므로 *같은 표현*으로 적으면 ≥2 집계가 잡힌다.
 
+### 캡슐 트랙 (METH-117) — 다운스트림 발 *명시 제안*
+- friction 트랙(통계적 재발 탐지)과 나란히, 다운스트림 작업 repo가 **명시적 변경 제안**을 `50_resources/meth_outbox/` 캡슐(1제안=1파일)로 발신한다 → 상류가 수동 `collect`로 `meth_inbox/`에 일괄 수거 → 사람 트리아지(유효/이미 반영/만료)에서 `_pending/`·지침·skeleton으로 분배. `friction-escalation` 타입 캡슐이 마찰→catalog 승급 제안의 공식 경로.
+- thinktank가 _inbox를 target별 집계해 교차-repo 중복 제안(`CROSS-REPO`)을 마킹한다. 두 트랙 모두 **자동 승급 없음** — 사람 머지가 게이트(백서 §8-2). 상세: `50_resources/meth_outbox/_README.md`·`50_resources/meth_inbox/_README.md`.
+
 ### Pending Lesson
 - 1회 해결된 문제 중 재사용 가능성이 있으면 `_pending/P-NNN_<slug>.md`에 저장한다.
 - Pending Lesson은 학습 데이터이자 승급 후보일 뿐, Skeleton에 bake-in 하지 않는다.
