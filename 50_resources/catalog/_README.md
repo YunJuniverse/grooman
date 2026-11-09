@@ -72,6 +72,8 @@ last_hit: 2026-03-22
 ### 원료 수집 (파이프라인 진입점) — `observe --friction`
 - Catalog 재료는 **L1 관찰 로그의 마찰 필드**에서 나온다. 비자명한 문제·재발·막힘을 겪은 세션은 wrap 시 `observe` 에 `--friction "where|cost_minutes|resolution|repeat_of"` 를 남긴다(CLAUDE.md/AGENTS.md §2 ④ 규칙). 마찰 없는 세션은 생략(강제 아님 — 노이즈 방지).
 - 흐름: `observe --friction`(원료) → `thinktank`(반복 ≥2회 후보 마킹) → `_pending/`(사람 작성) → 승급 머지 → active `C-NNN` → skeleton bake.
+- **문장 → 도구 승급(METH-148)**: 지침 조항이 된 규칙도 **같은 원인 재발 2회 또는 대외 노출 1회**면 문장에 머물지 않고 실행 시 차단 도구로 올린다 — 조항에 도구 경로를 병기한다(지침 23 §1-6). catalog 의 «패턴 성숙도» 사다리와 별개로, 규칙의 «강제력» 사다리다.
+- `thinktank --path <repo>` 가 마찰 비용 회고(합계·월별·재발 비중·phase 기입률)를 낸다 — 승급 판단의 비용 근거.
 - **마찰을 안 남기면 루프가 굶는다** — thinktank가 집계할 게 없어 승급 후보가 안 나오고 catalog가 비어 있게 된다. `where:` 는 재발 판정의 키이므로 *같은 표현*으로 적으면 ≥2 집계가 잡힌다.
 
 ### 캡슐 트랙 (METH-117) — 다운스트림 발 *명시 제안*

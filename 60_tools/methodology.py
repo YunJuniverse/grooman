@@ -108,6 +108,7 @@ MANIFEST = {
         "00_briefs/_README.md",
         "00_briefs/standing/SOP_template.md",
         "00_briefs/standing/SOP_scraping-pace.md",  # METH-125: 전 repo 공통 수집 페이스 SOP
+        "00_briefs/standing/SOP_external-sheet-edit.md",  # METH-149: repo 밖 스프레드시트 정본 편집
         "20_guides",
         "50_resources/templates",
         "50_resources/prompts",
@@ -135,6 +136,7 @@ MANIFEST = {
         ".github/workflows/methodology-auto-merge.yml",
         "open-dashboard.command",
         "_start",
+        ".gitattributes",   # METH-147 판단 ②: TODO·HANDOFF merge=union
     ],
     # init이 1회 생성하는 디렉터리·파일 (sync 무시)
     "init_paths": [
@@ -379,12 +381,19 @@ def yaml_scalar(value: str | None) -> str:
 REPEAT_OF_RE = re.compile(r"^(?:\d{4}-\d{2}-\d{2}_)?[a-z0-9]+(?:-[a-z0-9]+)*$|^C-\d{3}$")
 
 
+# «반복 아님»의 표기들 — null 로 정규화. ai-icons 실측: 형식 밖 값 12건이 "new"·"first-seen"
+# 이었고, 이것들이 kebab 슬러그로 통과해 thinktank ≥2 집계에서 가짜 앵커가 됐다(METH-149).
+REPEAT_OF_NULLS: frozenset[str] = frozenset({
+    "", "null", "none", "no", "-", "new", "first", "first-seen", "firstseen", "initial", "n/a", "na",
+})
+
+
 def normalize_repeat_of(raw: str) -> str | None:
     """repeat_of 값 정규화 — 접두 오염 제거 후 형식 검증. 위반 시 ValueError."""
     value = raw.strip().strip('"')
     while value.startswith("repeat_of:"):
         value = value[len("repeat_of:"):].strip()
-    if value in {"", "null", "none", "no", "-"}:
+    if value in REPEAT_OF_NULLS:
         return None
     if value in {"yes", "repeat", "true"}:
         raise ValueError(
@@ -427,8 +436,36 @@ def parse_prompting_item(raw: str) -> dict:
     }
 
 
+# friction 의 단계 — 선택 필드, 닫힌 5값 (METH-148 판단 ①).
+# 회고에서 «진단·확정 비용이 수정 비용을 넘었다»를 키워드 추정 없이 재려고 둔다(cafe24-renewal:
+# 마찰 4,684분 중 약 49% 가 «무엇이 실렸는지 확정»하는 비용). 선택이라 기존 로그는 그대로 유효하고,
+# thinktank 가 기입률을 함께 보고해 비어 있음이 숨지 않게 한다.
+FRICTION_PHASES: tuple[str, ...] = ("diagnose", "fix", "deploy", "verify", "communicate")
+
+
 def parse_friction_item(raw: str, index: int) -> dict:
-    parts = raw.split("|")
+    # 선택 5번째 필드 phase — 마지막 토큰이 닫힌 5값 중 하나일 때만 phase 로 읽는다.
+    phase = None
+    if raw.count("|") >= 4:
+        _rest, _last = raw.rsplit("|", 1)
+        if _last.strip() in FRICTION_PHASES:
+            phase, raw = _last.strip(), _rest
+        elif re.fullmatch(r"[a-z]+", _last.strip()) and _last.strip() not in REPEAT_OF_NULLS:
+            # 5필드인데 마지막이 닫힌 5값 밖의 «한 단어» — phase 오기다(METH-149, cafe24 실측
+            # `execute`·`investigate`). 그대로 두면 그 단어가 repeat_of 로, 진짜 repeat_of 가
+            # resolution 꼬리로 밀려 들어가 오류 없이 저장됐다(무음 오파싱). 슬러그·session_id 는
+            # 하이픈·숫자를 품으므로 한 단어 소문자만 phase 시도로 본다.
+            raise ValueError(
+                f"friction phase '{_last.strip()}' 는 허용값이 아니다 — "
+                f"{', '.join(FRICTION_PHASES)} 중 하나이거나 생략")
+    # 세로줄 4필드 — resolution 본문의 `|`(grep 인용문 등)가 형식 오류를 내던 결함(METH-147 #9).
+    # 마지막 구분자 → repeat_of, 앞 두 구분자 → where·cost. 가운데 resolution 은 세로줄 허용.
+    if raw.count("|") >= 3:
+        _head, _repeat = raw.rsplit("|", 1)
+        _where, _cost, _resolution = _head.split("|", 2)
+        parts = [_where, _cost, _resolution, _repeat]
+    else:
+        parts = raw.split("|")
     if len(parts) != 4:
         raise ValueError("--friction 형식은 'where|cost_minutes|resolution|repeat_of' 입니다")
     where, cost, resolution, repeat_of = [p.strip() for p in parts]
@@ -436,13 +473,16 @@ def parse_friction_item(raw: str, index: int) -> dict:
         cost_minutes = int(cost)
     except ValueError as exc:
         raise ValueError("friction cost_minutes는 정수여야 합니다") from exc
-    return {
+    item = {
         "id": f"F-{index:03d}",
         "where": where,
         "cost_minutes": cost_minutes,
         "resolution": resolution,
         "repeat_of": normalize_repeat_of(repeat_of),
     }
+    if phase:
+        item["phase"] = phase
+    return item
 
 
 def render_observation(payload: dict) -> str:
@@ -472,6 +512,8 @@ def render_observation(payload: dict) -> str:
                 f"    resolution: {yaml_scalar(item['resolution'])}",
                 f"    repeat_of: {item['repeat_of'] or 'null'}",
             ])
+            if item.get("phase"):
+                lines.append(f"    phase: {item['phase']}")
     else:
         lines.append("friction: []")
 
@@ -560,6 +602,9 @@ def validate_observation_file(path: Path) -> list[str]:
     if task_match and task_match.group(1) not in OBSERVATION_TASK_TYPES:
         errors.append(f"task_type은 {', '.join(sorted(OBSERVATION_TASK_TYPES))} 중 하나여야 합니다")
     # METH-121: repeat_of 형식 강제 — 오염되면 thinktank 반복 집계가 기계적으로 불가
+    for m in re.finditer(r"^\s+phase:\s*(.+?)\s*$", frontmatter, flags=re.MULTILINE):
+        if m.group(1).strip().strip('"') not in FRICTION_PHASES:
+            errors.append(f"friction phase 는 {', '.join(FRICTION_PHASES)} 중 하나여야 합니다 (선택 필드)")
     for m in re.finditer(r"^\s+repeat_of:\s*(.+?)\s*$", frontmatter, flags=re.MULTILINE):
         try:
             normalize_repeat_of(m.group(1))
@@ -659,7 +704,12 @@ def cmd_observe(args: argparse.Namespace) -> int:
     # METH-121: 메타 자동 채움 — "unknown" 상수가 900+건 쌓인 결함의 근본 수정.
     # ctx의 "unknown"은 미기입으로 취급하고, 환경에서 실측·추정한다.
     agent = args.agent or _ctx_value("last_session", "agent", "model") \
-        or os.environ.get("ANTHROPIC_MODEL") or os.environ.get("CLAUDE_MODEL") or "unknown"
+        or os.environ.get("ANTHROPIC_MODEL") or os.environ.get("CLAUDE_MODEL") \
+        or ("claude" if os.environ.get("CLAUDECODE") else None) \
+        or ("codex" if os.environ.get("CODEX_SANDBOX") else None) or "unknown"
+    # METH-149: Claude Code 는 모델 환경변수를 두지 않아 METH-121 이후에도 unknown 이 73~100%
+    # (5개 repo 실측). 모델명을 모르면 계열이라도 남긴다 — unknown 보다 집계에 쓸모 있다.
+    agent = agent.strip().lower() if agent != "unknown" else agent
     tool = args.tool or _ctx_value("last_session", "agent", "tool") \
         or ("claude-code" if os.environ.get("CLAUDECODE") else None) \
         or ("codex" if os.environ.get("CODEX_SANDBOX") else None) or "unknown"
@@ -924,8 +974,8 @@ def cmd_skeleton(args: argparse.Namespace) -> int:
 # ─── L3 Thinktank v0 ────────────────────────────────────────────────────────
 
 
-def observation_files() -> list[Path]:
-    base = METHODOLOGY_ROOT / OBSERVATION_DIR
+def observation_files(root: Path | None = None) -> list[Path]:
+    base = (root or METHODOLOGY_ROOT) / OBSERVATION_DIR
     if not base.exists():
         return []
     return sorted(p for p in base.glob("*.md") if OBSERVATION_FILE_RE.match(p.name))
@@ -939,7 +989,8 @@ def cmd_thinktank(args: argparse.Namespace) -> int:
     승급은 사람이 PR로 한다(백서 §8-2, `50_resources/catalog/_README.md` §3).
     분기 회고(`70_meta/retrospectives`) §1 지표의 소스로 회고 직전 실행한다.
     """
-    files = observation_files()
+    root = Path(args.path).resolve() if getattr(args, "path", None) else METHODOLOGY_ROOT
+    files = observation_files(root)
     observations = [parse_observation_frontmatter(p) for p in files]
 
     friction_lines: list[str] = []
@@ -978,10 +1029,11 @@ def cmd_thinktank(args: argparse.Namespace) -> int:
     iso_year, iso_week, _ = now.isocalendar()
     out_dir = METHODOLOGY_ROOT / INSIGHTS_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
-    out = out_dir / f"{iso_year}-W{iso_week:02d}_thinktank.md"
+    suffix = "" if root == METHODOLOGY_ROOT else f"_{root.name}"
+    out = out_dir / f"{iso_year}-W{iso_week:02d}_thinktank{suffix}.md"
     task_dist = ", ".join(f"{k} {v}" for k, v in sorted(task_counts.items(), key=lambda kv: -kv[1])) or "없음"
     lines = [
-        f"# Thinktank v0 — {iso_year}-W{iso_week:02d}",
+        f"# Thinktank v0 — {iso_year}-W{iso_week:02d}" + (f" · {root.name}" if suffix else ""),
         "",
         "> **수동 승급이 정식.** 이 리포트는 지표 집계 + 승급 *후보* 마킹만 한다 — 자동 승급 없음.",
         "> 승급은 사람이 PR로(백서 §8-2). 분기 회고 §1 지표의 소스 — 회고 직전 실행.",
@@ -1004,6 +1056,7 @@ def cmd_thinktank(args: argparse.Namespace) -> int:
             lines.append(f"- `{marker}` x{count}: {name}")
     else:
         lines.append("- No friction entries yet.")
+    lines.extend(_friction_retro_section(files))
     lines.extend([
         "",
         "## Observations",
@@ -1013,7 +1066,7 @@ def cmd_thinktank(args: argparse.Namespace) -> int:
         lines.append(f"- `{obs.get('session_id', 'unknown')}` — domain `{obs.get('domain', '?')}`, task `{obs.get('task_type', '?')}`")
     write_text(out, "\n".join(lines) + "\n")
 
-    capsule_lines = _thinktank_capsule_section()
+    capsule_lines = _thinktank_capsule_section() if root == METHODOLOGY_ROOT else []
     if capsule_lines:
         with out.open("a", encoding="utf-8") as fh:
             fh.write("\n".join(capsule_lines) + "\n")
@@ -1021,6 +1074,78 @@ def cmd_thinktank(args: argparse.Namespace) -> int:
     ok(f"thinktank report: {out.relative_to(METHODOLOGY_ROOT)}")
     info("수동 승급이 정식 — 승급 후보(≥2회)는 사람이 검토·PR로 승급(백서 §8-2).")
     return 0
+
+
+def _parse_friction_items(text: str) -> list[dict[str, Any]]:
+    """관찰 로그 frontmatter 의 friction 항목 — where·cost_minutes·repeat_of·phase·resolution."""
+    m = re.search(r"^friction:\s*\n((?:[ \t]+.*\n?)*)", text, flags=re.MULTILINE)
+    if not m:
+        return []
+    items: list[dict[str, Any]] = []
+    cur: dict[str, Any] | None = None
+    for line in m.group(1).splitlines():
+        s = line.strip()
+        if s.startswith("- "):
+            cur = {}
+            items.append(cur)
+            s = s[2:]
+        if cur is None or ":" not in s:
+            continue
+        k, v = s.split(":", 1)
+        v = v.strip().strip('"')
+        if k == "cost_minutes":
+            try:
+                cur[k] = int(v)
+            except ValueError:
+                cur[k] = 0
+        else:
+            cur[k] = None if v.lower() in {"null", "none", ""} else v
+    return items
+
+
+def _friction_retro_section(files: list[Path], top_n: int = 5) -> list[str]:
+    """마찰 비용 회고 — 합계·월별·재발 비중·phase 분포·상위 사례 (METH-148, 캡슐 retro-friction-aggregate).
+
+    cafe24-renewal 은 842건에서 마찰 204건·4,684분·재발 21% 를 임시 파서로 뽑았다. 같은 척도를
+    표준 명령으로 두면 프로젝트 종료·분기 회고를 반복하고 repo 간 비교가 된다.
+    """
+    rows: list[dict[str, Any]] = []
+    for p in files:
+        mm = re.match(r"(\d{4}-\d{2})-\d{2}_", p.name)
+        month = mm.group(1) if mm else "?"
+        for it in _parse_friction_items(read_text(p)):
+            it["month"], it["file"] = month, p.stem
+            rows.append(it)
+    out = ["", "## 마찰 비용 회고 (Retro)", ""]
+    if not rows:
+        return out + ["- friction 기록 없음."]
+    total = sum(r.get("cost_minutes", 0) for r in rows)
+    rep_rows = [r for r in rows if r.get("repeat_of")]
+    rep_cost = sum(r.get("cost_minutes", 0) for r in rep_rows)
+    phased = [r for r in rows if r.get("phase")]
+    out.append(f"- 마찰 **{len(rows)}건 · {total}분** · 재발(repeat_of) {len(rep_rows)}건 {rep_cost}분"
+               f" (**{round(100 * rep_cost / total) if total else 0}%**)")
+    out.append(f"- phase 기입률: **{len(phased)}/{len(rows)}**"
+               + (" — 기입률이 낮으면 아래 분포는 표본 편향이다" if len(phased) < len(rows) else ""))
+    if phased:
+        by_phase: dict[str, list[int]] = {}
+        for r in phased:
+            by_phase.setdefault(r["phase"], []).append(r.get("cost_minutes", 0))
+        out.append("- phase 분포: " + " · ".join(
+            f"{ph} {len(v)}건 {sum(v)}분" for ph, v in sorted(by_phase.items(), key=lambda kv: -sum(kv[1]))))
+    out += ["", "| 월 | 건수 | 분 | 재발 분 |", "|---|---|---|---|"]
+    months: dict[str, list[dict[str, Any]]] = {}
+    for r in rows:
+        months.setdefault(r["month"], []).append(r)
+    for mo in sorted(months):
+        rs = months[mo]
+        out.append(f"| {mo} | {len(rs)} | {sum(r.get('cost_minutes', 0) for r in rs)} | "
+                   f"{sum(r.get('cost_minutes', 0) for r in rs if r.get('repeat_of'))} |")
+    out += ["", f"**비용 상위 {top_n}**", ""]
+    for r in sorted(rows, key=lambda r: -r.get("cost_minutes", 0))[:top_n]:
+        tag = " · 재발" if r.get("repeat_of") else ""
+        out.append(f"- {r.get('cost_minutes', 0)}분 · `{r.get('where') or '?'}`{tag} — {r['file']}")
+    return out
 
 
 def _thinktank_capsule_section() -> list[str]:
@@ -1206,7 +1331,33 @@ def cmd_prompt_report(args: argparse.Namespace) -> int:
 
 
 def _repo_name(target: Path) -> str:
-    return target.resolve().name
+    """repo 이름 — 워크트리에서도 주 체크아웃 이름을 준다.
+
+    디렉터리명만 쓰면 워크트리에서 발행한 캡슐이 워크트리명(`icons-wt-hub`,
+    `.claude/worktrees/<임시명>`)을 origin_repo·id 로 갖는다. 캡슐 id 는 상류
+    `_collect_plan` 의 **중복 수거 방지 키**라서, 같은 제안이 워크트리마다 다른
+    id 로 갈라져 중복 적재된다(원장 실사례: `gamblescan-p0-pr__...` — METH-137
+    에서 경고만 남기고 원인 미해소였던 그 건).
+    git 공통 디렉터리(.git 본체)의 위치가 주 체크아웃이므로 그것을 이름으로 쓴다.
+    """
+    fallback = target.resolve().name
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(target), "rev-parse", "--git-common-dir"],
+            text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:  # noqa: BLE001 — git 없음·非 repo 모두 폴백
+        return fallback
+    if not out:
+        return fallback
+    common = Path(out)
+    if not common.is_absolute():
+        common = target / common
+    common = common.resolve()
+    # 통상 <repo>/.git · bare 는 <repo>.git — 어느 쪽이든 repo 이름으로 환원
+    name = common.parent.name if common.name == ".git" else common.name
+    if name.endswith(".git"):
+        name = name[:-4]
+    return name or fallback
 
 
 def _capsule_policy(target: Path) -> str:
@@ -1597,16 +1748,61 @@ def cmd_maincheck(args: argparse.Namespace) -> int:
 # Class B/C 자동 트리거 경로·패턴 (CLAUDE.md §3). fail-closed:
 # 하나라도 걸리면 자동 머지를 *거부*하고 사람을 부른다.
 # 오탐(사람 호출)은 싸고, 미탐(무검토 머지)은 비싸다 — 비대칭을 그대로 반영.
+# 판정은 **경로만** 본다 — 파일 내용은 스캔하지 않는다(METH-142 에서 명시 결정).
+# 캡슐 `icons__2026-08-22_land-classifier-cries-wolf` 가 «용어별 순증(added−removed)
+# 기준 콘텐츠 판정»을 제안했다. 근거는 강했다 — 개행 0개 단일 라인 JSON 산출물이
+# 한 글자 변경에도 전 코퍼스가 추가된 줄로 잡혀 PR #355·#356·#381 에서 3연속 오탐했고,
+# 그 «또 오탐» 학습 때문에 #381 의 진짜 신규 가격(유상 럭키드로우 12,000원)을 통과시킬
+# 뻔했다. **그래도 채택하지 않는다**: 이 판정기의 신뢰는 단순함에서 나온다 — 경로 목록은
+# 사람이 눈으로 검증할 수 있지만, 내용 판정은 임계값·토큰화·예외의 축을 새로 만들고
+# 그 축이 틀리면 «조용한 미탐»이 된다. 내용 판단은 Class B/C 로 올려 **사람이 보는**
+# 현 설계가 이미 맡고 있다. 오탐은 여기서 줄이되(METH-138·139 의 `plan` 정련,
+# METH-141 의 자산 제외) 방식은 경로에 머문다. 이 결정을 뒤집으려면 ADR 을 먼저 쓴다.
 CLASS_BC_PATTERNS: list[tuple[str, str]] = [
     # (설명, 정규식 — repo 상대경로에 대해 검사)
     ("DB 마이그레이션·스키마", r"(^|/)(migrations?|prisma)/|\.sql$|schema\.(prisma|sql)$"),
     ("인증·인가", r"(^|/)(auth|authz|authentication|authorization|session|middleware|permissions?|rbac|roles?)[./_-]"),
-    ("과금·결제·가격", r"(^|/)(billing|payment|pricing|checkout|invoice|subscription|plan)s?[./_-]"),
+    # `plan` 만 규칙이 다르다 — 나머지 여섯 낱말과 달리 요금제 밖에서도 흔한 수식어라,
+    # 같은 경계 `[./_-]` 를 주면 기획 낱말을 통째로 문다. icons 실측: 단독 `plan` 으로
+    # 2502 경로 중 **824개** 오탐(레포의 1/3) — `50_apps/plan-viewer/` 아래 모든 변경이
+    # Class B 로 걸려 그 앱은 자동 머지가 영구 불가능했다. 판별자로서 죽은 상태였다.
+    # 그래서 plan 은 셋 중 하나일 때만 건다.
+    #   ① 과금 낱말과 붙은 복합어 — `plan_pricing`·`plan-tier`(다른 대안은 못 잡는다)
+    #   ② **복수형** 파일명·세그먼트 — `plans.ts`·`plans/`(요금제 목록의 관용 표기)
+    # 단수 `plan.md`·`app/plan/` 은 뺀다 — 기획 용법이 지배적이다(실측 2건 전부 기획).
+    # 이 조합이 icons 에서 824 → 2 로 줄고, 남은 2건은 전부 진짜 `checkout/` 이다.
+    ("과금·결제·가격",
+     r"(^|/)(billing|payment|pricing|checkout|invoice|subscription)s?[./_-]"
+     r"|(^|/)plans?[._-](pricing|price|billing|tier|quota)"
+     r"|(^|/)plans[./]"),
     ("외부 API 계약", r"(^|/)(openapi|swagger)|\.proto$|(^|/)api[-_]?contract"),
     ("백그라운드 작업·스케줄러·큐", r"(^|/)(cron|scheduler|queue|worker|job)s?[./_-]"),
     ("CI·배포 파이프라인", r"^\.github/workflows/|(^|/)(Dockerfile|docker-compose|vercel\.json|fly\.toml)$"),
     ("법무·정책·공개 메시지", r"(^|/)(legal|policy|privacy|terms|compliance)[./_-]"),
 ]
+
+
+# 표현용 바이너리 자산 — 경로 트리거에서 제외한다.
+# 트리거는 «경로 단어»로 위험을 추정하는데, 이미지·영상·폰트는 그 경로에 놓여 있어도
+# 스키마·인증·과금·계약 «로직»을 바꿀 수 없다. icons 실측: 인증 트리거 적중 25건 중
+# 16건이 `public/gallery/auth-*.jpg` 갤러리 스크린샷이었다 — 재촬영 PR 마다 Class B.
+# **문서 확장자(.pdf·.md·.docx·.json 등)는 일부러 넣지 않는다** — `legal/terms.pdf`
+# 처럼 정책·약관·가격을 실제로 담는 파일이라 Class C 판정 대상으로 남아야 한다.
+ASSET_EXTS: frozenset[str] = frozenset({
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".bmp", ".tiff", ".ico", ".svg",
+    ".mp4", ".webm", ".mov", ".avi", ".mp3", ".wav", ".ogg",
+    ".woff", ".woff2", ".ttf", ".otf", ".eot",
+})
+
+
+# 날짜 산출물·관찰 로그 — 실행되는 코드도, 배포되는 정책도 아니다. ai-icons 실측:
+# 스냅샷에 둔 `worker.py` 가 «백그라운드 작업» 트리거에 걸려 Class B 로 거부됐다(METH-149).
+CLASS_SCAN_EXCLUDED_PREFIXES: tuple[str, ...] = ("40_dev/snapshots/", "50_resources/ai_observations/")
+
+
+def _is_asset(path: str) -> bool:
+    """표현용 바이너리 자산인가 — 확장자만 본다(경로 위치와 무관)."""
+    return Path(path).suffix.lower() in ASSET_EXTS
 
 
 def _classify_change(target: Path, base_ref: str, head_ref: str = "HEAD") -> list[tuple[str, str]]:
@@ -1623,11 +1819,64 @@ def _classify_change(target: Path, base_ref: str, head_ref: str = "HEAD") -> lis
         return [("변경 경로 조회 실패 — 자동 판정 불가", "(unknown)")]
     hits: list[tuple[str, str]] = []
     for path in (p.strip() for p in out.splitlines() if p.strip()):
+        if _is_asset(path):
+            continue  # 자산은 로직을 바꾸지 않는다 — ASSET_EXTS 주석 참조
+        if path.startswith(CLASS_SCAN_EXCLUDED_PREFIXES):
+            continue  # 날짜 산출물·관찰 로그 — CLASS_SCAN_EXCLUDED_PREFIXES 주석 참조
         for label, pattern in CLASS_BC_PATTERNS:
             if re.search(pattern, path, re.IGNORECASE):
                 hits.append((label, path))
                 break
     return hits
+
+
+def _excluded_assets(target: Path, base_ref: str, head_ref: str = "HEAD") -> list[str]:
+    """트리거 검사에서 자산으로 제외된 경로 — land 가 «무엇을 안 봤는지» 밝히기 위함."""
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(target), "diff", "--name-only", f"{base_ref}...{head_ref}"],
+            text=True, stderr=subprocess.DEVNULL,
+        )
+    except subprocess.CalledProcessError:
+        return []
+    return [p.strip() for p in out.splitlines()
+            if p.strip() and _is_asset(p.strip())
+            and any(re.search(pat, p.strip(), re.IGNORECASE) for _, pat in CLASS_BC_PATTERNS)]
+
+
+def _todo_change_class(target: Path, ids: set[str]) -> list[tuple[str, str]]:
+    """PR 이 가리키는 TODO 항목 중 change-class 가 B/C 인 것 — [(ID, 클래스)] (METH-149).
+
+    경로 트리거는 영문 경로 단어만 본다. drip-chat-planning 실측: TODO change-class C 항목을
+    담은 기획 PR 다수가 한글 파일명이라 전부 Class A 로 자동 머지됐다. 사람이 TODO 에 적어 둔 클래스가 경로 추정보다 정확하다.
+    """
+    texts = []
+    for src in (["show", "origin/main:TODO.md"], ["show", "origin/master:TODO.md"]):
+        try:
+            texts.append(subprocess.check_output(["git", "-C", str(target), *src], text=True,
+                                                 stderr=subprocess.DEVNULL))
+            break
+        except Exception:  # noqa: BLE001
+            continue
+    tp = target / "TODO.md"
+    if tp.exists():
+        texts.append(read_text(tp))
+    hits: dict[str, str] = {}
+    for text in texts:
+        for block in re.split(r"(?=^###\s)", text, flags=re.MULTILINE):
+            m = re.match(r"^###\s+(?:~~)?([A-Z][A-Z0-9]*-\d+)\b", block)
+            if not m or m.group(1).upper() not in ids:
+                continue
+            cm = re.search(r"change-class\W*([ABC])\b", block)
+            if cm and cm.group(1) in "BC":
+                hits[m.group(1).upper()] = cm.group(1)
+    return sorted(hits.items())
+
+
+def _pr_todo_ids(pr: dict, branch: str) -> set[str]:
+    """PR 제목·브랜치 이름에 적힌 TODO ID — 커밋 본문은 보지 않는다(기록 PR 의 언급까지 막지 않도록)."""
+    text = f"{pr.get('title', '')} {branch}"
+    return {f"{a.upper()}-{b}" for a, b in re.findall(r"(?<![A-Za-z0-9])([A-Za-z][A-Za-z0-9]*)-(\d+)\b", text)}
 
 
 def _pr_for_branch(target: Path, branch: str) -> dict | None:
@@ -1643,6 +1892,81 @@ def _pr_for_branch(target: Path, branch: str) -> dict | None:
         return None
 
 
+def _failed_jobs_zero_steps(target: Path, pr_number: int) -> tuple[int, int, bool]:
+    """실패 체크 중 «잡 스텝 0개»인 것의 수와 billing 사유 여부 — (0스텝 수, 실패 수, billing).
+
+    러너가 잡을 집기 전에 PR 머지 참조가 사라지면(main 이 1~2분마다 움직이는 병렬 환경)
+    잡은 스텝 0개·로그 없음으로 실패한다 — 내용 오류가 아니라 경합이다(icons #907: 6회 연속).
+    CI 결제가 끊겨 아예 안 돌 때도 같은 모양이고 annotations 에 billing 이 찍힌다(#8).
+    """
+    try:
+        out = subprocess.check_output(
+            ["gh", "pr", "checks", str(pr_number), "--json", "name,state,link"],
+            cwd=str(target), text=True, stderr=subprocess.DEVNULL)
+        rows = json.loads(out)
+    except Exception:  # noqa: BLE001
+        return (0, 0, False)
+    bad = {"FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED"}
+    failed = [r for r in rows if str(r.get("state", "")).upper() in bad]
+    zero = 0
+    billing = False
+    for r in failed:
+        m = re.search(r"/job/(\d+)", r.get("link") or "")
+        if not m:
+            continue
+        try:
+            job = json.loads(subprocess.check_output(
+                ["gh", "api", f"repos/{{owner}}/{{repo}}/actions/jobs/{m.group(1)}"],
+                cwd=str(target), text=True, stderr=subprocess.DEVNULL))
+        except Exception:  # noqa: BLE001
+            continue
+        if not job.get("steps"):
+            zero += 1
+        try:
+            ann = subprocess.check_output(
+                ["gh", "api", f"repos/{{owner}}/{{repo}}/check-runs/{m.group(1)}/annotations"],
+                cwd=str(target), text=True, stderr=subprocess.DEVNULL)
+            if re.search(r"billing|payment|spending limit", ann, re.IGNORECASE):
+                billing = True
+        except Exception:  # noqa: BLE001
+            pass
+    return (zero, len(failed), billing)
+
+
+def _blocked_has_ci_decision(target: Path) -> bool:
+    """TODO `## Blocked` 에 CI 결제·인프라 사유의 PM 판정 항목이 있는가 (local-ci 의 전제)."""
+    tp = target / "TODO.md"
+    if not tp.exists():
+        return False
+    m = re.search(r"^##\s+Blocked\s*$\n(.*?)(?=^##\s|\Z)", read_text(tp), re.MULTILINE | re.DOTALL)
+    body = m.group(1) if m else ""
+    return bool(re.search(r"CI.*(결제|billing|인프라|infra)|(결제|billing).*CI", body, re.IGNORECASE))
+
+
+def _local_ci_replicate(target: Path) -> list[str]:
+    """CI 단계를 로컬에서 그대로 재현 — 실패 목록 반환(빈 목록 = 통과)."""
+    fails: list[str] = []
+    meth = target / "60_tools" / "methodology.py"
+    def run(label: str, cmd: list[str]) -> None:
+        rc = subprocess.run(cmd, cwd=str(target), capture_output=True).returncode
+        print(f"  local-ci · {label}: {'통과' if rc == 0 else f'실패(rc={rc})'}")
+        if rc != 0:
+            fails.append(label)
+    run("manifest-check", ["python3", str(meth), "manifest-check"])
+    run("wrap --strict --read-only", ["python3", str(meth), "wrap", "--strict", "--read-only"])
+    for f in sorted((target / "50_resources" / "ai_observations").glob("*.md")):
+        if f.name.startswith("_"):
+            continue
+        errs = validate_observation_file(f)
+        if errs:
+            fails.append(f"observe validate: {f.name}")
+            print(f"  local-ci · observe validate {f.name}: 실패 — {errs[0]}")
+    tests = sorted((target / "tests").glob("test_*.py"))
+    for f in tests:
+        run(f"tests/{f.name}", ["python3", str(f)])
+    return fails
+
+
 def _pr_checks_failing(target: Path, pr_number: int) -> list[str] | None:
     """실패한 CI 체크 이름 목록. None = 체크 정보 조회 불가(판정 불가)."""
     try:
@@ -1655,6 +1979,36 @@ def _pr_checks_failing(target: Path, pr_number: int) -> list[str] | None:
         return None
     bad = {"FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED"}
     return [r.get("name", "?") for r in rows if str(r.get("state", "")).upper() in bad]
+
+
+def _required_checks(target: Path) -> list[str]:
+    """`.methodology-version` 의 `required_checks` — land 가 반드시 통과를 볼 체크 이름 (METH-151 D5)."""
+    vf = target / VERSION_FILE_NAME
+    try:
+        data = json.loads(read_text(vf)) if vf.exists() else {}
+    except Exception:  # noqa: BLE001
+        return []
+    req = data.get("required_checks") or []
+    return [str(r) for r in req if str(r).strip()]
+
+
+def _required_checks_missing(target: Path, pr_number: int, required: list[str]) -> list[str] | None:
+    """필수 체크 중 SUCCESS 가 아닌(없음 포함) 것. None = 조회 불가."""
+    try:
+        out = subprocess.check_output(
+            ["gh", "pr", "checks", str(pr_number), "--json", "name,state"],
+            cwd=str(target), text=True, stderr=subprocess.DEVNULL)
+        rows = json.loads(out)
+    except Exception:  # noqa: BLE001
+        return None
+    return _missing_required(rows, required)
+
+
+def _missing_required(rows: list[dict], required: list[str]) -> list[str]:
+    """순수 판정 — 체크 행 목록에서 필수 이름이 전부 SUCCESS 인지."""
+    ok_states = {"SUCCESS", "PASS"}
+    passed = {r.get("name") for r in rows if str(r.get("state", "")).upper() in ok_states}
+    return [name for name in required if name not in passed]
 
 
 def _pr_checks_pending(target: Path, pr_number: int) -> list[str]:
@@ -1688,6 +2042,105 @@ def _pr_merge_info(target: Path, pr_num: int | str) -> tuple[str | None, str | N
         return state, (commit.get("oid") or None)
     except Exception:  # noqa: BLE001 — gh 미설치·네트워크 모두 "판정 불가"
         return None, None
+
+
+LAND_RECORD_PATHS = ("TODO.md", "HANDOFF.md")
+_MERGE_AC_RE = re.compile(r"머지|merge|maincheck|Done|전이|land", re.IGNORECASE)
+
+
+def _land_record_todo(text: str, ids: set[str], pr_num: int | str, sha8: str, today: str) -> tuple[str, list[str], list[str]]:
+    """TODO 에 land 기록 — (새 텍스트, Done 으로 옮긴 ID, 기록만 단 ID) (METH-151 D2).
+
+    항목에 `landed` 줄을 단다. 남은 미체크 AC 가 «머지·Done 전이» 류뿐이면 Done 맨 위로 옮긴다
+    — PR 여러 개로 끝나는 항목(METH-148: PR 5개)을 첫 PR 에서 Done 처리하지 않기 위함.
+    """
+    parts = re.split(r"(?=^##\s)", text, flags=re.MULTILINE)
+    done_idx = next((i for i, p in enumerate(parts) if _kanban_heading(p.split("\n", 1)[0], "## Done")), None)
+    moved: list[str] = []
+    noted: list[str] = []
+    to_move: list[str] = []
+    for i, sec in enumerate(parts):
+        if i == done_idx or not sec.startswith("## "):
+            continue
+        blocks = re.split(r"(?=^###\s)", sec, flags=re.MULTILINE)
+        keep = []
+        for b in blocks:
+            m = re.match(r"^###\s+(?:~~)?([A-Z][A-Z0-9]*-\d+)\b", b)
+            if not m or m.group(1).upper() not in ids:
+                keep.append(b)
+                continue
+            line = f"- **landed**: PR #{pr_num} · main `{sha8}` · {today} (land 자동 기록)\n"
+            body = b.rstrip("\n") + "\n" + line
+            # 자동 기록이므로 «머지·Done 전이» AC 는 이 시점에 충족된다 — 체크한다
+            body = re.sub(r"^(\s*-\s*)\[ \](.*(?:머지|merge|maincheck|Done 전이).*)$", r"\1[x]\2", body,
+                          flags=re.MULTILINE | re.IGNORECASE)
+            open_ac = [l for l in body.splitlines() if re.match(r"^\s*-\s*\[ \]", l)]
+            if not open_ac and done_idx is not None:
+                to_move.append(body + "\n")
+                moved.append(m.group(1))
+            else:
+                keep.append(body + "\n")
+                noted.append(m.group(1))
+        parts[i] = "".join(keep)
+    if to_move and done_idx is not None:
+        head, _, rest = parts[done_idx].partition("\n")
+        parts[done_idx] = head + "\n\n" + "".join(to_move) + rest.lstrip("\n")
+    return "".join(parts), moved, noted
+
+
+def _land_record(target: Path, pr_num: int | str, merge_sha: str, ids: set[str], default_branch: str) -> None:
+    """머지 후 TODO·HANDOFF 기록을 main 에 직접 커밋 — «머지 기록 PR» 제거 (METH-151 D2, ADR-006).
+
+    예외의 범위: 변경이 TODO.md·HANDOFF.md 뿐일 때만. push 가 거부되면(보호 규칙 등) 커밋을
+    되돌리고 변경을 작업트리에 남긴다 — 다음 PR 에 실린다.
+    """
+    if not ids:
+        return
+    cur = subprocess.run(["git", "-C", str(target), "branch", "--show-current"], capture_output=True, text=True).stdout.strip()
+    if cur != default_branch:
+        warn(f"  land 기록 skip — {default_branch} 가 체크아웃돼 있지 않다(다른 worktree 점유).")
+        return
+    dirty = subprocess.run(["git", "-C", str(target), "status", "--porcelain", "--", *LAND_RECORD_PATHS],
+                           capture_output=True, text=True).stdout.strip()
+    if dirty:
+        warn("  land 기록 skip — TODO/HANDOFF 에 미커밋 변경이 있다.")
+        return
+    today = datetime.now().strftime("%Y-%m-%d")
+    sha8 = merge_sha[:8]
+    todo_p, ho_p = target / "TODO.md", target / "HANDOFF.md"
+    if not todo_p.exists():
+        return
+    new_todo, moved, noted = _land_record_todo(read_text(todo_p), ids, pr_num, sha8, today)
+    if not moved and not noted:
+        info(f"  land 기록 — TODO 에서 {', '.join(sorted(ids))} 항목을 못 찾아 기록 없음")
+        return
+    write_text(todo_p, new_todo)
+    if ho_p.exists():
+        ho = read_text(ho_p)
+        desc = (f"Done {', '.join(moved)}" if moved else "") + (" · " if moved and noted else "") \
+            + (f"기록 {', '.join(noted)}" if noted else "")
+        line = f"- {today} — land: PR #{pr_num} 머지(main `{sha8}`) · {desc}\n"
+        ho2 = re.sub(r"(^##\s+Recent Changes[^\n]*\n)", lambda m_: m_.group(1) + line, ho, count=1, flags=re.MULTILINE)
+        if ho2 != ho:
+            write_text(ho_p, ho2)
+    subprocess.run(["git", "-C", str(target), "add", "--", *LAND_RECORD_PATHS], capture_output=True)
+    staged = subprocess.run(["git", "-C", str(target), "diff", "--cached", "--name-only"],
+                            capture_output=True, text=True).stdout.split()
+    if not staged or any(f not in LAND_RECORD_PATHS for f in staged):
+        subprocess.run(["git", "-C", str(target), "reset", "-q"], capture_output=True)
+        warn(f"  land 기록 중단 — 스테이징이 TODO/HANDOFF 밖을 포함: {staged}")
+        return
+    subprocess.run(["git", "-C", str(target), "commit", "-q", "-m",
+                    f"chore(land): PR #{pr_num} 머지 기록 — {', '.join(sorted(moved + noted))}"], capture_output=True)
+    env = dict(os.environ, METHODOLOGY_SHIP_IN_PROGRESS="1")   # 훅 wrap 재검증 skip — 범위는 위에서 검사
+    ps = subprocess.run(["git", "-C", str(target), "push", "-q", "origin", f"HEAD:{default_branch}"],
+                        capture_output=True, text=True, env=env)
+    if ps.returncode != 0:
+        subprocess.run(["git", "-C", str(target), "reset", "-q", "HEAD~1"], capture_output=True)
+        warn(f"  land 기록 push 거부 — 변경은 작업트리에 남겼다(다음 PR 에 실린다): {(ps.stderr or '').strip()[:160]}")
+        return
+    ok(f"  land 기록 → main 직접 커밋: " + (f"Done {', '.join(moved)}" if moved else "") +
+       (f" 기록 {', '.join(noted)}" if noted else ""))
 
 
 def cmd_land(args: argparse.Namespace) -> int:
@@ -1740,9 +2193,11 @@ def cmd_land(args: argparse.Namespace) -> int:
             "스택-PR 금지(METH-120): 중간 브랜치로 머지되면 main 미도달이 된다.")
         return 1
 
-    # 2) Class 판정 — fail-closed
-    info("land: 2/6 — Class 판정 (Class B/C 자동 머지 금지)")
-    hits = _classify_change(target, base_ref)
+    # 2) Class 판정 — fail-closed. 이미 머지된 PR 이면 판정 대상이 없다 — 게이트는 «자동 머지»를
+    # 막는 장치이고, 사람이 머지한 Class B/C PR 도 도달 확인·기록(ADR-006 D2)은 받아야 한다(METH-151).
+    already_merged = str(pr.get("state", "")).upper() == "MERGED"
+    info("land: 2/6 — Class 판정 (Class B/C 자동 머지 금지)" + (" — skip (이미 머지됨)" if already_merged else ""))
+    hits = [] if already_merged else _classify_change(target, base_ref)
     if hits:
         err(f"Class B/C 트리거 {len(hits)}건 — 자동 머지 거부. 사람 검토가 필요하다.")
         seen: set[str] = set()
@@ -1753,12 +2208,60 @@ def cmd_land(args: argparse.Namespace) -> int:
             err(f"      {path}")
         err("CLAUDE.md §3: 근거·영향 범위·롤백 계획·리스크를 PR 에 남기고 사람이 머지한다.")
         return 2
+    todo_hits = [] if already_merged else _todo_change_class(target, _pr_todo_ids(pr, branch))
+    if todo_hits:
+        err(f"TODO change-class B/C 항목을 가리키는 PR — 자동 머지 거부: "
+            + ", ".join(f"{i}(Class {c})" for i, c in todo_hits))
+        err("경로 트리거가 비어도 사람이 TODO 에 적은 클래스가 우선한다. 승인 근거를 PR 에 남기고 사람이 머지한다.")
+        return 2
+    skipped = _excluded_assets(target, base_ref)
+    if skipped:
+        print(f"  · 자산 {len(skipped)}건은 트리거 검사 제외(이미지·영상·폰트) — "
+              f"예: {skipped[0]}")
     print("  ✓ Class B/C 트리거 없음 — Class A")
 
     if str(pr.get("state", "")).upper() != "MERGED":
+        # 2b) DIRTY — main 이 움직여 머지 참조를 못 만드는 상태. 1회 자동 해소 (METH-147 #1③).
+        # 병렬 세션이 몇 분 간격으로 머지하면 열린 PR 이 매번 DIRTY 가 되고 CI 가 시작조차 안 된다
+        # (icons #687: 리베이스 4회, 50분). origin/base 를 머지해 재푸시하고 CI 를 다시 돈다.
+        if str(pr.get("mergeable", "")).upper() == "CONFLICTING" and not args.dry_run:
+            base = pr.get("baseRefName") or "main"
+            warn(f"PR 이 DIRTY(base 와 충돌) — origin/{base} 자동 머지 1회 시도")
+            subprocess.run(["git", "-C", str(target), "fetch", "-q", "origin", base], capture_output=True)
+            mg = subprocess.run(["git", "-C", str(target), "merge", "--no-edit", f"origin/{base}"],
+                                capture_output=True, text=True)
+            if mg.returncode != 0:
+                subprocess.run(["git", "-C", str(target), "merge", "--abort"], capture_output=True)
+                err("자동 머지 충돌 — 사람이 해소해야 한다(라이브 파일이면 지침 30 §6: 일괄 ours 금지, checkpoint 는 prepend).")
+                return 1
+            ps = subprocess.run(["git", "-C", str(target), "push", "-q"], capture_output=True, text=True)
+            if ps.returncode != 0:
+                # 결과를 버리면 «재푸시 완료» 거짓 보고 뒤 같은 DIRTY 를 무한 반복한다(ai-icons 로컬 패치
+                # b71ff23b3 의 상류 반영, METH-149). pre-push 훅이 막은 경우가 흔하다.
+                err(f"머지 커밋 push 실패 — 로컬에만 머지됐다: {(ps.stderr or '').strip()[:300]}")
+                err("훅 거부면 그 메시지대로 고친 뒤 `git push` 후 land 재실행.")
+                return 1
+            err("origin 머지·재푸시 완료 — CI 가 새로 돈다. 한 사이클(≥2분) 뒤 land 를 재실행하라.")
+            return 1
         # 3) CI green
         info("land: 3/6 — CI green 확인")
-        if not args.no_ci_check:
+        if args.local_ci:
+            # CI 가 결제·인프라 사유로 아예 안 돌 때의 규율화된 경로 (METH-147 #8).
+            # `--no-ci-check` 와 달리 (a) PM 판정 증거(TODO Blocked) (b) CI 단계 로컬 재현 통과를 요구한다.
+            if not _blocked_has_ci_decision(target):
+                err("--local-ci 는 TODO `## Blocked` 에 CI 결제·인프라 사유의 PM 판정 항목이 있을 때만 — 없으면 거부.")
+                return 1
+            zero, nfail, billing = _failed_jobs_zero_steps(target, pr_num)
+            print(f"  CI 상태: 실패 {nfail}건 중 스텝 0개 {zero}건 · billing annotation {'있음' if billing else '없음'}")
+            fails = _local_ci_replicate(target)
+            if fails:
+                err(f"로컬 재현 실패 {len(fails)}건 — 머지 거부: {', '.join(fails[:5])}")
+                return 1
+            print("  ✓ 로컬 재현 전부 통과 — CI 없이 머지(근거는 PR 코멘트에 남긴다)")
+            subprocess.run(["gh", "pr", "comment", str(pr_num), "--body",
+                            "land --local-ci: CI 미실행(결제·인프라, PM 판정 TODO Blocked) — 로컬 재현 통과: manifest-check · wrap --strict --read-only · observe validate 전수 · tests/*.py"],
+                           cwd=str(target), capture_output=True)
+        elif not args.no_ci_check:
             pending = _pr_checks_pending(target, pr_num)
             if pending:
                 err(f"진행 중인 체크 {len(pending)}건 — 완료 후 재실행: {', '.join(pending[:5])}")
@@ -1769,10 +2272,34 @@ def cmd_land(args: argparse.Namespace) -> int:
                     "`gh pr checks` 로 수동 확인 후 --no-ci-check 로 재실행.")
                 return 1
             if failing:
+                zero, nfail, billing = _failed_jobs_zero_steps(target, pr_num)
+                if nfail and zero == nfail:
+                    # 내용 오류가 아니다 — 러너가 잡기 전에 머지 참조가 사라진 경합(또는 CI 부재).
+                    err(f"실패 체크 {nfail}건이 전부 «잡 스텝 0개·로그 없음» — 내용 오류가 아니라 **경합/CI 부재**다.")
+                    if billing:
+                        err("  annotations 에 billing — CI 가 안 도는 상태. PM 판정을 TODO Blocked 에 박제한 뒤 `land --local-ci`.")
+                    else:
+                        err("  main 이 움직여 머지 참조가 사라졌을 가능성 — 재푸시하지 말고 CI 한 사이클(≥2분) 뒤 재실행. "
+                            "푸시 간격이 CI 1회보다 짧으면 매 푸시가 앞 실행을 죽인다.")
+                    return 1
                 err(f"실패한 체크 {len(failing)}건 — 머지 거부: {', '.join(failing)}")
                 err("가드의 '통과'는 약해도 '거부'는 강하다 — 고치고 재실행.")
                 return 1
             print("  ✓ 실패 체크 0건")
+            required = _required_checks(target)
+            if required:
+                missing = _required_checks_missing(target, pr_num, required)
+                if missing is None:
+                    err("필수 체크 조회 불가 — 판정 불가라 머지하지 않는다.")
+                    return 1
+                if missing:
+                    # icons-ax 실측: 테스트 CI 없이 프리뷰 배포 체크만 있어도 «실패 0» 이었다(METH-151 D5).
+                    err(f"필수 체크 미통과·부재 {len(missing)}건 — 머지 거부: {', '.join(missing)}")
+                    return 1
+                print(f"  ✓ 필수 체크 {len(required)}건 전부 통과")
+            else:
+                warn("  required_checks 미지정 — 체크 종류를 가리지 않고 «실패 0» 만 봤다. "
+                     "`.methodology-version` 에 테스트 체크 이름을 등록하라(METH-151 D5).")
         else:
             warn("  --no-ci-check — CI 검증 생략(무검증 머지)")
 
@@ -1781,8 +2308,11 @@ def cmd_land(args: argparse.Namespace) -> int:
         if args.dry_run:
             ok(f"  DRY-RUN — 여기서 `gh pr merge {pr_num} --squash --delete-branch` 를 실행한다.")
             return 0
+        # CI 가 검사한 커밋 = 머지되는 커밋. 체크 확인 뒤 누가 push 하면 검사 안 된 커밋이 섞인다
+        # (팀 repo 관행 `--match-head-commit`, METH-149). 로컬에 미푸시 커밋이 있어도 여기서 멈춘다.
+        head_sha = subprocess.check_output(["git", "-C", str(target), "rev-parse", "HEAD"], text=True).strip()
         rc = subprocess.call(
-            ["gh", "pr", "merge", str(pr_num), "--squash", "--delete-branch"],
+            ["gh", "pr", "merge", str(pr_num), "--squash", "--delete-branch", "--match-head-commit", head_sha],
             cwd=str(target),
         )
         if rc != 0:
@@ -1793,6 +2323,7 @@ def cmd_land(args: argparse.Namespace) -> int:
             state, _sha = _pr_merge_info(target, pr_num)
             if state != "MERGED":
                 err(f"머지 실패 — 충돌·권한·보호 규칙을 확인. (PR 상태: {state or '조회 불가'})")
+                err(f"  PR head 가 로컬 HEAD({head_sha[:8]})와 다르면(미푸시·타인 push) 동기화 후 CI 를 다시 기다린다.")
                 return 1
             warn("  머지는 성공 — 로컬 정리(브랜치 삭제·체크아웃)만 실패. 재머지 금지, 동기화로 진행.")
     else:
@@ -1830,7 +2361,10 @@ def cmd_land(args: argparse.Namespace) -> int:
 
     ok(f"land 완료 — PR #{pr_num} 이 {default_branch} 에 도달(squash {check_sha[:8]}). "
        "이제 TODO Done 전이가 기계적으로 정당하다.")
-    print("  다음: TODO Done 이동 → HANDOFF/checkpoint 갱신 → ship")
+    if getattr(args, "no_record", False) or getattr(args, "no_sync", False):
+        print("  다음: TODO Done 이동 → HANDOFF/checkpoint 갱신 → ship")
+    else:
+        _land_record(target, pr_num, check_sha, _pr_todo_ids(pr, branch), default_branch)
     return 0
 
 
@@ -2851,14 +3385,48 @@ def cmd_ship(args: argparse.Namespace) -> int:
     # 이렇게 해야 wrap-state 와 라이브 파일이 동일 commit 에 패키징되어
     # 새 clone/pull 후의 wrap 검증이 일관됨 (sha matches → 다음 ship 은 *진짜
     # 변경*만 통과).
-    try:
-        commit_wrap_state(target)
-    except Exception as e:
-        warn(f"wrap-state 사전 갱신 실패: {e}")
-    if not args.no_add_all:
+    # wrap-state.json 은 더 이상 커밋하지 않는다 — baseline 은 HEAD 에서 재계산(METH-147).
+    # 생성물 2종이 추적 중이면 인덱스에서 뺀다(파일은 남긴다). 한 번 빠지면 .gitignore 가 막는다.
+    _ensure_generated_ignored(target)
+    for rel in GENERATED_PATHS:
+        subprocess.run(["git", "-C", str(target), "rm", "-q", "--cached", "--ignore-unmatch", rel],
+                       capture_output=True)
+    shared_block = _shared_checkout_foreign_files(target)
+    if shared_block and not args.allow_shared:
+        err(f"공유 체크아웃이다(워크트리 {shared_block[0]}개) — `git add -A` 가 남의 미커밋 파일을 담을 수 있다 "
+            f"(icons 실사고 2건: 다른 세션의 회색상자가 main 에 올라감). 커밋 대상 후보:")
+        for path in shared_block[1][:12]:
+            err(f"    {path}")
+        if len(shared_block[1]) > 12:
+            err(f"    … 외 {len(shared_block[1]) - 12}건")
+        err("전부 이 세션 것이면 --allow-shared 로 진행. 아니면 지침 30 §1 — 격리 워크트리에서 다시 시작.")
+        return 1
+    if args.no_add_all:
+        # 인덱스를 그대로 커밋하는 경로 — 무엇이 담겼는지 밝힌다(METH-142).
+        external = _externally_staged(target)
+        if external and not args.index_verified:
+            err("인덱스에 이 세션이 만들지 않았을 수 있는 스테이징이 있다 "
+                f"({len(external)}건) — 공유 체크아웃이면 남의 미완성 작업이 함께 커밋된다:")
+            for path in external[:10]:
+                err(f"    {path}")
+            if len(external) > 10:
+                err(f"    … 외 {len(external) - 10}건")
+            err("인덱스를 확인했고 전부 이 작업의 것이면 --index-verified 로 진행하거나, "
+                "격리 워크트리에서 다시 시작한다(지침 08 §9).")
+            return 1
+    else:
         rc = subprocess.call(["git", "-C", str(target), "add", "-A"])
         if rc != 0:
             err("git add 실패.")
+            return 1
+        big = _large_new_files(target)
+        if big and not getattr(args, "allow_large", False):
+            err(f"`git add -A` 가 새 대용량 파일 {len(big)}건을 담았다 — 이 작업의 것인지 확인하라:")
+            for path, size in big[:10]:
+                err(f"    {size / 1_048_576:.1f}MB  {path}")
+            err("lifeManager 실사고: 무관한 문서 pptx·pdf 2.4MB 가 다른 기능 커밋에 섞여 main 에 남았다.")
+            err("이 작업의 산출물이면 --allow-large, 아니면 `git reset -q <path>` 후 .gitignore 또는 다른 위치로.")
+            subprocess.run(["git", "-C", str(target), "reset", "-q"], capture_output=True)
             return 1
     # 변경이 staged 됐는지 확인
     diff_rc = subprocess.call(
@@ -2926,10 +3494,21 @@ def cmd_ship(args: argparse.Namespace) -> int:
     # 8) (선택) land — 머지 착지까지 이어서
     if getattr(args, "land", False):
         info("ship: 8/8 — land (머지 착지)")
+        if _pr_for_branch(target, branch) is None:
+            # invest-ops 실측: `ship --land` 가 «PR 없음»에서 멈추고 다음 명령을 몰라 8분 — land 는
+            # PR 을 전제하므로, 착지를 요청한 ship 이 PR 을 연다(제목·본문 = 커밋 메시지, METH-149).
+            base = (_git_remote_default_ref(target) or "origin/main").rsplit("/", 1)[-1]
+            cr = subprocess.run(["gh", "pr", "create", "--fill", "--base", base],
+                                cwd=str(target), capture_output=True, text=True)
+            if cr.returncode != 0:
+                err(f"PR 생성 실패 — `gh pr create --fill --base {base}` 후 `methodology land`: "
+                    f"{(cr.stderr or '').strip()[:200]}")
+                return 1
+            ok(f"  PR 생성: {cr.stdout.strip()}")
         land_args = argparse.Namespace(
             path=str(target), dry_run=False,
             no_ci_check=getattr(args, "no_ci_check", False),
-            no_sync=False,
+            local_ci=False, no_sync=False, no_record=False,
         )
         return cmd_land(land_args)
     return 0
@@ -3030,6 +3609,22 @@ EOF_REFS
   fi
 fi
 
+# 이 push 가 올리는 커밋 범위 — sync 경로 판정에 쓴다(METH-142).
+# 원격에 없는 브랜치(RSHA=0)면 범위를 못 잡으므로 HEAD 단일 커밋으로 본다.
+PUSH_RANGE="HEAD~1..HEAD"
+if [ -n "$REFS" ]; then
+  while read -r LREF LSHA RREF RSHA; do
+    [ -z "$LREF" ] && continue
+    case "$RSHA" in
+      0000000000000000000000000000000000000000|"") continue ;;
+    esac
+    PUSH_RANGE="$RSHA..$LSHA"
+    break
+  done <<EOF_RANGE
+$REFS
+EOF_RANGE
+fi
+
 # ship 이 호출한 push 인 경우 wrap 재실행 skip
 # (ship step 1 에서 이미 wrap --strict 통과 + step 6 직전 wrap-state 동기화 →
 #  이 시점 wrap 은 항상 sha 일치 = fail. 직접 git push 시는 env 미설정으로 정상 실행).
@@ -3038,21 +3633,67 @@ if [ -n "$METHODOLOGY_SHIP_IN_PROGRESS" ]; then
   exit 0
 fi
 
-# 방법론 sync commit 면제 (METH-022):
+# 방법론 sync commit 면제 (METH-022 · 판정 방식 METH-142):
 # 본 저장소의 방법론 자산을 적용 프로젝트로 전파하는 commit 은 라이브 파일
 # (HANDOFF/TODO/checkpoint/observation) 갱신을 동반하지 않으므로 wrap --strict
 # 가 정당하게 실패한다. 매번 --no-verify 수동 우회는 마찰 + 우회 습관화 위험.
-# HEAD commit 메시지가 sync 패턴이면 manifest-check 만 유지하고 wrap skip.
+#
+# 판정은 **변경 경로**로 한다 — 예전엔 커밋 메시지 접두어 목록으로만 판정해서
+# `chore: 방법론 sync …`(실제로 쓰이는 한국어 메시지)가 목록에 없어 push 가 막혔다.
+# 같은 마찰이 3회 재발했다(METH-142 전파 중 2 repo). 메시지는 사람이 매번 다르게 쓰고
+# 경로는 도구가 정한다 — 판정은 도구가 정하는 쪽에 건다.
+# 조건 둘 다 만족해야 skip: ① 푸시되는 변경 경로가 *전부* 방법론 관리 경로
+# ② 커밋 메시지에 sync 의도 표시(chore + sync). ②는 사람이 손으로 고친 지침 편집이
+# 조용히 wrap 을 건너뛰지 않게 하는 잠금장치다.
 HEAD_MSG=$(git log -1 --pretty=%s 2>/dev/null || echo "")
 case "$HEAD_MSG" in
-  "chore(methodology): sync"*|"chore: sync methodology"*|"chore(methodology): v"*"마이그레이션"*)
-    echo "[methodology hook] 방법론 sync commit 감지 — wrap skip (manifest-check 는 통과함)"
-    echo "  ($HEAD_MSG)"
+  "chore(methodology): v"*"마이그레이션"*)
+    echo "[methodology hook] 방법론 마이그레이션 commit 감지 — wrap skip"
     exit 0
     ;;
 esac
 
-run_guarded "wrap --strict" 300 python3 "$METH" wrap --strict
+case "$HEAD_MSG" in
+  chore*sync*|chore*Sync*|chore*SYNC*)
+    SYNC_INTENT=1 ;;
+  *)
+    SYNC_INTENT=0 ;;
+esac
+
+if [ "$SYNC_INTENT" = "1" ]; then
+  # core.quotePath=false — 기본값이면 한글 경로가 "20_guides/30_\353\217\231..." 로
+  # 따옴표+8진 이스케이프되어 관리 경로 패턴에 안 걸린다(ai-icons·lifeManager push 차단 실사고,
+  # 상류 sync 검증에서도 같은 함정이 이미 한 번 기록됨). 경로를 비교할 땐 항상 끈다.
+  CHANGED=$(git -c core.quotePath=false diff --name-only "$PUSH_RANGE" 2>/dev/null)
+  if [ -n "$CHANGED" ]; then
+    SHARED=$(python3 "$METH" shared-paths 2>/dev/null)
+    OUTSIDE=0
+    if [ -z "$SHARED" ]; then
+      OUTSIDE=1   # 목록을 못 얻으면 판정 불가 — 안전측(검증 진행)
+    else
+      for F in $CHANGED; do
+        MATCHED=0
+        for S in $SHARED; do
+          case "$F" in
+            "$S"|"$S"/*) MATCHED=1; break ;;
+          esac
+        done
+        [ "$MATCHED" = "0" ] && { OUTSIDE=1; break; }
+      done
+    fi
+    if [ "$OUTSIDE" = "0" ]; then
+      echo "[methodology hook] 방법론 sync push 감지 — 변경이 전부 관리 경로 → wrap skip (manifest-check 는 통과함)"
+      echo "  ($HEAD_MSG)"
+      exit 0
+    fi
+    echo "[methodology hook] sync 메시지지만 관리 경로 밖 변경이 있다 — wrap 검증 진행"
+  fi
+fi
+
+# --read-only (METH-146): 훅은 검사만 한다. 예전엔 여기서 wrap 이 프롬프팅 리포트를
+# 재생성하고 wrap-state 를 부트스트랩해 *push 가 실패해도* repo 가 dirty 로 남았다 —
+# 다음 sync-all 이 그것을 «진행 중 작업»으로 보고 skip 하는 오판이 하루 2회 났다.
+run_guarded "wrap --strict" 300 python3 "$METH" wrap --strict --read-only
 """
 
     if args.action == "install":
@@ -3570,6 +4211,19 @@ def current_git_head(target: Path) -> str | None:
         return None
 
 
+def _observations_updated_today(target: Path, cur_obs: list[str]) -> list[str]:
+    """오늘(UTC·로컬) 날짜 파일명의 관찰로그 중 HEAD 대비 내용이 바뀐 것 (METH-151 D3)."""
+    days = {datetime.now(timezone.utc).strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d")}
+    out = []
+    for rel in cur_obs:
+        if not Path(rel).name[:10] in days:
+            continue
+        head = _git_blob_sha256(target, rel)
+        if head is not None and head != file_sha256(target / rel):
+            out.append(rel)
+    return out
+
+
 def list_observation_files(target: Path) -> list[str]:
     """관찰 로그 파일들의 relative path 리스트 (정렬됨).
 
@@ -3584,6 +4238,50 @@ def list_observation_files(target: Path) -> list[str]:
                     continue
                 out.append(str(f.relative_to(target)))
     return sorted(out)
+
+
+def _git_blob_sha256(target: Path, rel: str, ref: str = "HEAD") -> str | None:
+    """`ref:rel` 블롭의 sha256 — 없으면 None."""
+    try:
+        data = subprocess.check_output(
+            ["git", "-C", str(target), "show", f"{ref}:{rel}"], stderr=subprocess.DEVNULL)
+    except Exception:  # noqa: BLE001
+        return None
+    return hashlib.sha256(data).hexdigest()
+
+
+def head_wrap_state(target: Path) -> dict[str, Any] | None:
+    """wrap baseline 을 **HEAD 에서 재계산** — wrap-state.json 을 커밋하지 않는다 (METH-147 판단 ①).
+
+    예전엔 ship 이 커밋 직전 `.ai/wrap-state.json` 을 써서 같은 커밋에 실었다. 병렬 세션이
+    늘자 그 파일이 모든 PR 에 실려 **PR 13건 중 11건이 이 파일과 라이브 파일 충돌로
+    리베이스**됐다(icons 2026-09-07~09, 내용 충돌 0). baseline 은 «마지막 커밋의 라이브
+    파일»이라는 뜻이고, 그것은 git 이 이미 갖고 있다 — HEAD 의 블롭 sha 를 읽으면 같은 값이다.
+    non-git 디렉터리에서는 None → 호출부가 json 폴백을 쓴다.
+    """
+    head = current_git_head(target)
+    if head is None:
+        return None
+    files: dict[str, Any] = {}
+    for name, rel in _WRAP_TRACKED:
+        files[name] = {"sha256": _git_blob_sha256(target, rel)}
+    try:
+        tracked = subprocess.check_output(
+            ["git", "-C", str(target), "-c", "core.quotePath=false", "ls-tree", "-r", "--name-only", "HEAD"],
+            text=True, stderr=subprocess.DEVNULL).splitlines()
+    except Exception:  # noqa: BLE001
+        tracked = []
+    obs_dirs = tuple(d.rstrip("/") + "/" for d in _wrap_obs_dirs(target))
+    validated = sorted(
+        f for f in tracked
+        if f.startswith(obs_dirs) and f.endswith(".md") and not Path(f).name.startswith("_"))
+    return {
+        "version": _WRAP_STATE_VERSION,
+        "source": "HEAD",
+        "last_validated_commit": head,
+        "files": files,
+        "observations": {"validated_files": validated},
+    }
 
 
 def bootstrap_wrap_state(target: Path) -> dict[str, Any]:
@@ -3631,6 +4329,19 @@ LIVE_FILE_LINE_LIMITS = {
     ".ai/checkpoint.md": 200,   # 백서 §2-2: ≤200줄
 }
 TODO_DONE_SOFT_CAP = 6          # 템플릿 규정: 최근 완료 ~4건만 유지
+# METH-149 (전수조사 2026-11): 줄수 한도는 «긴 줄»로 우회된다 — gamblescan HANDOFF 149줄/70KB
+# (줄당 470B)·cafe24 148줄/92KB(최장 23,885자)·drip-chat-planning checkpoint 70KB·icons-ax
+# CLAUDE.md 88줄/47KB. 6개 repo 가 줄수만 지키며 비대해졌다. 글자 수(한글 1자=1)와 줄 길이를
+# 함께 본다. **경고만** 낸다 — rotate 가 아직 긴 줄·서사를 자동 회전하지 못하므로 경성 fail 은
+# 탈출구 없는 차단이 된다(METH-122 원칙: fail-closed 에는 기계 탈출구가 있어야 한다).
+LIVE_FILE_CHAR_LIMITS = {
+    "HANDOFF.md": 12_000,
+    ".ai/checkpoint.md": 16_000,
+    "CLAUDE.md": 20_000,
+    "AGENTS.md": 20_000,
+}
+LIVE_FILE_MAX_LINE_CHARS = 1_000    # 상태 보드 한 줄 — Working-on 1,516자·Recent 23,885자 실측
+HANDOFF_RECENT_SOFT_CAP = 10        # Recent Changes 불릿 — drip-chat-planning 71건 실측 (rotate 는 5건 유지)
 # METH-122 (전수조사 P3): 경고만으로는 안 지켜졌다 — cafe24 checkpoint 345줄/342KB·
 # gamblescan TODO 761줄 실증. 규정의 2배(경성 한도) 초과 시 wrap --strict 가 fail —
 # `methodology rotate` 로 기계 회전하면 즉시 해소되므로 fail-closed 의 탈출구가 있다.
@@ -3642,8 +4353,19 @@ LIVE_ARCHIVE_DIR = Path("40_dev/snapshots/live-archive")
 STALE_DAYS = 7                  # 신선도 경고 임계 (HANDOFF 날짜·wrap 미실행 vs 최근 커밋)
 
 
+# `## Done (최근 6건 …)`·`## Blocked — 외부 게이트` 처럼 제목 뒤 부연을 단 repo 가 많다(gamblescan).
+# 완전일치로 찾으면 Done 상한이 무력해지고 칸반 섹션이 «부재»로 오판된다(METH-149).
+DONE_SECTION_RE = r"^##\s+Done\b[^\n]*$(.*?)(?=^##\s|\Z)"
+
+
+def _kanban_heading(line: str, sec: str) -> bool:
+    """`## Done`·`## Done (최근 6건)`·`## Blocked — 외부 게이트` 를 같은 섹션으로 본다."""
+    t = line.strip()
+    return t == sec or bool(re.match(rf"^{re.escape(sec)}(?:\s+[\(\[—–:-]|\s*$)", t))
+
+
 def _todo_done_count(text: str) -> int:
-    section = re.search(r"^##\s+Done\s*$(.*?)(?=^##\s|\Z)", text, re.MULTILINE | re.DOTALL)
+    section = re.search(DONE_SECTION_RE, text, re.MULTILINE | re.DOTALL)
     return len(re.findall(r"^###\s+", section.group(1), re.MULTILINE)) if section else 0
 
 
@@ -3664,26 +4386,138 @@ def live_file_hard_violations(target: Path) -> list[str]:
     return violations
 
 
-def _rotate_todo_done(text: str, keep: int = ROTATE_KEEP_DONE) -> tuple[str, str, int]:
+# ─── 라이브 파일 구조 검증 (METH-142) ──────────────────────────────────────
+# 사이즈 린트가 «너무 큰가»를 본다면 이것은 «파싱 가능한가»를 본다.
+# 계기(상류 실사고 2026-09-02): 라이브 파일을 인덱스 기반으로 편집하다 `# HANDOFF.md`
+# 제목 줄을 덮어썼고, 그 뒤 Working-on 갱신이 그 자리에 쌓여 **원래 Working-on 이
+# 스테일인 채 둘이 공존**했다. boot 파서는 첫 매치를 읽으므로 출력은 정상으로 보였고,
+# PR 6개를 지나도록 아무도 못 봤다. 지침 19 §8b.3(편집 후 구조 검증)의 기계화다.
+#
+# **판정 경계**: 모호성(중복)만 error 로 막고, 부재·형식 드리프트는 warn 이다.
+# 다운스트림 12곳 실측 결과 Working-on 부재 7곳·H1 부재 1곳·칸반 섹션 부재 2곳이라,
+# 이것들을 fail 로 잡으면 가드가 매 push 를 막아 곧 무시당한다(지침 23 §4-3: 규칙을
+# 넓히기 전에 신규 적중분을 전수 재측정). 중복은 실측 0건 — 즉 오탐 없이 사고만 잡는다.
+
+WORKING_ON_RE = r"^-\s+(?:\*\*)?Working on(?:\*\*)?[ \t]*:"
+KANBAN_SECTIONS = ("## Backlog", "## Ready", "## InProgress", "## Blocked", "## Done")
+
+
+def live_file_structure_issues(target: Path) -> tuple[list[str], list[str]]:
+    """라이브 파일 구조 검사 — (errors, warnings).
+
+    errors = 파서가 «조용히 하나를 골라야 하는» 모호성. warnings = 부재·드리프트.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    h = target / "HANDOFF.md"
+    if h.exists():
+        lines = read_text(h).splitlines()
+        working = [i + 1 for i, l in enumerate(lines) if re.match(WORKING_ON_RE, l)]
+        if len(working) > 1:
+            errors.append(
+                f"HANDOFF.md: 'Working on' 불릿이 {len(working)}개다(행 {working}) — "
+                "boot 는 첫 줄만 읽으므로 나머지는 스테일인 채 숨는다. 한 줄만 남겨라")
+        elif not working:
+            warnings.append("HANDOFF.md: 'Working on' 불릿이 없다 — boot 가 현재 포커스를 못 보여준다")
+        first = next((l for l in lines if l.strip()), "")
+        if not first.startswith("# "):
+            warnings.append(
+                f"HANDOFF.md: 첫 내용 줄이 제목(`# `)이 아니다 — 편집 사고로 제목이 덮였을 수 있다: {first[:40]!r}")
+        for sec in ("## Active Links", "## Recent Changes"):
+            if sum(1 for l in lines if l.strip() == sec) > 1:
+                errors.append(f"HANDOFF.md: '{sec}' 섹션이 중복이다 — 어느 쪽이 정본인지 파서가 모른다")
+
+    todo = target / "TODO.md"
+    if todo.exists():
+        lines = read_text(todo).splitlines()
+        for i, l in enumerate(lines):
+            # ai-icons 실측: 머리 주석 속 백틱이 분절돼 «## InProgress`, `## Blocked`, `## Done» 한 줄이
+            # 됐고, «Done 으로 이동» 편집이 그 아래 가짜 구획으로 들어가 완료 6건이 Done 밖에 숨었다.
+            if l.startswith("## ") and l.count("## ") > 1:
+                errors.append(f"TODO.md: {i + 1}행이 여러 섹션 제목을 한 줄에 품었다 — 깨진 헤더다: {l[:60]!r}")
+        for sec in KANBAN_SECTIONS:
+            n = sum(1 for l in lines if _kanban_heading(l, sec))
+            if n > 1:
+                errors.append(f"TODO.md: 칸반 섹션 '{sec}' 이 {n}개다 — 대시보드 파싱이 갈린다")
+            elif n == 0:
+                warnings.append(f"TODO.md: 칸반 섹션 '{sec}' 이 없다 — 대시보드에서 그 칼럼이 비어 보인다")
+
+    return errors, warnings
+
+
+class RotateOrderError(Exception):
+    """Done 문서 순서가 최신-우선 관례를 어겼다 — 조용한 아카이브 대신 중단(METH-142).
+
+    캡슐 `icons__2026-08-22_rotate-assumes-sorted-done`: `items[:keep]` 는 «문서 상위
+    N건»인데 docstring 은 «최신 keep건»이라 주장했다. 순서가 어긋나면 최신 항목이
+    조용히 아카이브된다(지침 23 §1-1 무음 실패). 상류 TODO 에서도 재현 — METH-116
+    (2026-07-25)이 131·136·135(2026-08-07)보다 위에 있었다.
+    """
+
+
+def _item_date(item: str) -> str | None:
+    """Done 항목에서 대표 날짜(ISO) — 없으면 None.
+
+    날짜 필드가 없는 항목이 흔해서(상류 실측 9건 중 6건) *정렬 키*로는 못 쓴다.
+    읽어낼 수 있는 날짜들의 **최대값**을 그 항목의 시점으로 본다 — 착수일이 아니라
+    가장 최근 활동일이 완료 시점에 가깝기 때문(METH-116 은 07-25 착수·08-22 완료).
+    """
+    dates = re.findall(r"\d{4}-\d{2}-\d{2}", item)
+    return max(dates) if dates else None
+
+
+def _assert_done_order(kept: list[str], moved: list[str]) -> None:
+    """아카이브 경계가 날짜를 역전시키면 RotateOrderError.
+
+    검사 범위는 **경계를 넘는 역전**뿐이다 — 유지 항목 사이의 순서는 피해가 없다.
+    날짜가 없는 항목은 판정 대상에서 빠진다(지침 23 §1-2: 검사 못 함 ≠ 깨끗함 —
+    호출부가 미판정 건수를 보고한다).
+    """
+    kept_dates = [d for d in (_item_date(i) for i in kept) if d]
+    if not kept_dates:
+        return
+    oldest_kept = min(kept_dates)
+    for item in moved:
+        d = _item_date(item)
+        if d and d > oldest_kept:
+            title = item.splitlines()[0].lstrip("# ").strip()
+            return _raise_order_error(title, d, oldest_kept)
+
+
+def _raise_order_error(title: str, moved_date: str, oldest_kept: str) -> None:
+    raise RotateOrderError(
+        f"아카이브 대상 «{title}»({moved_date})이 유지 대상 최고참({oldest_kept})보다 최신이다 — "
+        "Done 순서가 최신-우선이 아니다. TODO 를 재정렬한 뒤 다시 실행하거나, "
+        "순서가 의도된 것이면 --force-order 로 진행한다."
+    )
+
+
+def _rotate_todo_done(text: str, keep: int = ROTATE_KEEP_DONE,
+                      force_order: bool = False) -> tuple[str, str, int, int]:
     """TODO Done 섹션에서 최신 keep건만 남기고 나머지를 아카이브 블록으로 분리.
 
-    반환: (새 TODO 텍스트, 아카이브 md, 이관 건수). Done 항목 순서는 최신-우선 관례를 따른다.
+    반환: (새 TODO 텍스트, 아카이브 md, 이관 건수, 날짜 미판정 건수).
+    Done 항목 순서는 최신-우선 관례를 따르며, **그 가정을 검사한다**(METH-142).
     """
-    m = re.search(r"^##\s+Done\s*$\n(.*?)(?=^##\s|\Z)", text, re.MULTILINE | re.DOTALL)
+    m = re.search(r"^##\s+Done\b[^\n]*$\n(.*?)(?=^##\s|\Z)", text, re.MULTILINE | re.DOTALL)
     if not m:
-        return text, "", 0
+        return text, "", 0, 0
     body = m.group(1)
     parts = re.split(r"(?=^###\s+)", body, flags=re.MULTILINE)
     head = parts[0] if parts and not parts[0].startswith("### ") else ""
     items = [p for p in parts if p.startswith("### ")]
     if len(items) <= keep:
-        return text, "", 0
+        return text, "", 0, 0
     kept, moved = items[:keep], items[keep:]
+    if not force_order:
+        _assert_done_order(kept, moved)
+    undated = sum(1 for i in items if _item_date(i) is None)
     # 항목 이후의 꼬리 주석(> ...)은 head/kept 에 안 섞이도록 마지막 항목에서 분리하지 않고 그대로 둔다
     new_body = head + "".join(kept)
     new_text = text[:m.start(1)] + new_body + text[m.end(1):]
     archive = "".join(moved).rstrip() + "\n"
-    return new_text, archive, len(moved)
+    return new_text, archive, len(moved), undated
 
 
 def _rotate_recent_changes(text: str, keep: int = ROTATE_KEEP_RECENT) -> tuple[str, str, int]:
@@ -3703,6 +4537,239 @@ def _rotate_recent_changes(text: str, keep: int = ROTATE_KEEP_RECENT) -> tuple[s
     return new_text, archive, len(bullets) - keep
 
 
+# ship 이 커밋하지 않는 생성물 — 관찰로그·HEAD 에서 언제든 재계산된다 (METH-147 판단 ①).
+GENERATED_PATHS: tuple[str, ...] = (".ai/wrap-state.json", "50_resources/prompting-report.md")
+_GENERATED_IGNORE_BLOCK = (
+    "\n# methodology 생성물 — 커밋하지 않는다 (METH-147: PR 충돌의 절반이 이 두 파일이었다)\n"
+    ".ai/wrap-state.json\n50_resources/prompting-report.md\n")
+
+
+def _ensure_generated_ignored(target: Path) -> bool:
+    """`.gitignore` 에 생성물 제외 블록이 없으면 추가(멱등). 추가했으면 True."""
+    gi = target / ".gitignore"
+    cur = read_text(gi) if gi.exists() else ""
+    if all(rel in cur for rel in GENERATED_PATHS):
+        return False
+    write_text(gi, cur.rstrip("\n") + "\n" + _GENERATED_IGNORE_BLOCK)
+    return True
+
+
+def _shared_checkout_foreign_files(target: Path) -> tuple[int, list[str]] | None:
+    """공유 체크아웃(워크트리 ≥2, 현재가 주 체크아웃)이면 (워크트리 수, 커밋 후보 경로) — 아니면 None.
+
+    ship 은 «누구 파일인지» 알 수 없다. 그래서 감지 + 열거 + 확인으로 간다(METH-147, 지침 30 §1
+    의 마지막 방어선). 격리 워크트리 안에서 ship 하면 걸리지 않는다 — 그것이 정본 절차다.
+    """
+    try:
+        wts = subprocess.check_output(["git", "-C", str(target), "worktree", "list", "--porcelain"],
+                                      text=True, stderr=subprocess.DEVNULL)
+        common = subprocess.check_output(["git", "-C", str(target), "rev-parse", "--git-common-dir"],
+                                         text=True, stderr=subprocess.DEVNULL).strip()
+        gitdir = subprocess.check_output(["git", "-C", str(target), "rev-parse", "--git-dir"],
+                                         text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:  # noqa: BLE001
+        return None
+    n = sum(1 for l in wts.splitlines() if l.startswith("worktree "))
+    is_main = (target / common).resolve() == (target / gitdir).resolve() if common and gitdir else False
+    if n < 2 or not is_main:
+        return None
+    try:
+        st = subprocess.check_output(
+            ["git", "-C", str(target), "-c", "core.quotePath=false", "status", "--porcelain", "-uall"],
+            text=True, stderr=subprocess.DEVNULL)
+    except Exception:  # noqa: BLE001
+        return None
+    # METH-151 판단 D4: 추적 파일 수정은 열거하지 않는다 — 워크트리가 있기만 하면 매 ship 에
+    # 발동해 165회 중 91회 우회 학습됐고, 실사고(남의 미커밋 관찰로그 4건 흡수)는 못 막았다
+    # (drip-chat-planning e231a62). 실사고 유형은 «남이 만든 새 파일»이다 — 미추적 신규만 본다.
+    # 이 세션의 관찰로그 1건(가장 최근 것)은 정상 산출물이라 제외하고, 2건 이상이면 전부 보인다.
+    untracked = [l[3:].strip().strip('"') for l in st.splitlines() if l.startswith("?? ")]
+    obs = sorted((u for u in untracked if "/ai_observations/" in f"/{u}"),
+                 key=lambda u: (target / u).stat().st_mtime if (target / u).exists() else 0)
+    if len(obs) == 1:
+        untracked = [u for u in untracked if u != obs[0]]
+    return (n, untracked) if untracked else None
+
+
+LARGE_NEW_FILE_BYTES = 1_048_576
+
+
+def _large_new_files(target: Path) -> list[tuple[str, int]]:
+    """인덱스에 새로 추가된(A) 1MB 이상 파일 — [(경로, 바이트)] (METH-149)."""
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(target), "-c", "core.quotePath=false", "diff", "--cached",
+             "--name-only", "--diff-filter=A"], text=True, stderr=subprocess.DEVNULL)
+    except Exception:  # noqa: BLE001
+        return []
+    big = []
+    for rel in (l.strip() for l in out.splitlines() if l.strip()):
+        fp = target / rel
+        try:
+            size = fp.stat().st_size
+        except OSError:
+            continue
+        if size >= LARGE_NEW_FILE_BYTES:
+            big.append((rel, size))
+    return big
+
+
+def _externally_staged(target: Path) -> list[str]:
+    """인덱스에 있는데 작업트리 변경이 아닌 경로 — 남이 스테이징해 둔 것 (METH-142).
+
+    공유 체크아웃에서 `--no-add-all` 로 ship 하면 **인덱스를 그대로 커밋**한다.
+    다른 세션이 자기 작업을 스테이징해 두었으면 그것이 함께 커밋된다 — 실사고:
+    미완성 참조가 섞여 프로덕션이 깨졌다(캡슐 icons__2026-08-27_ship-add-all-on-shared-checkout).
+    staged 집합에서 «작업트리에서도 수정 중»인 경로를 뺀 나머지를 외부분으로 본다.
+    """
+    def _names(*args: str) -> set[str]:
+        try:
+            out = subprocess.check_output(
+                ["git", "-C", str(target), *args], text=True, stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            return set()
+        return {l.strip() for l in out.splitlines() if l.strip()}
+
+    staged = _names("diff", "--cached", "--name-only")
+    dirty = _names("diff", "--name-only")            # 작업트리 미스테이징 변경
+    untracked = _names("ls-files", "--others", "--exclude-standard")
+    return sorted(staged - dirty - untracked)
+
+
+def _max_todo_id(text: str, prefix: str) -> int:
+    nums = [int(n) for n in re.findall(rf"\b{re.escape(prefix)}-(\d+)\b", text)]
+    return max(nums) if nums else 0
+
+
+def _infer_todo_prefix(text: str) -> str | None:
+    """TODO 항목 제목(`### PREFIX-N`)의 최빈 접두어 — reserve 기본값 (METH-149).
+
+    기본값이 METH 고정이라 lifeManager 에서 3회 `id/METH-1·2·3` 이 원격에 만들어졌다.
+    """
+    found = re.findall(r"^###\s+(?:~~)?([A-Z][A-Z0-9]*)-\d+\b", text, re.MULTILINE)
+    if not found:
+        return None
+    counts: dict[str, int] = {}
+    for f in found:
+        counts[f] = counts.get(f, 0) + 1
+    return max(counts.items(), key=lambda kv: kv[1])[0]
+
+
+def _todo_id_width(text: str, prefix: str) -> int:
+    """기존 ID 의 0 채움 폭 — `I18N-002` 류 repo 에 `id/I18N-2` 를 발급하던 불일치 (gamblescan)."""
+    widths = [len(n) for n in re.findall(rf"\b{re.escape(prefix)}-(\d+)\b", text) if n.startswith("0")]
+    return max(widths) if widths else 0
+
+
+def _todo_archive_texts(target: Path) -> list[str]:
+    """회전된 TODO 아카이브 — 여기 있는 번호도 «쓴 번호»다(gamblescan I18N-002·NEWS-005 재발급)."""
+    out: list[str] = []
+    for pattern in ("40_dev/snapshots/live-archive/*", "40_dev/snapshots/*todo*archive*", "docs/snapshots/*todo*archive*"):
+        for f in target.glob(pattern):
+            if f.is_file() and f.suffix == ".md":
+                try:
+                    out.append(read_text(f))
+                except Exception:  # noqa: BLE001
+                    continue
+    return out
+
+
+def cmd_reserve(args: argparse.Namespace) -> int:
+    """TODO ID 원자적 예약 — 원격 태그 `id/<PREFIX>-N` (METH-147 판단 ③).
+
+    병렬 세션이 같은 번호를 선점해 충돌·커밋 혼입이 월 3건 이상(cafe24-renewal·icons).
+    세션 접미사 ID 는 안정 ID 원칙(지침 02)과 대시보드 파싱을 흔든다. 대신 **원격 태그
+    생성의 원자성**을 쓴다 — 같은 이름의 태그 push 는 둘 중 하나만 성공한다. 번호는
+    origin/main·로컬 TODO·기존 예약 태그의 최댓값 + 1 부터 시도하고, 선점당하면 다음 번호.
+    """
+    target = Path(args.path or ".").resolve()
+    tp0 = target / "TODO.md"
+    prefix = args.prefix or (_infer_todo_prefix(read_text(tp0)) if tp0.exists() else None)
+    if not prefix:
+        err("ID 접두어를 TODO.md 에서 추론하지 못했다 — `--prefix <PREFIX>` 로 지정하라.")
+        return 1
+    if not args.prefix:
+        info(f"접두어 {prefix} — TODO.md 최빈 접두어에서 추론 (다르면 --prefix)")
+    subprocess.run(["git", "-C", str(target), "fetch", "-q", "origin", "--tags"], capture_output=True)
+    texts = []
+    for src in (["show", "origin/main:TODO.md"], ["show", "origin/master:TODO.md"]):
+        try:
+            texts.append(subprocess.check_output(["git", "-C", str(target), *src], text=True, stderr=subprocess.DEVNULL))
+            break
+        except Exception:  # noqa: BLE001
+            continue
+    tp = target / "TODO.md"
+    if tp.exists():
+        texts.append(read_text(tp))
+    try:
+        tags = subprocess.check_output(["git", "-C", str(target), "tag", "-l", f"id/{prefix}-*"],
+                                       text=True, stderr=subprocess.DEVNULL)
+    except Exception:  # noqa: BLE001
+        tags = ""
+    texts.extend(_todo_archive_texts(target))
+    n = max([_max_todo_id(x, prefix) for x in texts] + [_max_todo_id(tags, prefix)]) + 1
+    width = max([_todo_id_width(x, prefix) for x in texts] + [0])
+    for _ in range(8):
+        num = str(n).zfill(width)
+        tag = f"id/{prefix}-{num}"
+        mk = subprocess.run(["git", "-C", str(target), "tag", tag], capture_output=True)
+        if mk.returncode != 0:
+            n += 1
+            continue
+        push = subprocess.run(["git", "-C", str(target), "push", "-q", "origin", f"refs/tags/{tag}"],
+                              capture_output=True, text=True)
+        if push.returncode == 0:
+            ok(f"예약: {prefix}-{num}  (원격 태그 {tag})")
+            print(f"{prefix}-{num}")
+            return 0
+        subprocess.run(["git", "-C", str(target), "tag", "-d", tag], capture_output=True)
+        if "already exists" in (push.stderr or "") or "rejected" in (push.stderr or ""):
+            n += 1   # 다른 세션이 먼저 잡았다
+            continue
+        err(f"태그 push 실패: {push.stderr.strip()[:200]}")
+        return 1
+    err("8회 시도 내 예약 실패 — 원격 태그 상태를 확인하라(`git ls-remote --tags origin 'id/*'`)")
+    return 1
+
+
+def cmd_shared_paths(args: argparse.Namespace) -> int:
+    """sync 가 덮어쓰는 방법론 관리 경로 목록 출력 — 훅의 sync 판정 단일 소스 (METH-142).
+
+    pre-push 훅이 «이 push 가 방법론 sync 인가»를 커밋 메시지가 아니라 **변경 경로**로
+    판정하려면 이 목록이 필요하다. 셸에 한 벌 더 복사하면 MANIFEST 가 바뀔 때 갈라진다
+    (지침 19 §8b.1). 한 줄에 하나씩, repo 상대경로.
+    """
+    for rel in MANIFEST["shared_paths"]:
+        print(rel)
+    # managed_files(CLAUDE.md·AGENTS.md 등 마커 머지 파일)도 sync 가 갱신한다 — 빠지면 CLAUDE.md
+    # 한 줄이 바뀐 sync push 가 «관리 경로 밖 변경»으로 wrap 검증에 걸린다(METH-147 전파에서
+    # 훅 설치 3 repo 전부 차단 실사고).
+    for item in MANIFEST.get("managed_files", []):
+        rel = item[1] if isinstance(item, (list, tuple)) and len(item) > 1 else (item if isinstance(item, str) else None)
+        if rel:
+            print(rel)
+    print(".methodology-version")   # sync 가 함께 갱신하는 버전 파일
+    return 0
+
+
+def cmd_dev_check(args: argparse.Namespace) -> int:
+    """이 프로젝트에서 뜬 dev 서버 감지 — build 충돌 가드의 단일 판정 지점 (METH-142).
+
+    `60_tools/build-guard.sh` 가 이 명령을 호출한다. 같은 판정을 셸에 한 벌 더 두면
+    한쪽만 고쳐진다 — 실제로 METH-131 의 cwd 스코프가 파이썬 경로에만 들어가고
+    사람이 지나는 셸 경로는 머신 전역 `pgrep` 인 채로 남았다(캡슐
+    `icons__2026-08-27_build-guard-judge-by-cwd`). 지침 19 §8b.1 의 자기적용.
+
+    exit 0 = 뜬 서버 없음, 1 = 이 프로젝트의 dev 서버 실행 중.
+    """
+    target = Path(args.path or ".").resolve()
+    found = _dev_server_running(target)
+    if found is None:
+        return 0
+    print(found)
+    return 1
+
+
 def cmd_rotate(args: argparse.Namespace) -> int:
     """라이브 파일 기계 회전 — 초과분을 40_dev/snapshots/live-archive/ 로 이관 (METH-122).
 
@@ -3717,11 +4784,19 @@ def cmd_rotate(args: argparse.Namespace) -> int:
 
     todo_p = target / "TODO.md"
     if todo_p.exists():
-        new_text, archive, moved = _rotate_todo_done(read_text(todo_p))
+        try:
+            new_text, archive, moved, undated = _rotate_todo_done(
+                read_text(todo_p), force_order=args.force_order)
+        except RotateOrderError as e:
+            err(f"TODO.md 회전 중단 — {e}")
+            return 1
         if moved:
             header = f"# TODO Done 아카이브 — {today} rotate ({moved}건)\n\n> 정본 이력은 git log·PR. 이 파일은 열람용 사본.\n\n"
             actions.append((todo_p, new_text, arch_dir / f"{today}_todo-done.md", header + archive))
             info(f"TODO.md: Done {moved}건 이관 예정 (최신 {ROTATE_KEEP_DONE}건 유지)")
+            if undated:
+                warn(f"TODO.md: Done {undated}건은 날짜가 없어 순서 검사 대상에서 빠졌다 "
+                     "— 통과가 «순서가 옳다»는 뜻은 아니다(지침 23 §1-2)")
 
     ho_p = target / "HANDOFF.md"
     if ho_p.exists():
@@ -3736,7 +4811,12 @@ def cmd_rotate(args: argparse.Namespace) -> int:
         cp_text = read_text(cp_p)
         cp_lines = cp_text.splitlines(keepends=True)
         limit = LIVE_FILE_LINE_LIMITS[".ai/checkpoint.md"]
-        if len(cp_lines) > limit:
+        kept, archived, n_moved = _rotate_checkpoint_sessions(cp_text)
+        if n_moved:
+            header = f"# checkpoint 세션 절 아카이브 — {today} rotate ({n_moved}절)\n\n"
+            actions.append((cp_p, kept, arch_dir / f"{today}_checkpoint.md", header + archived))
+            info(f"checkpoint: 세션 절 {n_moved}개 이관 예정 (최신 {CHECKPOINT_KEEP_SESSIONS}절 유지)")
+        elif len(cp_lines) > limit:
             keep_n = 40
             stub = "".join(cp_lines[:keep_n]) + (
                 f"\n> (이하 {len(cp_lines) - keep_n}줄은 {LIVE_ARCHIVE_DIR}/{today}_checkpoint.md 로 "
@@ -3759,6 +4839,26 @@ def cmd_rotate(args: argparse.Namespace) -> int:
         ok(f"{live.relative_to(target)} → {arch.relative_to(target)}")
     info("커밋은 ship 으로. wrap 은 회전된 콘텐츠 변경을 갱신으로 인정한다.")
     return 0
+
+
+# METH-151 판단 D1 (ADR-006): checkpoint = **세션별 절**, 최신이 맨 위. 동시 세션 4개 repo 가 이미
+# 이렇게 적응했고(ai-icons 절 30개), «매 세션 덮어씀» 규칙과 지침 30 §6 «맨 위 prepend» 가 서로
+# 어긋나 있었다. 절 = 날짜를 품은 H2(`## 2026-11-09 · slug`). 최신 N절만 남기고 나머지는 아카이브.
+CHECKPOINT_KEEP_SESSIONS = 3
+_CHECKPOINT_SESSION_RE = re.compile(r"^##\s+.*\b\d{4}-\d{2}-\d{2}\b", re.MULTILINE)
+
+
+def _checkpoint_session_count(text: str) -> int:
+    return len(_CHECKPOINT_SESSION_RE.findall(text))
+
+
+def _rotate_checkpoint_sessions(text: str, keep: int = CHECKPOINT_KEEP_SESSIONS) -> tuple[str, str, int]:
+    """(유지 텍스트, 아카이브 텍스트, 이관 절 수). 절이 keep 이하이면 (text, "", 0)."""
+    starts = [m.start() for m in _CHECKPOINT_SESSION_RE.finditer(text)]
+    if len(starts) <= keep:
+        return text, "", 0
+    cut = starts[keep]
+    return text[:cut].rstrip("\n") + "\n", text[cut:], len(starts) - keep
 
 
 def _latest_commit_date(target: Path) -> str | None:
@@ -3827,7 +4927,12 @@ def _dev_server_running(target: Path | None = None) -> str | None:
         return None
     if out.returncode != 0 or not out.stdout.strip():
         return None
-    lines = [l for l in out.stdout.strip().splitlines() if l.strip()]
+    # 자기적중 배제 — `pkill -f "next dev"`·이 가드 자신처럼 *명령 문자열에* 그 낱말을
+    # 담고 있을 뿐인 프로세스(캡슐 build-guard-judge-by-cwd: 오탐 4회 중 1회가 이것).
+    lines = [l for l in out.stdout.strip().splitlines()
+             if l.strip() and not re.search(r"\b(pkill|pgrep|build-guard|methodology\.py)\b", l)]
+    if not lines:
+        return None
     if target is None:
         return lines[0]
     target = target.resolve()
@@ -3857,6 +4962,53 @@ def _process_cwd(pid: str) -> Path | None:
     return None
 
 
+def _live_file_char_warnings(target: Path) -> list[str]:
+    """글자 수·줄 길이·Recent 건수·Done 밖 완료 표기 — 줄수 한도 우회 탐지 (METH-149)."""
+    out: list[str] = []
+    for rel, limit in LIVE_FILE_CHAR_LIMITS.items():
+        p = target / rel
+        if not p.exists():
+            continue
+        text = read_text(p)
+        if len(text) > limit:
+            out.append(f"{rel}: {len(text):,}자 (규정 ≤{limit:,}자, {len(text)/limit:.1f}×) — 줄수는 지켜도 "
+                       "내용이 쌓였다. 서사·완료 이력은 snapshots/live-archive 로 옮기고 요지만 남긴다.")
+        if rel in LIVE_FILE_LINE_LIMITS:
+            long_lines = [(i + 1, len(l)) for i, l in enumerate(text.splitlines())
+                          if len(l) > LIVE_FILE_MAX_LINE_CHARS]
+            if long_lines:
+                worst = max(long_lines, key=lambda t: t[1])
+                out.append(f"{rel}: {LIVE_FILE_MAX_LINE_CHARS:,}자 넘는 줄 {len(long_lines)}개(최장 {worst[0]}행 "
+                           f"{worst[1]:,}자) — 상태 보드는 terse 1줄. 덧붙이기 대신 교체한다.")
+    cp = target / ".ai" / "checkpoint.md"
+    if cp.exists():
+        n = _checkpoint_session_count(read_text(cp))
+        if n > CHECKPOINT_KEEP_SESSIONS:
+            out.append(f".ai/checkpoint.md: 세션 절 {n}개 (유지 {CHECKPOINT_KEEP_SESSIONS}절) — "
+                       "`methodology rotate --checkpoint --apply` 로 오래된 절을 이관.")
+    h = target / "HANDOFF.md"
+    if h.exists():
+        m = re.search(r"^##\s+Recent Changes[^\n]*\n(.*?)(?=^##\s|\Z)", read_text(h), re.MULTILINE | re.DOTALL)
+        if m:
+            n = len(re.findall(r"^-\s+", m.group(1), re.MULTILINE))
+            if n > HANDOFF_RECENT_SOFT_CAP:
+                out.append(f"HANDOFF.md: Recent Changes {n}건 (권장 5건) — `methodology rotate --apply` 로 회전.")
+    t = target / "TODO.md"
+    if t.exists():
+        done_outside = 0
+        current = None
+        for line in read_text(t).splitlines():
+            if line.startswith("## "):
+                current = next((sec for sec in KANBAN_SECTIONS if _kanban_heading(line, sec)), line)
+            elif line.startswith("### ") and current in ("## Backlog", "## Ready", "## InProgress", "## Blocked"):
+                if "✅" in line or re.search(r"~~.+~~", line):
+                    done_outside += 1
+        if done_outside:
+            out.append(f"TODO.md: Done 밖에 완료 표기(✅·취소선) 항목 {done_outside}건 — Done 집계를 우회한다. "
+                       "Done 으로 옮기거나 rotate 로 아카이브(cafe24 실측: Ready 96건 중 93건 ✅).")
+    return out
+
+
 def live_file_size_warnings(target: Path) -> list[str]:
     """라이브 파일 비대화 경고 목록 — wrap·boot 공용.
 
@@ -3874,11 +5026,12 @@ def live_file_size_warnings(target: Path) -> list[str]:
                 f"{rel}: {n}줄 (규정 ≤{limit}줄, {n/limit:.1f}×) — 트리밍 필요. "
                 "오래된 내용은 git·40_dev/snapshots 로 이관하고 요지만 남긴다."
             )
+    warnings.extend(_live_file_char_warnings(target))
     todo_p = target / "TODO.md"
     if todo_p.exists():
         try:
             section = re.search(
-                r"^##\s+Done\s*$(.*?)(?=^##\s|\Z)",
+                DONE_SECTION_RE,
                 read_text(todo_p), re.MULTILINE | re.DOTALL,
             )
             done = len(re.findall(r"^###\s+", section.group(1), re.MULTILINE)) if section else 0
@@ -3906,8 +5059,14 @@ def cmd_wrap(args: argparse.Namespace) -> int:
     info(f"wrap check: {target}  (today={today} UTC)")
     print()
 
-    state = load_wrap_state(target)
+    # baseline = HEAD (git 이면). json 은 non-git 폴백·과거 호환 (METH-147 판단 ①).
+    state = head_wrap_state(target) or load_wrap_state(target)
     bootstrapped = False
+    if state is None and getattr(args, "read_only", False):
+        # 훅 경로(METH-146): 검사만 하고 아무것도 쓰지 않는다. baseline 이 없으면
+        # 판정 불가이므로 pass 시키되 그 사실을 밝힌다 — 부트스트랩은 ship/wrap 몫.
+        warn(".ai/wrap-state.json 없음 — read-only 라 부트스트랩하지 않고 pass (다음 ship 이 baseline 저장)")
+        return 0
     if state is None:
         warn(".ai/wrap-state.json 없음 — 현재 파일 상태를 baseline 으로 부트스트랩.")
         warn("다음 wrap부터는 라이브 파일이 *실제로 변경*되어야 통과합니다.")
@@ -3945,6 +5104,13 @@ def cmd_wrap(args: argparse.Namespace) -> int:
     seen = set((state.get("observations") or {}).get("validated_files", []))
     cur_obs = list_observation_files(target)
     new_obs = [f for f in cur_obs if f not in seen]
+    if not new_obs and not bootstrapped:
+        # METH-151 판단 D3: 같은 세션의 연속 PR·land 재시도는 **오늘 날짜 관찰로그의 갱신**을
+        # 인정한다(`observe --slug <같은> --force`). PR 마다 새 로그를 강제하자 마감·재시도용
+        # 마이크로 로그가 9% 쌓였다(ai-icons). 새 작업 단위는 여전히 새 로그.
+        updated = _observations_updated_today(target, cur_obs)
+        if updated:
+            new_obs = updated
     if bootstrapped:
         checks.append(("ai_observations/", True, "bootstrapped"))
     elif not new_obs:
@@ -4024,11 +5190,26 @@ def cmd_wrap(args: argparse.Namespace) -> int:
         warn(f"사이즈: {w}")
 
     # ── 프롬프팅 리포트 자동 갱신 (METH-118) — 기록이 있으면 wrap 마다 최신화 ──
+    # read-only(훅 경로, METH-146)에서는 건너뛴다: 훅이 남긴 리포트 갱신이 repo 를
+    # dirty 로 만들어 다음 sync-all 이 «진행 중 작업»으로 오인해 skip 했다(하루 2회 실사고).
     try:
-        if _regenerate_prompt_report(target):
+        if not getattr(args, "read_only", False) and _regenerate_prompt_report(target):
             info(f"prompting report 갱신: {PROMPT_REPORT_PATH}")
     except Exception as exc:  # 리포트 실패가 wrap 을 막으면 안 됨
         warn(f"prompting report 갱신 실패(무시): {exc}")
+
+    # ── ADR 인용 검사 (METH-147 #11) — 없는 조항을 인용한 문서는 경고(설계 왜곡의 씨앗) ──
+    for doc, cite in _adr_citations_missing(target)[:10]:
+        warn(f"ADR 인용: {doc} 가 {cite} 를 인용하지만 40_dev/adr/ 에 그 파일이 없다 — 원문 §번호로 바꾸거나 인용을 지운다")
+
+    # ── 구조 검증 (METH-142) — 중복(모호성)은 --strict fail, 부재는 경고 ──
+    struct_errors, struct_warns = live_file_structure_issues(target)
+    for w in struct_warns:
+        warn(f"구조: {w}")
+    for e in struct_errors:
+        err(f"구조(경성): {e}")
+    if struct_errors and args.strict:
+        missing += len(struct_errors)
 
     # ── 경성 한도 (METH-122) — 규정 2배 초과는 --strict fail (탈출구: rotate) ──
     hard = live_file_hard_violations(target)
@@ -4062,6 +5243,65 @@ def _handoff_working_on(txt: str) -> str | None:
     if not m:
         return None
     return m.group(1).strip() or None
+
+
+def _required_local_files_missing(target: Path) -> list[str]:
+    """`.methodology-version` 의 `required_local_files` 중 없는 경로 (METH-147 #19).
+
+    gitignore 된 배포 접속 파일이 새 체크아웃·원격 세션에 없어 **수정·검증을 끝낸 뒤에야**
+    배포가 막히는 일이 월 4회(cafe24-renewal, 마지막은 반나절 미배포). 그 파일은 비밀이라
+    AI 가 재생성할 수 없고 사용자 개입이 필요하므로 착수 시점에 알리는 것이 가장 싸다.
+    **존재만 검사한다 — 내용은 읽지 않는다.**
+    """
+    vf = target / VERSION_FILE_NAME
+    if not vf.exists():
+        return []
+    try:
+        req = json.loads(read_text(vf)).get("required_local_files") or []
+    except Exception:  # noqa: BLE001
+        return []
+    return [rel for rel in req if isinstance(rel, str) and not (target / rel).exists()]
+
+
+def _adr_citations_missing(target: Path) -> list[tuple[str, str]]:
+    """변경 중인 문서가 인용한 `ADR-NNNN` 중 파일이 없는 것 — (문서, 인용) (METH-147 #11).
+
+    AI 가 쓴 부연이 다음 문서에서 ADR 조항처럼 재인용되고, 존재하지 않는 조항이 원문과
+    정반대 뜻으로 설계 결론을 떠받친 사고(icons 2026-09-02, 한 세션 3건). 인용 문자열이
+    실제 ADR 파일을 가리키는지만 기계로 본다 — 오탐은 싸고 미탐은 설계를 왜곡한다.
+    """
+    adr_dir = target / "40_dev" / "adr"
+    if not adr_dir.is_dir():
+        return []
+    try:
+        changed = subprocess.check_output(
+            ["git", "-C", str(target), "-c", "core.quotePath=false", "diff", "--name-only", "HEAD"],
+            text=True, stderr=subprocess.DEVNULL).splitlines()
+        untracked = subprocess.check_output(
+            ["git", "-C", str(target), "-c", "core.quotePath=false", "ls-files", "--others", "--exclude-standard"],
+            text=True, stderr=subprocess.DEVNULL).splitlines()
+    except Exception:  # noqa: BLE001
+        return []
+    # 파일명 두 형식 모두 인정 — `ADR-NNN-*.md`(상류·지침 02)와 `NNNN-*.md`(adr/README 구 규정).
+    # drip-chat-planning 은 README 대로 `0001-…` 로 지었다가 ship 마다 오경고 10건을 받았다(METH-149).
+    existing = {m.group(1) for f in adr_dir.glob("*.md")
+                for m in [re.match(r"(?:ADR-)?(\d{3,4})[-_.]", f.name)] if m}
+    out: list[tuple[str, str]] = []
+    for rel in changed + untracked:
+        if not rel.endswith(".md") or rel.startswith("40_dev/adr/"):
+            continue
+        fp = target / rel
+        if not fp.is_file():
+            continue
+        # `<repo>:ADR-NNNN` 은 다른 repo 의 ADR — 이 저장소 파일과 대조하지 않는다(METH-148).
+        # 공유 지침이 하류 사고 사례를 인용할 때 모든 repo 에서 오경고가 나던 것을 막는다.
+        # 코드 블록·인라인 코드 안은 인용이 아니라 형식 예시다(지침 02 «`ADR-001`», 지침 18 YAML 예시).
+        body = re.sub(r"```.*?```", "", read_text(fp), flags=re.DOTALL)
+        body = re.sub(r"`[^`\n]*`", "", body)
+        for num in sorted(set(re.findall(r"(?<![\w:])ADR-(\d{3,4})", body))):
+            if num not in existing and num.lstrip("0") not in {e.lstrip("0") for e in existing}:
+                out.append((rel, f"ADR-{num}"))
+    return out
 
 
 def cmd_boot(args: argparse.Namespace) -> int:
@@ -4146,6 +5386,11 @@ def cmd_boot(args: argparse.Namespace) -> int:
 
     # [4] 라이브 파일 사이즈
     print("\033[1m[4] 라이브 파일 사이즈\033[0m")
+    missing_req = _required_local_files_missing(target)
+    if missing_req:
+        print()
+        for rel in missing_req:
+            warn(f"preflight: 선언된 로컬 파일 없음 — {rel} (배포 접속 정보 등; 비밀이라 AI 가 만들 수 없다 → 착수 전에 사용자에게 요청)")
     sw = live_file_size_warnings(target)
     if sw:
         for w in sw:
@@ -4522,6 +5767,8 @@ def main(argv: list[str] | None = None) -> int:
     pw = sub.add_parser("wrap", help="작업·세션 종료 검증 — 4개 라이브 파일(HANDOFF/TODO/checkpoint/observation) 갱신 누락 점검")
     pw.add_argument("--path", help="대상 폴더 (기본: 현재)")
     pw.add_argument("--strict", action="store_true", help="누락 시 exit 1 (CI/hook용)")
+    pw.add_argument("--read-only", dest="read_only", action="store_true",
+                    help="검사만 — wrap-state 부트스트랩·프롬프팅 리포트 재생성 등 파일 쓰기 없음 (pre-push 훅용, METH-146)")
     pw.set_defaults(func=cmd_wrap)
 
     psh = sub.add_parser("ship", help="작업 종료 통합 — wrap+manifest-check+sensitive 검사+(test/build)+commit+push")
@@ -4530,6 +5777,12 @@ def main(argv: list[str] | None = None) -> int:
     psh.add_argument("--no-test", action="store_true", help="test 단계 skip")
     psh.add_argument("--no-build", action="store_true", help="build 단계 skip")
     psh.add_argument("--no-add-all", action="store_true", help="git add -A 안 함 (사용자가 미리 staging)")
+    psh.add_argument("--allow-shared", dest="allow_shared", action="store_true",
+                     help="공유 체크아웃(워크트리 2개 이상) 경고를 통과 — 커밋 대상이 전부 이 세션 것임을 확인했을 때만 (METH-147)")
+    psh.add_argument("--index-verified", dest="index_verified", action="store_true",
+                     help="--no-add-all 시 스테이징 확인 경고를 통과 — 인덱스 내용을 직접 확인했을 때만")
+    psh.add_argument("--allow-large", dest="allow_large", action="store_true",
+                     help="새 1MB+ 파일 커밋 허용 — 이 작업의 산출물임을 확인했을 때만 (METH-149)")
     psh.add_argument("--no-commit", action="store_true", help="commit 단계 skip (검증만)")
     psh.add_argument("--no-push", action="store_true", help="push 단계 skip (commit까지만)")
     psh.add_argument("--allow-sensitive", action="store_true", help="sensitive 파일 의심 패턴 차단 우회")
@@ -4573,7 +5826,8 @@ def main(argv: list[str] | None = None) -> int:
     po.add_argument("--flow-used", default="ad-hoc", help="skeleton:<id>-<version> 또는 ad-hoc")
     po.add_argument("--intent", action="append", help="프롬프트 intent. 여러 번 지정 가능")
     po.add_argument("--rounds", action="append", type=int, help="각 intent의 turn 수. --intent와 같은 개수")
-    po.add_argument("--friction", action="append", help="'where|cost_minutes|resolution|repeat_of' 형식. 여러 번 지정 가능")
+    po.add_argument("--friction", action="append",
+                    help="'where|cost_minutes|resolution|repeat_of[|phase]' 형식. phase(선택) = diagnose|fix|deploy|verify|communicate. 여러 번 지정 가능")
     po.add_argument("--rounds-total", dest="rounds_total", type=int,
                     help="세션 총 핑퐁 라운드 수 — 상시 기록 의무 (METH-118)")
     po.add_argument("--prompting", action="append",
@@ -4608,7 +5862,8 @@ def main(argv: list[str] | None = None) -> int:
     ska.add_argument("--force", action="store_true")
     ska.set_defaults(func=cmd_skeleton)
 
-    pt = sub.add_parser("thinktank", help="L3 관찰 집계 — §7 지표 + 승급 후보 마킹 (수동 승급 정식, 회고 소스)")
+    pt = sub.add_parser("thinktank", help="L3 관찰 집계 — §7 지표 + 승급 후보 마킹 + 마찰 비용 회고 (수동 승급 정식, 회고 소스)")
+    pt.add_argument("--path", help="다른 repo 의 관찰 로그를 집계 (기본: 이 repo). 리포트는 이 repo insights 에 <주>_thinktank_<repo>.md 로")
     pt.set_defaults(func=cmd_thinktank)
 
     pc = sub.add_parser(
@@ -4661,6 +5916,10 @@ def main(argv: list[str] | None = None) -> int:
                      help="머지 직전까지만 — Class 판정·CI 확인 결과만 보고")
     pld.add_argument("--no-ci-check", dest="no_ci_check", action="store_true",
                      help="CI green 검증 생략 (무검증 머지 — 기본 금지)")
+    pld.add_argument("--local-ci", dest="local_ci", action="store_true",
+                     help="CI 가 결제·인프라로 안 돌 때 — TODO Blocked 의 PM 판정 + CI 단계 로컬 재현 통과 시에만 머지 (METH-147)")
+    pld.add_argument("--no-record", dest="no_record", action="store_true",
+                     help="머지 후 TODO·HANDOFF 기록 커밋을 main 에 남기지 않는다 (기본: 기록, METH-151 D2·ADR-006)")
     pld.add_argument("--no-sync", dest="no_sync", action="store_true",
                      help="기본 브랜치 로컬 동기화 생략 — main 이 다른 worktree 에 점유된 경우")
     pld.set_defaults(func=cmd_land)
@@ -4673,7 +5932,30 @@ def main(argv: list[str] | None = None) -> int:
     prt.add_argument("--apply", action="store_true", help="실제 이관 (없으면 dry-run)")
     prt.add_argument("--checkpoint", action="store_true",
                      help="checkpoint 도 회전(전체 사본 아카이브 + 상단 요지 유지)")
+    prt.add_argument("--force-order", dest="force_order", action="store_true",
+                     help="Done 순서 검사를 건너뛴다 — 문서 순서가 최신-우선이 아닌 것이 의도된 경우만")
     prt.set_defaults(func=cmd_rotate)
+
+    prv = sub.add_parser(
+        "reserve",
+        help="TODO ID 원자적 예약 — 원격 태그 id/<PREFIX>-N (병렬 세션 번호 충돌 방지, METH-147)",
+    )
+    prv.add_argument("--path", help="대상 폴더 (기본: 현재)")
+    prv.add_argument("--prefix", default=None, help="ID 접두어 (기본: TODO.md 최빈 접두어 추론)")
+    prv.set_defaults(func=cmd_reserve)
+
+    psp = sub.add_parser(
+        "shared-paths",
+        help="sync 가 덮어쓰는 방법론 관리 경로 목록 — pre-push 훅의 sync 판정 단일 소스 (METH-142)",
+    )
+    psp.set_defaults(func=cmd_shared_paths)
+
+    pdc = sub.add_parser(
+        "dev-check",
+        help="이 프로젝트의 dev 서버 실행 감지 — build-guard.sh 가 호출하는 단일 판정 지점 (exit 1 = 실행 중)",
+    )
+    pdc.add_argument("--path", help="대상 폴더 (기본: 현재)")
+    pdc.set_defaults(func=cmd_dev_check)
 
     ppr = sub.add_parser(
         "prompt-report",
