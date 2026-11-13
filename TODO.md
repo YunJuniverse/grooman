@@ -11,19 +11,18 @@
 
 _(없음)_
 
-## Ready
+## Backlog
 
-### GRM-018
-- **title**: UX 진단·clinic 설계 후속 조치 (문서→구현)
+### GRM-020
+- **title**: clinic 신뢰 장치 (강남언니 3종 패턴) — clinic 활성화 시
 - **mode**: fullstack
-- **change-class**: A
+- **change-class**: B
 - **owner**: AI + Human
 - **acceptance criteria**:
-  - [ ] 다크모드 제목 대비(§1, 13곳) — **PERF-2 백그라운드 작업이 처리 중**(중복 주의). 배경 맥락(bg-white 하드코딩 페이지 제외) 필요
-  - [ ] `/search` 본문에 검색 입력창(현재 헤더 아이콘으로만 열림 — 흐름 단절)
-  - [ ] 홈 한 줄 소개 히어로(비로그인 첫 방문자용 랜딩 맥락)
-  - [ ] clinic 신뢰 장치 B안(경량 스키마)+C안(익명 옵션) — clinic 활성화 시(Class B, `clinic-trust-design-2026-07-24.md`)
-- **notes**: `user-ux-diagnosis-2026-07-24.md`·`clinic-trust-design-2026-07-24.md`의 미착수 항목. clinic·콜드스타트 항목은 글이 쌓인 뒤가 적기.
+  - [ ] B안(경량 스키마): `post_clinic_meta`(has_downside·verified·verified_by/at) + '아쉬운 점' 필수 입력 + 인증 이미지 업로드 + 목록 필터
+  - [ ] C안(익명 옵션): clinic 글 단위 익명 토글 — `createComment`에도 동일 정책 적용(talmo가 잡은 정책 구멍)
+  - [ ] 선결: 봇 시딩(ADR-0002) 시 clinic 후기 만족도 분포 넓게(talmo 교훈 — 평점 3~5만 있으면 '아쉬운 점' 필터 공허)
+- **notes**: 설계 `40_dev/snapshots/clinic-trust-design-2026-07-24.md`. 스키마 변경(Class B)이고 clinic 글 0건이라 지금 만들면 검증 데이터 없음 → clinic 활성화 후 빌드 게이트. 예약·상담·가격 동선은 §27 위반이라 배제.
 
 ## InProgress
 
@@ -62,6 +61,10 @@ _(없음)_
 - **notes**: 정적 감사 결과 SEO·기본 a11y 양호(메타·lang·aria-label 구현). 주 약점=raw img 크기 부재(CLS). next/image 전면 전환 완료(raw img 14→0, PR#13). **블로커 해소 경로 확인(2026-07-22)**: `NEXT_PUBLIC_SUPABASE_URL` + anon key만 빌드에 주입하면 로컬 `next start`로 정상 렌더됨을 실증 — Vercel 배포 없이 로컬 실측 가능(`NEXT_PUBLIC_*`는 빌드 타임 인라인이라 build·start 양쪽에 필요). **2026-07-24 조치**: 사용자 승인("둘 다 진행해줘") 후 폰트 self-host + color-contrast 수정 완료. 부수 발견 2건은 SEC-2와 같은 패턴으로 백그라운드 작업 스폰(다크모드 전역 감사) — `40_dev/snapshots/lighthouse-measurement-2026-07-24.md` §조치 참조.
 
 ## Done
+
+### GRM-018
+- **title**: UX 진단 후속 — 검색 페이지 검색창 + 홈 랜딩 히어로
+- **notes**: Completed 2026-07-24. **검색창(§3)**: `app/search/SearchBox.tsx`(client) 신설 — 검색 페이지 본문에 검색창 배치, 헤더 아이콘으로만 검색을 열던 흐름 단절 해소. `initialQuery`로 결과 페이지에서도 검색어 유지(SSR value 실측 확인). **홈 히어로(§4)**: 비로그인 첫 방문자에게만 "대한민국 남성 그루밍 커뮤니티" 한 줄 소개 + 시작하기/둘러보기 CTA(로그인 사용자에겐 숨김, `auth.getUser()` 서버 판정). 검색 유입 시 랜딩 맥락 제공. **다크 제목(§1)**: GRM-019(PR#21)가 이미 해소함을 확인 — 잔여 `text-gray-900`은 전부 `bg-white` 하드코딩 컨테이너(privacy·terms·글상세 article) 안이라 의도적으로 유지된 것. **clinic 신뢰장치(§8)**: 스키마 변경(Class B)+clinic 글 0건이라 GRM-020(Backlog)으로 분리. 검증: tsc 0·vitest 43·build 27·브라우저 히어로/검색 시각 확인. 참고: 홈 `revalidate=60`은 기존 쿠키 읽기로 이미 무력(死 설정)이었음을 빌드로 확인, 이 변경이 새 문제 아님. Class A. 근거: `user-ux-diagnosis-2026-07-24.md`.
 
 ### GRM-019
 - **title**: 다크모드·명암비 전역 감사 (PERF-2 해소)

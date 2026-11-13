@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import PostCard from '@/components/posts/PostCard'
+import SearchBox from './SearchBox'
 import type { Post } from '@/types/supabase'
 
 interface Props {
@@ -34,16 +35,20 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
         {q ? `"${q}" 검색 결과` : '검색'}
       </h1>
+
+      <SearchBox initialQuery={q} />
+
       {q && (
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{posts.length}개의 게시글을 찾았습니다.</p>
       )}
 
       {!q && (
-        <div className="text-center py-20 text-gray-600 dark:text-gray-400">
-          <p className="text-sm">검색어를 입력해주세요.</p>
+        <div className="text-center py-16 text-gray-600 dark:text-gray-400">
+          <p className="text-sm">위 검색창에 그루밍 정보를 검색해보세요.</p>
+          <p className="text-xs mt-1">제품 후기·성분 분석·시술 경험 등</p>
         </div>
       )}
 

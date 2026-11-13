@@ -40,16 +40,54 @@ async function getLatestPosts(): Promise<Post[]> {
   } catch { return [] }
 }
 
+async function getIsLoggedIn(): Promise<boolean> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return false
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    return !!user
+  } catch { return false }
+}
+
 export default async function HomePage() {
-  const [latestPosts, hotPosts] = await Promise.all([
+  const [latestPosts, hotPosts, isLoggedIn] = await Promise.all([
     getLatestPosts(),
     getHotPosts(),
+    getIsLoggedIn(),
   ])
 
   return (
     <div className="flex gap-5 xl:gap-6">
       {/* 메인 콘텐츠 */}
       <div className="flex-1 min-w-0">
+        {/* 랜딩 소개 — 비로그인 첫 방문자에게만. 검색 유입 시 "여기가 뭐 하는 곳인지" 맥락 제공
+            (user-ux-diagnosis-2026-07-24.md §4). 로그인 사용자에겐 공간 낭비라 숨긴다. */}
+        {!isLoggedIn && (
+          <section className="mb-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] px-5 py-6 sm:px-7 sm:py-8">
+            <h1 className="text-lg sm:text-xl font-bold text-[var(--text-1)] leading-snug">
+              대한민국 남성 그루밍 커뮤니티
+            </h1>
+            <p className="mt-2 text-sm text-[var(--text-2)] leading-relaxed">
+              헤어케어·탈모부터 스킨케어·쉐이빙·향수·시술 후기까지.<br className="hidden sm:block" />
+              실사용 경험과 성분 정보를 담백하게 나눕니다.
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <Link
+                href="/login"
+                className="text-sm font-bold text-white bg-indigo-600 hover:opacity-90 px-4 py-2 rounded-full transition"
+              >
+                시작하기
+              </Link>
+              <Link
+                href="/hair"
+                className="text-sm font-medium text-[var(--text-2)] hover:text-[var(--text-1)] px-4 py-2 rounded-full border border-[var(--border)] transition"
+              >
+                둘러보기
+              </Link>
+            </div>
+          </section>
+        )}
+
         {/* 카테고리 그리드 */}
         <section className="mb-5">
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
