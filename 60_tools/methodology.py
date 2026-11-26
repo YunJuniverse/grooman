@@ -2861,6 +2861,8 @@ def _discover_downstreams(root: Path) -> list[Path]:
     """root 바로 아래에서 .methodology-version 을 가진 프로젝트 폴더 수집.
 
     방법론 원본(METHODOLOGY_ROOT) 자신은 제외한다. 이름순 정렬.
+    버전 파일에 `"retired": true` 가 있는 폴더는 목록에서 뺀다 — 원격이 사라졌거나
+    더는 관리하지 않는 프로젝트. 폴더 자신이 표시를 갖고 있어 상류에 이름을 적지 않는다.
     """
     found: list[Path] = []
     try:
@@ -2870,9 +2872,18 @@ def _discover_downstreams(root: Path) -> list[Path]:
     for child in children:
         if not child.is_dir() or child.resolve() == METHODOLOGY_ROOT:
             continue
-        if (child / VERSION_FILE_NAME).exists():
+        if (child / VERSION_FILE_NAME).exists() and not _is_retired(child):
             found.append(child)
     return found
+
+
+def _is_retired(path: Path) -> bool:
+    """버전 파일의 `"retired": true` 여부. 파일이 깨졌으면 퇴역으로 보지 않는다(목록에 남겨 드러낸다)."""
+    try:
+        data = json.loads((path / VERSION_FILE_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(data, dict) and data.get("retired") is True
 
 
 SYNC_ACTIVE_DAYS = 30
