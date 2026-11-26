@@ -42,6 +42,8 @@ python3 60_tools/methodology.py capsule \
 - `--target`: `guide-NN` | `catalog` | `skeleton/<도메인>` | `tool/<명령>` 등 반영 목표
 - 파일명 `YYYY-MM-DD_<slug>.md`, id는 `<repo>__<파일명 stem>` 자동 부여(수거 중복 방지 키)
 - 검증: `capsule --validate <path>`
+- 마찰에서 나온 제안이면 `--friction-ref` 로 그 관찰 로그를 가리킨다. friction 은 «막힌 사실», 캡슐은 «그래서 방법론을 이렇게 바꾸자»다.
+- 사용자가 «방법론에 반영해줘»라고 하면 캡슐 생성부터 커밋·push 까지가 의무다. AI 자발 제안은 근거(재발·비용·실사례)가 있을 때만.
 
 ## 4. 민감정보
 
