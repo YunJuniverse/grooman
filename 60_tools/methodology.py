@@ -10,7 +10,7 @@ Commands
       현재 폴더(.methodology-version 보유)를 업스트림과 동기화한다.
       --apply 없이 호출하면 변경 미리보기만 출력 (드라이런).
 
-  methodology sync-all [--apply] [--root <dir>]
+  methodology sync-all [--apply] [--root <dir>] [--include-dormant]
       root(기본: 방법론 상위) 아래 관리 다운스트림을 전부 발견해 일괄 sync.
       --apply 시 dirty·비-main 브랜치는 안전상 skip (--include-dirty/--allow-nonmain 로 강제).
 
@@ -2044,105 +2044,6 @@ def _pr_merge_info(target: Path, pr_num: int | str) -> tuple[str | None, str | N
         return None, None
 
 
-LAND_RECORD_PATHS = ("TODO.md", "HANDOFF.md")
-_MERGE_AC_RE = re.compile(r"머지|merge|maincheck|Done|전이|land", re.IGNORECASE)
-
-
-def _land_record_todo(text: str, ids: set[str], pr_num: int | str, sha8: str, today: str) -> tuple[str, list[str], list[str]]:
-    """TODO 에 land 기록 — (새 텍스트, Done 으로 옮긴 ID, 기록만 단 ID) (METH-151 D2).
-
-    항목에 `landed` 줄을 단다. 남은 미체크 AC 가 «머지·Done 전이» 류뿐이면 Done 맨 위로 옮긴다
-    — PR 여러 개로 끝나는 항목(METH-148: PR 5개)을 첫 PR 에서 Done 처리하지 않기 위함.
-    """
-    parts = re.split(r"(?=^##\s)", text, flags=re.MULTILINE)
-    done_idx = next((i for i, p in enumerate(parts) if _kanban_heading(p.split("\n", 1)[0], "## Done")), None)
-    moved: list[str] = []
-    noted: list[str] = []
-    to_move: list[str] = []
-    for i, sec in enumerate(parts):
-        if i == done_idx or not sec.startswith("## "):
-            continue
-        blocks = re.split(r"(?=^###\s)", sec, flags=re.MULTILINE)
-        keep = []
-        for b in blocks:
-            m = re.match(r"^###\s+(?:~~)?([A-Z][A-Z0-9]*-\d+)\b", b)
-            if not m or m.group(1).upper() not in ids:
-                keep.append(b)
-                continue
-            line = f"- **landed**: PR #{pr_num} · main `{sha8}` · {today} (land 자동 기록)\n"
-            body = b.rstrip("\n") + "\n" + line
-            # 자동 기록이므로 «머지·Done 전이» AC 는 이 시점에 충족된다 — 체크한다
-            body = re.sub(r"^(\s*-\s*)\[ \](.*(?:머지|merge|maincheck|Done 전이).*)$", r"\1[x]\2", body,
-                          flags=re.MULTILINE | re.IGNORECASE)
-            open_ac = [l for l in body.splitlines() if re.match(r"^\s*-\s*\[ \]", l)]
-            if not open_ac and done_idx is not None:
-                to_move.append(body + "\n")
-                moved.append(m.group(1))
-            else:
-                keep.append(body + "\n")
-                noted.append(m.group(1))
-        parts[i] = "".join(keep)
-    if to_move and done_idx is not None:
-        head, _, rest = parts[done_idx].partition("\n")
-        parts[done_idx] = head + "\n\n" + "".join(to_move) + rest.lstrip("\n")
-    return "".join(parts), moved, noted
-
-
-def _land_record(target: Path, pr_num: int | str, merge_sha: str, ids: set[str], default_branch: str) -> None:
-    """머지 후 TODO·HANDOFF 기록을 main 에 직접 커밋 — «머지 기록 PR» 제거 (METH-151 D2, ADR-006).
-
-    예외의 범위: 변경이 TODO.md·HANDOFF.md 뿐일 때만. push 가 거부되면(보호 규칙 등) 커밋을
-    되돌리고 변경을 작업트리에 남긴다 — 다음 PR 에 실린다.
-    """
-    if not ids:
-        return
-    cur = subprocess.run(["git", "-C", str(target), "branch", "--show-current"], capture_output=True, text=True).stdout.strip()
-    if cur != default_branch:
-        warn(f"  land 기록 skip — {default_branch} 가 체크아웃돼 있지 않다(다른 worktree 점유).")
-        return
-    dirty = subprocess.run(["git", "-C", str(target), "status", "--porcelain", "--", *LAND_RECORD_PATHS],
-                           capture_output=True, text=True).stdout.strip()
-    if dirty:
-        warn("  land 기록 skip — TODO/HANDOFF 에 미커밋 변경이 있다.")
-        return
-    today = datetime.now().strftime("%Y-%m-%d")
-    sha8 = merge_sha[:8]
-    todo_p, ho_p = target / "TODO.md", target / "HANDOFF.md"
-    if not todo_p.exists():
-        return
-    new_todo, moved, noted = _land_record_todo(read_text(todo_p), ids, pr_num, sha8, today)
-    if not moved and not noted:
-        info(f"  land 기록 — TODO 에서 {', '.join(sorted(ids))} 항목을 못 찾아 기록 없음")
-        return
-    write_text(todo_p, new_todo)
-    if ho_p.exists():
-        ho = read_text(ho_p)
-        desc = (f"Done {', '.join(moved)}" if moved else "") + (" · " if moved and noted else "") \
-            + (f"기록 {', '.join(noted)}" if noted else "")
-        line = f"- {today} — land: PR #{pr_num} 머지(main `{sha8}`) · {desc}\n"
-        ho2 = re.sub(r"(^##\s+Recent Changes[^\n]*\n)", lambda m_: m_.group(1) + line, ho, count=1, flags=re.MULTILINE)
-        if ho2 != ho:
-            write_text(ho_p, ho2)
-    subprocess.run(["git", "-C", str(target), "add", "--", *LAND_RECORD_PATHS], capture_output=True)
-    staged = subprocess.run(["git", "-C", str(target), "diff", "--cached", "--name-only"],
-                            capture_output=True, text=True).stdout.split()
-    if not staged or any(f not in LAND_RECORD_PATHS for f in staged):
-        subprocess.run(["git", "-C", str(target), "reset", "-q"], capture_output=True)
-        warn(f"  land 기록 중단 — 스테이징이 TODO/HANDOFF 밖을 포함: {staged}")
-        return
-    subprocess.run(["git", "-C", str(target), "commit", "-q", "-m",
-                    f"chore(land): PR #{pr_num} 머지 기록 — {', '.join(sorted(moved + noted))}"], capture_output=True)
-    env = dict(os.environ, METHODOLOGY_SHIP_IN_PROGRESS="1")   # 훅 wrap 재검증 skip — 범위는 위에서 검사
-    ps = subprocess.run(["git", "-C", str(target), "push", "-q", "origin", f"HEAD:{default_branch}"],
-                        capture_output=True, text=True, env=env)
-    if ps.returncode != 0:
-        subprocess.run(["git", "-C", str(target), "reset", "-q", "HEAD~1"], capture_output=True)
-        warn(f"  land 기록 push 거부 — 변경은 작업트리에 남겼다(다음 PR 에 실린다): {(ps.stderr or '').strip()[:160]}")
-        return
-    ok(f"  land 기록 → main 직접 커밋: " + (f"Done {', '.join(moved)}" if moved else "") +
-       (f" 기록 {', '.join(noted)}" if noted else ""))
-
-
 def cmd_land(args: argparse.Namespace) -> int:
     """PR 머지 → main 도달 확인 → 브랜치 정리까지의 '착지' — METH-133.
 
@@ -2214,11 +2115,12 @@ def cmd_land(args: argparse.Namespace) -> int:
             + ", ".join(f"{i}(Class {c})" for i, c in todo_hits))
         err("경로 트리거가 비어도 사람이 TODO 에 적은 클래스가 우선한다. 승인 근거를 PR 에 남기고 사람이 머지한다.")
         return 2
-    skipped = _excluded_assets(target, base_ref)
+    skipped = [] if already_merged else _excluded_assets(target, base_ref)
     if skipped:
         print(f"  · 자산 {len(skipped)}건은 트리거 검사 제외(이미지·영상·폰트) — "
               f"예: {skipped[0]}")
-    print("  ✓ Class B/C 트리거 없음 — Class A")
+    if not already_merged:
+        print("  ✓ Class B/C 트리거 없음 — Class A")
 
     if str(pr.get("state", "")).upper() != "MERGED":
         # 2b) DIRTY — main 이 움직여 머지 참조를 못 만드는 상태. 1회 자동 해소 (METH-147 #1③).
@@ -2359,12 +2261,10 @@ def cmd_land(args: argparse.Namespace) -> int:
         err("main 도달 미확인 — TODO Done 전이 금지.")
         return 1
 
+    # 머지 기록 커밋은 만들지 않는다 — Done 전이·HANDOFF 한 줄은 그 PR 안에 실려 함께 도달한다
+    # (METH-152 D1, ADR-007 — ADR-006 D2 대체). main 의 TODO 만 사실이다.
     ok(f"land 완료 — PR #{pr_num} 이 {default_branch} 에 도달(squash {check_sha[:8]}). "
-       "이제 TODO Done 전이가 기계적으로 정당하다.")
-    if getattr(args, "no_record", False) or getattr(args, "no_sync", False):
-        print("  다음: TODO Done 이동 → HANDOFF/checkpoint 갱신 → ship")
-    else:
-        _land_record(target, pr_num, check_sha, _pr_todo_ids(pr, branch), default_branch)
+       "PR 에 실린 TODO Done 표기도 함께 도달했다.")
     return 0
 
 
@@ -2975,6 +2875,74 @@ def _discover_downstreams(root: Path) -> list[Path]:
     return found
 
 
+SYNC_ACTIVE_DAYS = 30
+_SYNC_SUBJECT_RE = re.compile(r"방법론 sync|methodology sync", re.IGNORECASE)
+
+
+def _recent_work_commits(path: Path, days: int = SYNC_ACTIVE_DAYS) -> int | None:
+    """최근 days 일 내 «작업» 커밋 수 — 방법론 sync 커밋은 활동으로 치지 않는다 (METH-152 D2, ADR-007).
+
+    모든 브랜치·원격 추적 ref 를 본다(피처 브랜치 작업도 활동). git repo 가 아니면 None.
+    """
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(path), "log", "--all", f"--since={days} days ago", "--pretty=%s"],
+            text=True, stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return None
+    return sum(1 for line in out.splitlines() if line.strip() and not _SYNC_SUBJECT_RE.search(line))
+
+
+def _dormant_reason(state: dict, args: argparse.Namespace) -> str | None:
+    """휴면 다운스트림이면 건너뛸 이유 — 읽는 세션이 없는 repo 에 전파하지 않는다 (METH-152 D2).
+
+    휴면 repo 는 다음 세션의 boot 가 버전 차이를 알릴 때 그 repo 에서 sync 한다.
+    """
+    if getattr(args, "include_dormant", False):
+        return None
+    if state.get("active") == 0:
+        days = getattr(args, "active_days", None) or SYNC_ACTIVE_DAYS
+        return f"휴면 — 최근 {days}일 작업 커밋 0 (--include-dormant 로 강제)"
+    return None
+
+
+def _find_upstream_root(target: Path) -> Path | None:
+    """다운스트림에서 방법론 원본 폴더를 찾는다 — 환경변수, 없으면 형제·사촌 `methodology/`."""
+    env = os.environ.get("METHODOLOGY_UPSTREAM")
+    cands: list[Path] = [Path(env).expanduser()] if env else []
+    for base in (target.parent, target.parent.parent):
+        cands.append(base / "methodology")
+        try:
+            cands.extend(sorted(c / "methodology" for c in base.iterdir() if c.is_dir()))
+        except OSError:
+            pass
+    for c in cands:
+        if (c / "60_tools" / "methodology.py").exists() and (c / META_ROOT).is_dir() \
+                and not (c / VERSION_FILE_NAME).exists() and c.resolve() != target.resolve():
+            return c.resolve()
+    return None
+
+
+def _upstream_behind_notice(target: Path) -> str | None:
+    """이 다운스트림이 상류보다 뒤처졌으면 알림 문구 (boot 용, METH-152 D2). 판정 불가면 None."""
+    applied = (load_version_file(target) or {}).get("upstream_commit")
+    if not applied or applied == "unknown":
+        return None
+    up = _find_upstream_root(target)
+    if up is None:
+        return None
+    try:
+        head = subprocess.check_output(["git", "-C", str(up), "rev-parse", "HEAD"],
+                                       text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        return None
+    if head.startswith(applied):
+        return None
+    return (f"방법론 상류가 앞서 있다 (적용 {applied} → 상류 {head[:7]}) — "
+            f"이 repo 에서 `python3 {up}/60_tools/methodology.py sync --apply --path .`")
+
+
 def _downstream_state(path: Path) -> dict:
     """한 다운스트림의 sync 판단에 필요한 상태 스냅샷."""
     vinfo = load_version_file(path) or {}
@@ -2985,6 +2953,7 @@ def _downstream_state(path: Path) -> dict:
         "branch": _git_current_branch(path),
         "dirty": _git_dirty_count(path),
         "outbox": len(capsule_files(path)),
+        "active": _recent_work_commits(path),
     }
 
 
@@ -3016,12 +2985,13 @@ def _sync_all_skip_reason(state: dict, args: argparse.Namespace) -> str | None:
 def _print_downstream_table(states: list[dict], up_commit: str) -> None:
     """사전 스캔 표 — 버전·브랜치·dirty·outbox 캡슐·업스트림 대비."""
     print()
-    print(f"  {'project':22s} {'version':7s} {'branch':26s} {'dirty':>5s} {'outbox':>6s}  vs-upstream")
-    print(f"  {'-'*22} {'-'*7} {'-'*26} {'-'*5} {'-'*6}  {'-'*11}")
+    print(f"  {'project':22s} {'version':7s} {'branch':26s} {'dirty':>5s} {'outbox':>6s} {'30d':>4s}  vs-upstream")
+    print(f"  {'-'*22} {'-'*7} {'-'*26} {'-'*5} {'-'*6} {'-'*4}  {'-'*11}")
     for s in states:
         state = "behind" if _is_behind(s, up_commit) else "최신 ✓"
         print(f"  {s['path'].name:22.22s} {s['version']:7s} "
-              f"{(s['branch'] or '?'):26.26s} {s['dirty']:>5d} {s.get('outbox', 0):>6d}  {state}")
+              f"{(s['branch'] or '?'):26.26s} {s['dirty']:>5d} {s.get('outbox', 0):>6d} "
+              f"{('?' if s.get('active') is None else str(s['active'])):>4s}  {state}")
     total_outbox = sum(s.get("outbox", 0) for s in states)
     if total_outbox:
         warn(f"outbox 캡슐 {total_outbox}건 발견 — 수거는 `methodology collect` (METH-117)")
@@ -3040,11 +3010,20 @@ def cmd_sync_all(args: argparse.Namespace) -> int:
     info(f"sync-all — root: {root}  ({len(projects)}개)  "
          f"{'APPLY' if apply else 'DRY-RUN'}")
     states = [_downstream_state(p) for p in projects]
+    days = getattr(args, "active_days", None) or SYNC_ACTIVE_DAYS
+    if days != SYNC_ACTIVE_DAYS:
+        for s in states:
+            s["active"] = _recent_work_commits(s["path"], days)
     _print_downstream_table(states, up_commit)
 
     processed, skipped = [], []
     for s in states:
         name = s["path"].name
+        dormant = _dormant_reason(s, args)   # dry-run 에서도 건너뛴다 — 미리보기가 실제와 같게
+        if dormant:
+            warn(f"skip  {name}: {dormant}")
+            skipped.append((name, dormant))
+            continue
         if apply:
             reason = _sync_all_skip_reason(s, args)
             if reason:
@@ -3217,7 +3196,7 @@ def _todo_done_ids(text: str) -> set[str]:
 
 
 def _warn_premature_done(target: Path) -> None:
-    """작업 브랜치에서 Done 신규 진입을 감지하면 경고 — 차단하지 않는다."""
+    """작업 브랜치의 Done 신규 진입을 알린다 — PR 에 싣는 것이 정상 경로다 (METH-152 D1, ADR-007)."""
     todo = target / "TODO.md"
     if not todo.exists():
         return
@@ -3241,10 +3220,9 @@ def _warn_premature_done(target: Path) -> None:
     new_done = _todo_done_ids(read_text(todo)) - _todo_done_ids(before)
     if not new_done:
         return
-    warn(f"Done 신규 진입 {len(new_done)}건 — 아직 {default_branch} 미도달: "
-         f"{', '.join(sorted(new_done))}")
-    warn("  머지 전 Done 표기는 허위 기록이다(METH-120). push 후 "
-         "`methodology.py land` 로 착지시켜 maincheck 를 통과시킬 것.")
+    info(f"Done 전이 {len(new_done)}건이 이 PR 에 실린다: {', '.join(sorted(new_done))} "
+         f"— {default_branch} 에 도달하기 전까지는 예정이다(ADR-007).")
+    info("  push 후 `methodology.py land` 로 착지시켜 maincheck 를 통과시킬 것.")
 
 
 def cmd_ship(args: argparse.Namespace) -> int:
@@ -3300,12 +3278,11 @@ def cmd_ship(args: argparse.Namespace) -> int:
 
     # 4) test / build (있을 때만)
     pkg = target / "package.json"
+    # 매니저는 단계 밖에서 한 번 정한다 — test·build 블록 안에서만 정하면
+    # --no-test --no-build 조합에서 tsc 단계가 NameError 로 죽는다.
+    manager = _pkg_manager(target)
     if pkg.exists() and not args.no_test:
         info("ship: 4/7 — pnpm test (있으면)")
-        # 어느 매니저인지 단순 추정
-        manager = "pnpm" if (target / "pnpm-lock.yaml").exists() else (
-            "yarn" if (target / "yarn.lock").exists() else "npm"
-        )
         # test 스크립트 있는지 확인
         try:
             pkg_data = json.loads(pkg.read_text(encoding="utf-8"))
@@ -3324,9 +3301,6 @@ def cmd_ship(args: argparse.Namespace) -> int:
 
     if pkg.exists() and not args.no_build:
         info("ship: 5/7 — pnpm build (있으면)")
-        manager = "pnpm" if (target / "pnpm-lock.yaml").exists() else (
-            "yarn" if (target / "yarn.lock").exists() else "npm"
-        )
         try:
             pkg_data = json.loads(pkg.read_text(encoding="utf-8"))
             scripts = pkg_data.get("scripts", {})
@@ -3354,7 +3328,7 @@ def cmd_ship(args: argparse.Namespace) -> int:
         warn("빌드 미검증 상태로 push 한다 — 파손이 배포에서만 드러날 수 있다.")
         if (target / "tsconfig.json").exists():
             info("  최소 검증: tsc --noEmit")
-            rc = subprocess.call([manager, "exec", "tsc", "--noEmit"], cwd=str(target))
+            rc = subprocess.call(_typecheck_cmd(manager), cwd=str(target))
             if rc != 0:
                 err("타입 검사 실패 — push 중단. (--no-build 여도 타입은 본다)")
                 err("정말 건너뛰려면 원인을 고치거나 tsconfig 를 조정할 것.")
@@ -4913,6 +4887,22 @@ def staleness_warnings(target: Path) -> list[str]:
     return warnings
 
 
+def _pkg_manager(target: Path) -> str:
+    """lock 파일로 패키지 매니저를 단순 추정한다 (pnpm > yarn > npm)."""
+    if (target / "pnpm-lock.yaml").exists():
+        return "pnpm"
+    if (target / "yarn.lock").exists():
+        return "yarn"
+    return "npm"
+
+
+def _typecheck_cmd(manager: str) -> list[str]:
+    """`tsc --noEmit` 실행 명령. npm 은 `--` 가 없으면 --noEmit 을 자기 옵션으로 삼킨다."""
+    if manager == "npm":
+        return ["npm", "exec", "--", "tsc", "--noEmit"]
+    return [manager, "exec", "tsc", "--noEmit"]
+
+
 def _dev_server_running(target: Path | None = None) -> str | None:
     """실행 중인 next dev 서버 감지 — build 충돌 가드 (METH-122, P6 7회 재발).
 
@@ -5419,6 +5409,11 @@ def cmd_boot(args: argparse.Namespace) -> int:
         if pending:
             warn(f"미수거 캡슐 {pending}건 / {repos}개 repo — `methodology collect` 실행 고려")
 
+    # [4c] 상류 버전 차이 — 휴면 repo 는 전파를 받지 않으므로 세션이 열릴 때 알린다 (METH-152 D2)
+    behind = _upstream_behind_notice(target)
+    if behind:
+        warn(behind)
+
     # [5] dashboard
     print("\033[1m[5] 대시보드\033[0m")
     if not args.no_dashboard:
@@ -5730,6 +5725,19 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="--apply 시 기본 브랜치(main/master) 아니어도 sync (기본: skip)",
     )
+    psa.add_argument(
+        "--include-dormant",
+        dest="include_dormant",
+        action="store_true",
+        help="휴면 repo(최근 작업 커밋 0)도 sync (기본: skip — METH-152 D2·ADR-007)",
+    )
+    psa.add_argument(
+        "--active-days",
+        dest="active_days",
+        type=int,
+        default=SYNC_ACTIVE_DAYS,
+        help=f"활동 판정 기간(일, 기본 {SYNC_ACTIVE_DAYS}) — 방법론 sync 커밋은 활동에서 제외",
+    )
     psa.set_defaults(func=cmd_sync_all)
 
     pst = sub.add_parser("status", help="버전 비교")
@@ -5919,7 +5927,7 @@ def main(argv: list[str] | None = None) -> int:
     pld.add_argument("--local-ci", dest="local_ci", action="store_true",
                      help="CI 가 결제·인프라로 안 돌 때 — TODO Blocked 의 PM 판정 + CI 단계 로컬 재현 통과 시에만 머지 (METH-147)")
     pld.add_argument("--no-record", dest="no_record", action="store_true",
-                     help="머지 후 TODO·HANDOFF 기록 커밋을 main 에 남기지 않는다 (기본: 기록, METH-151 D2·ADR-006)")
+                     help="(폐기 — 무동작) land 는 더 이상 기록 커밋을 만들지 않는다 (METH-152 D1·ADR-007)")
     pld.add_argument("--no-sync", dest="no_sync", action="store_true",
                      help="기본 브랜치 로컬 동기화 생략 — main 이 다른 worktree 에 점유된 경우")
     pld.set_defaults(func=cmd_land)

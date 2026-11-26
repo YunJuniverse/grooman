@@ -123,6 +123,9 @@
     { "id": "g30", "label": "30 동시 세션 git 격리", "kind": "guide", "category": "guides", "tier": 3,
       "path": "20_guides/30_동시_세션_git_격리.md",
       "role": "세션이 둘 이상일 때의 git 규율 — 격리 워크트리·경로 add 한계·배포 링크·브랜치 레이스" },
+    { "id": "g31", "label": "31 세션 마감·머지 착지", "kind": "guide", "category": "guides", "tier": 3,
+      "path": "20_guides/31_세션_마감_및_머지_착지.md",
+      "role": "마감 4파일·ship·land·스택-PR 금지·Done 은 PR 안에 — CLAUDE.md §2 포인터의 정본" },
 
     { "id": "p10", "label": "10 사업기획서", "kind": "artifact", "category": "planning", "tier": 1,
       "path": "30_planning/10_사업기획서.md",
@@ -211,6 +214,7 @@
     { "from": "g00", "to": "g28", "kind": "parent-of", "label": "실험 모드" },
     { "from": "g00", "to": "g29", "kind": "parent-of", "label": "자율주행" },
     { "from": "g00", "to": "g30", "kind": "parent-of", "label": "동시 세션 격리" },
+    { "from": "g00", "to": "g31", "kind": "parent-of", "label": "마감·착지" },
     { "from": "g01", "to": "g28", "kind": "routes-to", "label": "§5.11 키워드" },
     { "from": "g01", "to": "g29", "kind": "routes-to", "label": "§5.11 키워드" },
     { "from": "g01", "to": "g30", "kind": "routes-to", "label": "§5.11 동시 세션" },
