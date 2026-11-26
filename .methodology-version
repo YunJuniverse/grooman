@@ -2,6 +2,6 @@
   "methodology_version": "v4.0",
   "applied_at": "2026-11-26",
   "applied_from": "ai-pipeline-methodology",
-  "upstream_commit": "120ca39",
+  "upstream_commit": "f1adeb6",
   "project_label": "grooman"
 }
